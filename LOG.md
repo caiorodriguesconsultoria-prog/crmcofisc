@@ -108,5 +108,17 @@ Adicionado `@sentry/nextjs`, com `instrumentation.ts` (server/edge), `instrument
 ## 2026-08-20 · Acerto a repetir — Sentry ativo em produção
 Caio criou o projeto no sentry.io, cadastrou `NEXT_PUBLIC_SENTRY_DSN` no Vercel e alerta "high priority issues" com notificação por e-mail. Novo deploy disparado pra pegar a variável, confirmado rodando (READY). Monitoramento de erros ativo.
 
+## 2026-08-20 · Decisão — construir estrutura completa antes do design
+Caio decidiu completar toda a estrutura vista no protótipo original (Claude Design, arquivo `COFISC - Processos.dc.html` na pasta do Drive) antes de partir pro design visual. Levantamento comparado com o protótipo mostrou lacunas por tamanho: pequenas (NUPs nomeados, campo valor, selo cobertura de férias — banco já suportava), médias (Gestores/Fiscais, contratos por fornecedor, filtros, SEI/prazo) e grandes (Kanban com checklist de tarefas por etapa, Agenda, aba Relatório completa).
+
+## 2026-08-20 · Decisão — campos do Relatório em colunas, não JSON
+Dos 24 campos do "Quadro resumitivo" do protótipo, a maioria já tem equivalente no banco (contrato, objeto, vigência, valor, gestor/fiscal). Os ~11 genuinamente novos (Processo Eletrônico, Pregão, Ata de Registro de Preços, Publicação D.O.U/PNCP, Valor da Garantia, Portaria de Designação de Fiscal, Nota de Empenho, Programa de Trabalho, Natureza de Despesa, Local de Entrega) viraram colunas reais em `processos` (migração 0010), não um campo `dados_complementares` genérico — número pequeno o suficiente pra não virar bagunça, e colunas reais validam melhor.
+
+## 2026-08-20 · Decisão/SQL — Migração 0010 (relatório, gestor/fiscal, execuções)
+Adiciona os 11 campos do relatório + `prazo_data` + `gestor_id`/`gestor_substituto_id`/`fiscal_id`/`fiscal_substituto_id` em `processos`, e cria `processo_execucoes` (cronograma de entregas: número, quantidade, unidade, data prevista, situação), RLS liberado pra equipe igual `processo_nups`. "SEI" do protótipo vira reaproveitamento de `processo_eletronico_numero` preenchido — não precisa de coluna própria.
+
+## 2026-08-20 · Pendência — checklist de tarefas: Kanban ou Evento?
+O checklist de tarefas por etapa do protótipo usa 8 "etapas" quase idênticas à lista de tags/eventos atual, não às 5 etapas do Kanban definidas depois. Isso reabre a separação Kanban×Evento que Caio definiu explicitamente antes — aguardando ele esclarecer antes de criar a tabela de tarefas.
+
 ## 2026-08-20 · Marco — Estrutura bruta fechada
 Todas as telas e funcionalidades combinadas pra essa fase estão no ar em produção: processos (CRUD, kanban, tags/eventos, andamentos, cobertura de férias), fornecedores, coordenações, painel/dashboard e Sentry. Próxima etapa combinada com Caio: passar por um design (visual) antes da auditoria de segurança final (Etapa 6 da metodologia), que continua sendo o requisito pra liberar dados reais no sistema.
