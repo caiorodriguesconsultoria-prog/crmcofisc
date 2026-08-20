@@ -80,3 +80,33 @@ Deploy testado e confirmado por Caio (cadastro de coordenação funcionando, sel
 
 ## 2026-08-20 · Decisão — Painel/dashboard real
 Substituída a contagem simples do dashboard por: total de processos, processos por etapa (kanban), eventos ativos em aberto e lista de "processos parados" (dias na etapa atual, calculado via `processo_kanban_historico` — entrada sem saída). Limite de dias pra considerar "parado" é um campo editável na tela (padrão 15, ajustável em tempo real pelo usuário), não fixo no código, a pedido de Caio.
+
+## 2026-08-20 · Acerto a repetir — Painel/dashboard confirmado
+Deploy testado e confirmado por Caio (contagem por etapa, eventos ativos e lista de parados com campo de dias editável funcionando).
+
+## 2026-08-20 · Decisão — cobertura de férias volta ao escopo
+Reconsiderado: mesmo com Caio como único usuário hoje, cobertura de férias (handoff titular↔responsável) permanece no escopo — construir na sequência de telas.
+
+## 2026-08-20 · Pendência levantada — tipo de assinatura aguardada
+Caio identificou que falta, no painel do processo, indicar qual tipo de assinatura está pendente quando a etapa é "Aguardando assinatura" (ex.: Contrato, Termo Aditivo, Ofício). É funcionalidade/dado, não item de design visual — aguardando definição de Caio sobre o formato (tag nova vs. campo dedicado) antes de implementar.
+
+## 2026-08-20 · Decisão — pendência "tipo de assinatura" descartada
+Caio decidiu não incluir a tag de tipo de assinatura pendente. Fora de escopo.
+
+## 2026-08-20 · Acerto a repetir — Cobertura de férias implementada
+Painel do processo ganhou seção "Responsável": mostra titular e (se diferente) responsável atual em cobertura + motivo. Botão "Transferir" seleciona novo responsável + motivo obrigatório (`processos.responsavel_atual_id`/`motivo_backup`); botão "Retornar ao titular" limpa o backup. Sem migração nova — colunas já existiam desde 0001, RLS de `processos.update` já é liberado pra equipe. Também corrigido: o painel mostrava sempre o titular como "Responsável", nunca o responsável atual real.
+
+## 2026-08-20 · Decisão — cobertura de férias também na abertura do processo
+Caio esclareceu que a cobertura precisa poder ser definida já na criação do processo (não só depois, via painel) — é o que diferencia processos abertos "para si" dos abertos em cobertura de outro titular ausente. Formulário de novo processo ganhou checkbox "Abrir em cobertura", que revela campos "Quem assume agora" + motivo (obrigatórios se marcado); sem marcar, comportamento é o mesmo de antes (responsável atual = titular).
+
+## 2026-08-20 · Acerto a repetir — Cobertura de férias confirmada (painel + abertura)
+Deploy testado e confirmado por Caio: transferir/retornar responsável no painel do processo, e abrir processo já em cobertura na criação, ambos funcionando em produção.
+
+## 2026-08-20 · Decisão — Sentry configurado (erros apenas)
+Adicionado `@sentry/nextjs`, com `instrumentation.ts` (server/edge), `instrumentation-client.ts` (browser) e `app/global-error.tsx` (captura erros de renderização React). `tracesSampleRate: 0` e sem integração de session replay — só captura de erro, conforme combinado no stack original. DSN lido de `NEXT_PUBLIC_SENTRY_DSN` (env var, opcional): sem ela definida, o Sentry fica inativo e o app funciona normalmente — nada quebra enquanto Caio não cria o projeto no sentry.io e cola o DSN no Vercel. Não configurado upload de source maps no build (evita precisar de `SENTRY_AUTH_TOKEN`, mais uma credencial pra gerenciar); stacktraces em produção ficam minificados — aceitável pro escopo atual, pode ser revisto depois se virar necessidade.
+
+## 2026-08-20 · Acerto a repetir — Sentry ativo em produção
+Caio criou o projeto no sentry.io, cadastrou `NEXT_PUBLIC_SENTRY_DSN` no Vercel e alerta "high priority issues" com notificação por e-mail. Novo deploy disparado pra pegar a variável, confirmado rodando (READY). Monitoramento de erros ativo.
+
+## 2026-08-20 · Marco — Estrutura bruta fechada
+Todas as telas e funcionalidades combinadas pra essa fase estão no ar em produção: processos (CRUD, kanban, tags/eventos, andamentos, cobertura de férias), fornecedores, coordenações, painel/dashboard e Sentry. Próxima etapa combinada com Caio: passar por um design (visual) antes da auditoria de segurança final (Etapa 6 da metodologia), que continua sendo o requisito pra liberar dados reais no sistema.
