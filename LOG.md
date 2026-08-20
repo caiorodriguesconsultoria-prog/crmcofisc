@@ -74,3 +74,9 @@ Caio informou que será o único usuário do sistema — tela de cadastro de equ
 
 ## 2026-08-20 · Acerto a repetir — Tela de cadastro de coordenações
 Criadas `/coordenacoes` (lista) e `/coordenacoes/novo` (criação, admin-only), mesmo padrão das telas de fornecedores. RLS já existente reaproveitado sem migração nova.
+
+## 2026-08-20 · Acerto a repetir — Coordenações confirmadas em produção
+Deploy testado e confirmado por Caio (cadastro de coordenação funcionando, selecionável ao criar processo).
+
+## 2026-08-20 · Decisão — Painel/dashboard real
+Substituída a contagem simples do dashboard por: total de processos, processos por etapa (kanban), eventos ativos em aberto e lista de "processos parados" (dias na etapa atual, calculado via `processo_kanban_historico` — entrada sem saída). Limite de dias pra considerar "parado" é um campo editável na tela (padrão 15, ajustável em tempo real pelo usuário), não fixo no código, a pedido de Caio.
