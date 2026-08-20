@@ -45,6 +45,9 @@ Coordenações, tags (incl. Substituição de marca), tabela `processo_tags` (N:
 ## 2026-08-19 · Falha corrigida — RLS bloqueando silenciosamente sem erro
 Causa raiz do "0 processos" e dropdowns vazios na tela de novo processo: `select` bloqueado por RLS não gera erro (`using` só filtra linhas, diferente de `insert/update` que geram erro no `with check`). O bootstrap do admin (0003) nunca tinha inserido a linha em `pessoas` de fato (WHERE por e-mail não bateu na primeira tentativa), então `is_authorized()` sempre retornava falso. Diagnosticado comparando `select * from pessoas` (vazio) com `select id, email from auth.users` (1 linha). Lição: quando uma tela SELECT aparece vazia sem erro nenhum, suspeitar de RLS antes de qualquer outra coisa — e passar a expor os `error` de toda consulta na tela (não só descartar), pra não repetir esse diagnóstico às cegas.
 
+## 2026-08-19 · Acerto a repetir — Etapa 8 concluída
+Andamentos (registro narrativo com tipo/texto/SEI/autor) confirmados funcionando no painel do processo.
+
 ## 2026-08-19 · Acerto a repetir — Etapa 7 concluída
 Painel do processo (troca de kanban, adicionar/remover eventos, históricos de kanban e evento) testado e confirmado funcionando por Caio, incluindo o preenchimento automático do histórico via trigger.
 
@@ -56,3 +59,9 @@ Kanbans novos, histórico automático (trigger) de kanban e tags, e tags "Evento
 
 ## 2026-08-19 · Decisão — Kanban/Tag/Evento/Histórico reestruturados
 Caio pediu separação clara: Kanban = estado atual (1 por processo), Tag = ocorrência manual (várias simultâneas), Evento/Histórico = registro permanente (nunca apagado). Reaproveitado o que já existia (`etapa_atual` = kanban, `tags`+`processo_tags` = tag) em vez de criar estrutura paralela. Adicionado: `processo_kanban_historico` e `processo_tag_historico` (entrada/saída, duração calculada via coluna gerada), populados automaticamente por trigger (não depende do app lembrar de gravar). `etapa_atual` trocou os 7 valores originais pelos 5 kanbans novos (Ofício de apresentação / Aguardando entrega / Aguardando assinatura / Aguardando pagamento / Aguardando Área Técnica) — "Aguardando Andamento", "Relatório" e "Concluído" removidos a pedido de Caio. Categoria de tag `natureza_ocorrencia` renomeada pra `evento` (rótulo "Natureza da ocorrência" → "Evento" na UI); "Substituição de marca" renomeada pra "Alteração de Marca". Fora de escopo por ora (não pedido): tela de kanban/board, tela de histórico/relatórios, remoção de tag ativa pela UI.
+
+## 2026-08-20 · Acerto a repetir — Tela de cadastro de fornecedores
+Criadas `/fornecedores` (lista) e `/fornecedores/novo` (criação, admin-only) — antes só dava pra cadastrar fornecedor via SQL Editor. RLS já existente (insert/update/delete só `is_admin()`) reaproveitado sem migração nova; tela só verifica `pessoas.is_admin` do usuário logado pra mostrar/esconder o link de criação e redirecionar acesso direto à URL. Deploy testado em produção antes de confirmar com Caio.
+
+## 2026-08-20 · Decisão — e-mail de fornecedor vira lista (0 a N)
+Caio pediu suporte a múltiplos e-mails por fornecedor (varia de 1 a 3 na prática). Substituídas as colunas fixas `email_comercial`/`email_logistica` por tabela `fornecedor_emails` (fornecedor_id, email, rótulo livre opcional), migração 0009 migra os dados existentes antes de dropar as colunas antigas. Formulário de novo fornecedor ganhou campo repetível "+ Adicionar e-mail"; lista de fornecedores mostra todos os e-mails com rótulo entre parênteses.

@@ -27,6 +27,9 @@ export default async function DashboardPage() {
       <p>
         <Link href="/processos">Ver processos →</Link>
       </p>
+      <p>
+        <Link href="/fornecedores">Ver fornecedores →</Link>
+      </p>
       <form action="/logout" method="post">
         <button type="submit">Sair</button>
       </form>
