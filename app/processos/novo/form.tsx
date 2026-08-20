@@ -28,6 +28,9 @@ export default function NovoProcessoForm({
   const [coordenacaoId, setCoordenacaoId] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
   const [titularId, setTitularId] = useState("");
+  const [emCobertura, setEmCobertura] = useState(false);
+  const [responsavelAtualId, setResponsavelAtualId] = useState("");
+  const [motivoBackup, setMotivoBackup] = useState("");
   const [formaEntregaId, setFormaEntregaId] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -35,6 +38,12 @@ export default function NovoProcessoForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
+
+    if (emCobertura && (!responsavelAtualId || !motivoBackup.trim())) {
+      setErro("Informe quem assume e o motivo da cobertura.");
+      return;
+    }
+
     setSalvando(true);
 
     const { data: processo, error: erroProcesso } = await supabase
@@ -46,7 +55,8 @@ export default function NovoProcessoForm({
         coordenacao_id: coordenacaoId,
         fornecedor_id: fornecedorId,
         titular_id: titularId,
-        responsavel_atual_id: titularId,
+        responsavel_atual_id: emCobertura ? responsavelAtualId : titularId,
+        motivo_backup: emCobertura ? motivoBackup.trim() : null,
         forma_entrega_tag_id: formaEntregaId || null,
       })
       .select("id")
@@ -139,6 +149,46 @@ export default function NovoProcessoForm({
           ))}
         </select>
       </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          type="checkbox"
+          checked={emCobertura}
+          onChange={(e) => setEmCobertura(e.target.checked)}
+        />
+        Abrir em cobertura (titular ausente)
+      </label>
+      {emCobertura && (
+        <>
+          <label>
+            Quem assume agora
+            <select
+              value={responsavelAtualId}
+              onChange={(e) => setResponsavelAtualId(e.target.value)}
+              required
+              style={{ display: "block", width: "100%", padding: 8 }}
+            >
+              <option value="">Selecione</option>
+              {pessoas
+                .filter((p) => p.id !== titularId)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label>
+            Motivo
+            <input
+              value={motivoBackup}
+              onChange={(e) => setMotivoBackup(e.target.value)}
+              placeholder="Ex.: férias, licença"
+              required
+              style={{ display: "block", width: "100%", padding: 8 }}
+            />
+          </label>
+        </>
+      )}
       <label>
         Forma de entrega
         <select

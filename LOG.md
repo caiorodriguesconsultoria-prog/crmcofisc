@@ -95,3 +95,6 @@ Caio decidiu não incluir a tag de tipo de assinatura pendente. Fora de escopo.
 
 ## 2026-08-20 · Acerto a repetir — Cobertura de férias implementada
 Painel do processo ganhou seção "Responsável": mostra titular e (se diferente) responsável atual em cobertura + motivo. Botão "Transferir" seleciona novo responsável + motivo obrigatório (`processos.responsavel_atual_id`/`motivo_backup`); botão "Retornar ao titular" limpa o backup. Sem migração nova — colunas já existiam desde 0001, RLS de `processos.update` já é liberado pra equipe. Também corrigido: o painel mostrava sempre o titular como "Responsável", nunca o responsável atual real.
+
+## 2026-08-20 · Decisão — cobertura de férias também na abertura do processo
+Caio esclareceu que a cobertura precisa poder ser definida já na criação do processo (não só depois, via painel) — é o que diferencia processos abertos "para si" dos abertos em cobertura de outro titular ausente. Formulário de novo processo ganhou checkbox "Abrir em cobertura", que revela campos "Quem assume agora" + motivo (obrigatórios se marcado); sem marcar, comportamento é o mesmo de antes (responsável atual = titular).
