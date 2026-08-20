@@ -65,3 +65,12 @@ Criadas `/fornecedores` (lista) e `/fornecedores/novo` (criação, admin-only) �
 
 ## 2026-08-20 · Decisão — e-mail de fornecedor vira lista (0 a N)
 Caio pediu suporte a múltiplos e-mails por fornecedor (varia de 1 a 3 na prática). Substituídas as colunas fixas `email_comercial`/`email_logistica` por tabela `fornecedor_emails` (fornecedor_id, email, rótulo livre opcional), migração 0009 migra os dados existentes antes de dropar as colunas antigas. Formulário de novo fornecedor ganhou campo repetível "+ Adicionar e-mail"; lista de fornecedores mostra todos os e-mails com rótulo entre parênteses.
+
+## 2026-08-20 · Acerto a repetir — Fornecedores e e-mails em lista confirmados
+SQL 0009 rodado, deploy em produção testado e confirmado por Caio (cadastro de fornecedor com múltiplos e-mails funcionando).
+
+## 2026-08-20 · Decisão — tela de pessoas descartada, uso é individual
+Caio informou que será o único usuário do sistema — tela de cadastro de equipe (pessoas) não é necessária por ora. Seguimos direto para coordenações, que ainda dependiam do SQL Editor.
+
+## 2026-08-20 · Acerto a repetir — Tela de cadastro de coordenações
+Criadas `/coordenacoes` (lista) e `/coordenacoes/novo` (criação, admin-only), mesmo padrão das telas de fornecedores. RLS já existente reaproveitado sem migração nova.
