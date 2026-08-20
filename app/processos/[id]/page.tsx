@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PainelProcesso from "./painel";
+import Andamentos from "./andamentos";
 
 export default async function ProcessoPage({
   params,
@@ -37,6 +38,8 @@ export default async function ProcessoPage({
     { data: tagsDisponiveis },
     { data: kanbanHistorico },
     { data: tagHistorico },
+    { data: andamentosRaw },
+    { data: pessoaAtual },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     supabase
@@ -55,6 +58,12 @@ export default async function ProcessoPage({
       .select("inicio_em, fim_em, duracao, tags(valor)")
       .eq("processo_id", id)
       .order("inicio_em", { ascending: false }),
+    supabase
+      .from("andamentos")
+      .select("id, tipo, texto, data, sei_numero, autor:pessoas(nome)")
+      .eq("processo_id", id)
+      .order("data", { ascending: false }),
+    supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
@@ -80,6 +89,12 @@ export default async function ProcessoPage({
         etapaAtual={p.etapa_atual}
         tagsAtivas={tagsAtivas}
         tagsDisponiveis={tagsDisponiveis ?? []}
+      />
+
+      <Andamentos
+        processoId={p.id}
+        autorId={pessoaAtual?.id ?? null}
+        andamentos={(andamentosRaw ?? []) as any}
       />
 
       <section style={{ marginTop: 24 }}>
