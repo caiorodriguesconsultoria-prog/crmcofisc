@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PainelProcesso from "./painel";
 import Andamentos from "./andamentos";
+import Cobertura from "./cobertura";
 
 export default async function ProcessoPage({
   params,
@@ -22,7 +23,7 @@ export default async function ProcessoPage({
   const { data: processo, error: erroProcesso } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacoes(sigla), fornecedores(nome), titular:pessoas!processos_titular_id_fkey(nome)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacoes(sigla), fornecedores(nome), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome)",
     )
     .eq("id", id)
     .single();
@@ -40,6 +41,7 @@ export default async function ProcessoPage({
     { data: tagHistorico },
     { data: andamentosRaw },
     { data: pessoaAtual },
+    { data: pessoas },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     supabase
@@ -64,6 +66,7 @@ export default async function ProcessoPage({
       .eq("processo_id", id)
       .order("data", { ascending: false }),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
+    supabase.from("pessoas").select("id, nome").eq("ativo", true).order("nome"),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
@@ -80,9 +83,16 @@ export default async function ProcessoPage({
       <p style={{ color: "#605D5D" }}>{p.nup_principal}</p>
       <p>{p.objeto}</p>
       <p>
-        Coordenação: {p.coordenacoes?.sigla} · Fornecedor: {p.fornecedores?.nome} · Responsável:{" "}
-        {p.titular?.nome}
+        Coordenação: {p.coordenacoes?.sigla} · Fornecedor: {p.fornecedores?.nome}
       </p>
+
+      <Cobertura
+        processoId={p.id}
+        titular={p.titular}
+        responsavelAtual={p.responsavel}
+        motivoBackup={p.motivo_backup}
+        pessoas={pessoas ?? []}
+      />
 
       <PainelProcesso
         processoId={p.id}

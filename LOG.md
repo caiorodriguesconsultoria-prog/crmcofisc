@@ -80,3 +80,18 @@ Deploy testado e confirmado por Caio (cadastro de coordenação funcionando, sel
 
 ## 2026-08-20 · Decisão — Painel/dashboard real
 Substituída a contagem simples do dashboard por: total de processos, processos por etapa (kanban), eventos ativos em aberto e lista de "processos parados" (dias na etapa atual, calculado via `processo_kanban_historico` — entrada sem saída). Limite de dias pra considerar "parado" é um campo editável na tela (padrão 15, ajustável em tempo real pelo usuário), não fixo no código, a pedido de Caio.
+
+## 2026-08-20 · Acerto a repetir — Painel/dashboard confirmado
+Deploy testado e confirmado por Caio (contagem por etapa, eventos ativos e lista de parados com campo de dias editável funcionando).
+
+## 2026-08-20 · Decisão — cobertura de férias volta ao escopo
+Reconsiderado: mesmo com Caio como único usuário hoje, cobertura de férias (handoff titular↔responsável) permanece no escopo — construir na sequência de telas.
+
+## 2026-08-20 · Pendência levantada — tipo de assinatura aguardada
+Caio identificou que falta, no painel do processo, indicar qual tipo de assinatura está pendente quando a etapa é "Aguardando assinatura" (ex.: Contrato, Termo Aditivo, Ofício). É funcionalidade/dado, não item de design visual — aguardando definição de Caio sobre o formato (tag nova vs. campo dedicado) antes de implementar.
+
+## 2026-08-20 · Decisão — pendência "tipo de assinatura" descartada
+Caio decidiu não incluir a tag de tipo de assinatura pendente. Fora de escopo.
+
+## 2026-08-20 · Acerto a repetir — Cobertura de férias implementada
+Painel do processo ganhou seção "Responsável": mostra titular e (se diferente) responsável atual em cobertura + motivo. Botão "Transferir" seleciona novo responsável + motivo obrigatório (`processos.responsavel_atual_id`/`motivo_backup`); botão "Retornar ao titular" limpa o backup. Sem migração nova — colunas já existiam desde 0001, RLS de `processos.update` já é liberado pra equipe. Também corrigido: o painel mostrava sempre o titular como "Responsável", nunca o responsável atual real.
