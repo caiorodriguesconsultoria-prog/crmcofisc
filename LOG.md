@@ -104,3 +104,9 @@ Deploy testado e confirmado por Caio: transferir/retornar responsável no painel
 
 ## 2026-08-20 · Decisão — Sentry configurado (erros apenas)
 Adicionado `@sentry/nextjs`, com `instrumentation.ts` (server/edge), `instrumentation-client.ts` (browser) e `app/global-error.tsx` (captura erros de renderização React). `tracesSampleRate: 0` e sem integração de session replay — só captura de erro, conforme combinado no stack original. DSN lido de `NEXT_PUBLIC_SENTRY_DSN` (env var, opcional): sem ela definida, o Sentry fica inativo e o app funciona normalmente — nada quebra enquanto Caio não cria o projeto no sentry.io e cola o DSN no Vercel. Não configurado upload de source maps no build (evita precisar de `SENTRY_AUTH_TOKEN`, mais uma credencial pra gerenciar); stacktraces em produção ficam minificados — aceitável pro escopo atual, pode ser revisto depois se virar necessidade.
+
+## 2026-08-20 · Acerto a repetir — Sentry ativo em produção
+Caio criou o projeto no sentry.io, cadastrou `NEXT_PUBLIC_SENTRY_DSN` no Vercel e alerta "high priority issues" com notificação por e-mail. Novo deploy disparado pra pegar a variável, confirmado rodando (READY). Monitoramento de erros ativo.
+
+## 2026-08-20 · Marco — Estrutura bruta fechada
+Todas as telas e funcionalidades combinadas pra essa fase estão no ar em produção: processos (CRUD, kanban, tags/eventos, andamentos, cobertura de férias), fornecedores, coordenações, painel/dashboard e Sentry. Próxima etapa combinada com Caio: passar por um design (visual) antes da auditoria de segurança final (Etapa 6 da metodologia), que continua sendo o requisito pra liberar dados reais no sistema.
