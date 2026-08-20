@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,6 +23,9 @@ export default async function DashboardPage() {
       <p>
         Processos cadastrados:{" "}
         {error ? `erro ao consultar (${error.message})` : count}
+      </p>
+      <p>
+        <Link href="/processos">Ver processos →</Link>
       </p>
       <form action="/logout" method="post">
         <button type="submit">Sair</button>
