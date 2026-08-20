@@ -98,3 +98,9 @@ Painel do processo ganhou seção "Responsável": mostra titular e (se diferente
 
 ## 2026-08-20 · Decisão — cobertura de férias também na abertura do processo
 Caio esclareceu que a cobertura precisa poder ser definida já na criação do processo (não só depois, via painel) — é o que diferencia processos abertos "para si" dos abertos em cobertura de outro titular ausente. Formulário de novo processo ganhou checkbox "Abrir em cobertura", que revela campos "Quem assume agora" + motivo (obrigatórios se marcado); sem marcar, comportamento é o mesmo de antes (responsável atual = titular).
+
+## 2026-08-20 · Acerto a repetir — Cobertura de férias confirmada (painel + abertura)
+Deploy testado e confirmado por Caio: transferir/retornar responsável no painel do processo, e abrir processo já em cobertura na criação, ambos funcionando em produção.
+
+## 2026-08-20 · Decisão — Sentry configurado (erros apenas)
+Adicionado `@sentry/nextjs`, com `instrumentation.ts` (server/edge), `instrumentation-client.ts` (browser) e `app/global-error.tsx` (captura erros de renderização React). `tracesSampleRate: 0` e sem integração de session replay — só captura de erro, conforme combinado no stack original. DSN lido de `NEXT_PUBLIC_SENTRY_DSN` (env var, opcional): sem ela definida, o Sentry fica inativo e o app funciona normalmente — nada quebra enquanto Caio não cria o projeto no sentry.io e cola o DSN no Vercel. Não configurado upload de source maps no build (evita precisar de `SENTRY_AUTH_TOKEN`, mais uma credencial pra gerenciar); stacktraces em produção ficam minificados — aceitável pro escopo atual, pode ser revisto depois se virar necessidade.
