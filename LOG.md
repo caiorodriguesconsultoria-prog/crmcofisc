@@ -143,3 +143,9 @@ Painel do processo ganhou seção "Checklist": um grupo por etapa/evento ativo, 
 
 ## 2026-08-20 · Marco — Estrutura bruta fechada
 Todas as telas e funcionalidades combinadas pra essa fase estão no ar em produção: processos (CRUD, kanban, tags/eventos, andamentos, cobertura de férias), fornecedores, coordenações, painel/dashboard e Sentry. Próxima etapa combinada com Caio: passar por um design (visual) antes da auditoria de segurança final (Etapa 6 da metodologia), que continua sendo o requisito pra liberar dados reais no sistema.
+
+## 2026-08-21 · Falha corrigida — esqueci de mandar o SQL da migração 0010
+Depois de escrever a migração 0010 (campos do relatório, gestor/fiscal, execuções), mandei o zip do código mas não o arquivo `.sql` pro Caio rodar no Supabase — só lembrei da 0011 depois. Resultado: a query de detalhe do processo (que já usava as colunas novas) quebrava com erro de schema, e o Next.js mostrava 404 genérico em vez do erro real, mascarando a causa. Lição: sempre que uma migração for gerada, checar explicitamente que o SendUserFile do `.sql` foi feito antes de seguir pra próxima etapa — não confiar só em lembrar.
+
+## 2026-08-21 · Acerto a repetir — Migração 0010 e vínculo gestor/fiscal confirmados
+Caio rodou o SQL 0010 e confirmou: detalhe do processo abre normal, campos de gestor/fiscal (novo processo + painel) funcionando.
