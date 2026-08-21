@@ -108,5 +108,26 @@ Adicionado `@sentry/nextjs`, com `instrumentation.ts` (server/edge), `instrument
 ## 2026-08-20 · Acerto a repetir — Sentry ativo em produção
 Caio criou o projeto no sentry.io, cadastrou `NEXT_PUBLIC_SENTRY_DSN` no Vercel e alerta "high priority issues" com notificação por e-mail. Novo deploy disparado pra pegar a variável, confirmado rodando (READY). Monitoramento de erros ativo.
 
+## 2026-08-20 · Decisão — construir estrutura completa antes do design
+Caio decidiu completar toda a estrutura vista no protótipo original (Claude Design, arquivo `COFISC - Processos.dc.html` na pasta do Drive) antes de partir pro design visual. Levantamento comparado com o protótipo mostrou lacunas por tamanho: pequenas (NUPs nomeados, campo valor, selo cobertura de férias — banco já suportava), médias (Gestores/Fiscais, contratos por fornecedor, filtros, SEI/prazo) e grandes (Kanban com checklist de tarefas por etapa, Agenda, aba Relatório completa).
+
+## 2026-08-20 · Decisão — campos do Relatório em colunas, não JSON
+Dos 24 campos do "Quadro resumitivo" do protótipo, a maioria já tem equivalente no banco (contrato, objeto, vigência, valor, gestor/fiscal). Os ~11 genuinamente novos (Processo Eletrônico, Pregão, Ata de Registro de Preços, Publicação D.O.U/PNCP, Valor da Garantia, Portaria de Designação de Fiscal, Nota de Empenho, Programa de Trabalho, Natureza de Despesa, Local de Entrega) viraram colunas reais em `processos` (migração 0010), não um campo `dados_complementares` genérico — número pequeno o suficiente pra não virar bagunça, e colunas reais validam melhor.
+
+## 2026-08-20 · Decisão/SQL — Migração 0010 (relatório, gestor/fiscal, execuções)
+Adiciona os 11 campos do relatório + `prazo_data` + `gestor_id`/`gestor_substituto_id`/`fiscal_id`/`fiscal_substituto_id` em `processos`, e cria `processo_execucoes` (cronograma de entregas: número, quantidade, unidade, data prevista, situação), RLS liberado pra equipe igual `processo_nups`. "SEI" do protótipo vira reaproveitamento de `processo_eletronico_numero` preenchido — não precisa de coluna própria.
+
+## 2026-08-20 · Decisão — checklist de tarefas: Kanban confirmado + eventos
+Caio confirmou a separação Kanban×Evento como já estava, com os 5 nomes de Kanban definidos anteriormente. Das 8 listas de tarefas do protótipo, só "Ofício de apresentação" bate 1:1 com uma etapa do Kanban; as outras 6 batem com eventos já cadastrados (Transcurso de validade, Embalagem Comercial, Avaria na Entrega, Atraso na entrega, Falta na Entrega, Desvio de qualidade) e viraram checklist de evento. A lista "Entrega" (sem correspondência) foi descartada; as outras 4 etapas do Kanban ficam sem checklist até Caio fornecer o conteúdo.
+
+## 2026-08-20 · SQL — Migração 0011 (checklist de tarefas)
+Duas tabelas novas: `tarefas_padrao` (lista fixa por contexto kanban/evento + chave, editável só por admin) e `processo_tarefas` (snapshot da lista no processo, marcada como concluída pela equipe — não muda retroativamente se `tarefas_padrao` mudar depois). Triggers de `registrar_kanban_historico`/`registrar_tag_historico` estendidos pra gerar o checklist automaticamente a cada entrada de etapa/ativação de evento. Marcar uma tarefa como concluída gera um andamento automático (trigger `registrar_tarefa_andamento`), igual ao comportamento do protótipo. "Concluir etapa" não trava por tarefa pendente (mesmo comportamento do protótipo). Backfill gera checklist pros processos/eventos já ativos antes desta migração.
+
+## 2026-08-20 · Acerto a repetir — Migração 0011 confirmada
+Caio testou trocar etapa e ativar evento em produção depois de rodar o SQL — sem erro, triggers estendidos funcionando normal.
+
+## 2026-08-20 · Acerto a repetir — Checklist no painel do processo
+Painel do processo ganhou seção "Checklist": um grupo por etapa/evento ativo, com as tarefas de `processo_tarefas` (marcar/desmarcar concluída, contagem "X/Y tarefas"). Marcar como concluída já dispara o andamento automático (trigger da migração 0011). Sem migração nova — só leitura/escrita no que já existe.
+
 ## 2026-08-20 · Marco — Estrutura bruta fechada
 Todas as telas e funcionalidades combinadas pra essa fase estão no ar em produção: processos (CRUD, kanban, tags/eventos, andamentos, cobertura de férias), fornecedores, coordenações, painel/dashboard e Sentry. Próxima etapa combinada com Caio: passar por um design (visual) antes da auditoria de segurança final (Etapa 6 da metodologia), que continua sendo o requisito pra liberar dados reais no sistema.
