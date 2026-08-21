@@ -167,3 +167,9 @@ Nova tela `/kanban`: colunas pelas 5 etapas, cards com contrato/coordenação/fo
 
 ## 2026-08-21 · Falha corrigida — deploy quebrado por arquivo esquecido no payload
 Ao deployar os filtros de processos direto via API do Vercel (sem passar pelo GitHub), esqueci de incluir `app/processos/lista.tsx` no array de arquivos — só mandei o `page.tsx` que importa ele. Build quebrou com "Module not found: Can't resolve './lista'". Corrigido reenviando o payload completo (42 arquivos) com o arquivo faltante. Lição: ao montar manualmente o payload de deploy, contar os arquivos antes de enviar e conferir que todo import novo tem seu arquivo correspondente na lista.
+
+## 2026-08-21 · Decisão — deploy no Vercel via agente em background, com checagem de contagem
+Depois do erro acima, deploys direto pela API do Vercel (fora do fluxo normal de git) passaram a ser delegados a um agente em background com instrução explícita de contar os arquivos (`git ls-files` filtrado) antes de montar o payload e conferir a contagem bate antes de chamar a ferramenta de deploy — evita o erro de arquivo esquecido de forma mais confiável que montar o payload manualmente.
+
+## 2026-08-21 · Acerto a repetir — Kanban: mover card livremente (drag-and-drop)
+Caio pediu poder mover os cards do Kanban livremente, não só avançar pela ordem fixa. Adicionado arrastar-e-soltar nativo (HTML5 drag/drop, sem biblioteca externa): qualquer card pode ser solto em qualquer coluna, inclusive voltando etapa. Botão "Concluir etapa" mantido como atalho/alternativa sem mouse. Mesma mutação de antes (`processos.etapa_atual`), sem migração nova.
