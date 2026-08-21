@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import QuadroResumitivo from "./quadro-resumitivo";
+import CronogramaRelatorio from "./cronograma-relatorio";
 
 export default async function RelatorioPage({
   params,
@@ -32,6 +33,12 @@ export default async function RelatorioPage({
 
   const p = processo as any;
 
+  const { data: execucoes } = await supabase
+    .from("processo_execucoes")
+    .select("id, numero, quantidade, unidade, data_prevista")
+    .eq("processo_id", id)
+    .order("numero");
+
   return (
     <main style={{ padding: 32, maxWidth: 760 }}>
       <p>
@@ -42,6 +49,8 @@ export default async function RelatorioPage({
       {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {(error as any).message}</p>}
 
       <QuadroResumitivo processoId={id} processo={p} />
+
+      <CronogramaRelatorio execucoes={(execucoes ?? []) as any} />
     </main>
   );
 }

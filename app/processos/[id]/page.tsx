@@ -8,6 +8,7 @@ import Checklist from "./checklist";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import Nups from "./nups";
 import Prazo from "./prazo";
+import Cronograma from "./cronograma";
 
 export default async function ProcessoPage({
   params,
@@ -48,6 +49,7 @@ export default async function ProcessoPage({
     { data: pessoas },
     { data: papeis },
     { data: nups },
+    { data: execucoes },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     supabase
@@ -82,6 +84,11 @@ export default async function ProcessoPage({
       .select("id, tipo, nup")
       .eq("processo_id", id)
       .in("tipo", ["relatorio", "pagamento"]),
+    supabase
+      .from("processo_execucoes")
+      .select("id, numero, quantidade, unidade, data_prevista, situacao")
+      .eq("processo_id", id)
+      .order("numero"),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
@@ -194,6 +201,8 @@ export default async function ProcessoPage({
         gestores={gestoresDaCoordenacao}
         fiscais={fiscaisDaCoordenacao}
       />
+
+      <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} />
 
       <Checklist grupos={gruposTarefas} />
 
