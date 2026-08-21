@@ -6,6 +6,7 @@ import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
 import Checklist from "./checklist";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
+import Nups from "./nups";
 
 export default async function ProcessoPage({
   params,
@@ -45,6 +46,7 @@ export default async function ProcessoPage({
     { data: pessoaAtual },
     { data: pessoas },
     { data: papeis },
+    { data: nups },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     supabase
@@ -74,12 +76,26 @@ export default async function ProcessoPage({
       .from("pessoa_papeis")
       .select("pessoa_id, coordenacao_id, papel, pessoas(nome)")
       .in("papel", ["gestor", "fiscal"]),
+    supabase
+      .from("processo_nups")
+      .select("id, tipo, nup")
+      .eq("processo_id", id)
+      .in("tipo", ["relatorio", "pagamento"]),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
     id: t.tag_id,
     valor: t.tags?.valor ?? "",
   }));
+
+  const nupRelatorioRow = (nups ?? []).find((n) => n.tipo === "relatorio");
+  const nupPagamentoRow = (nups ?? []).find((n) => n.tipo === "pagamento");
+  const nupRelatorio = nupRelatorioRow
+    ? { id: nupRelatorioRow.id, tipo: "relatorio" as const, valor: nupRelatorioRow.nup }
+    : null;
+  const nupPagamento = nupPagamentoRow
+    ? { id: nupPagamentoRow.id, tipo: "pagamento" as const, valor: nupPagamentoRow.nup }
+    : null;
 
   const gestoresDaCoordenacao = (papeis ?? [])
     .filter((pp) => pp.papel === "gestor" && pp.coordenacao_id === p.coordenacao_id)
@@ -160,6 +176,8 @@ export default async function ProcessoPage({
         tagsAtivas={tagsAtivas}
         tagsDisponiveis={tagsDisponiveis ?? []}
       />
+
+      <Nups processoId={p.id} nupRelatorio={nupRelatorio} nupPagamento={nupPagamento} />
 
       <GestaoFiscalizacao
         processoId={p.id}

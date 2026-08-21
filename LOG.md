@@ -149,3 +149,6 @@ Depois de escrever a migração 0010 (campos do relatório, gestor/fiscal, execu
 
 ## 2026-08-21 · Acerto a repetir — Migração 0010 e vínculo gestor/fiscal confirmados
 Caio rodou o SQL 0010 e confirmou: detalhe do processo abre normal, campos de gestor/fiscal (novo processo + painel) funcionando.
+
+## 2026-08-21 · Acerto a repetir — NUPs nomeados no painel
+Painel do processo ganhou seção "NUPs": NUP Relatório e NUP Pagamentos, editáveis (NUP Principal continua vindo direto de `processos.nup_principal`, já mostrado no topo — não duplicado em `processo_nups`). Sem migração nova, tabela `processo_nups` já existia com o campo `tipo` certo.
