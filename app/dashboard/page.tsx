@@ -70,6 +70,9 @@ export default async function DashboardPage() {
         <Link href="/kanban">Ver kanban →</Link>
       </p>
       <p>
+        <Link href="/agenda">Ver agenda →</Link>
+      </p>
+      <p>
         <Link href="/fornecedores">Ver fornecedores →</Link>
       </p>
       <p>
