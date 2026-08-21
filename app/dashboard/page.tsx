@@ -67,6 +67,9 @@ export default async function DashboardPage() {
         <Link href="/processos">Ver processos →</Link>
       </p>
       <p>
+        <Link href="/kanban">Ver kanban →</Link>
+      </p>
+      <p>
         <Link href="/fornecedores">Ver fornecedores →</Link>
       </p>
       <p>
