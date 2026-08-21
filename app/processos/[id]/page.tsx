@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import PainelProcesso from "./painel";
 import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
+import Checklist from "./checklist";
 
 export default async function ProcessoPage({
   params,
@@ -74,6 +75,52 @@ export default async function ProcessoPage({
     valor: t.tags?.valor ?? "",
   }));
 
+  const [{ data: kanbanAtivo }, { data: tagHistoricoAtivo }] = await Promise.all([
+    supabase
+      .from("processo_kanban_historico")
+      .select("id")
+      .eq("processo_id", id)
+      .is("saida_em", null)
+      .maybeSingle(),
+    supabase
+      .from("processo_tag_historico")
+      .select("id, tags(valor)")
+      .eq("processo_id", id)
+      .is("fim_em", null),
+  ]);
+
+  const origensAtivas = [
+    ...(kanbanAtivo ? [kanbanAtivo.id] : []),
+    ...(tagHistoricoAtivo ?? []).map((t) => t.id),
+  ];
+
+  const nomeOrigem = new Map<string, string>();
+  if (kanbanAtivo) nomeOrigem.set(kanbanAtivo.id, p.etapa_atual);
+  for (const t of tagHistoricoAtivo ?? []) {
+    nomeOrigem.set(t.id, (t as any).tags?.valor ?? "Evento");
+  }
+
+  const { data: tarefasRaw } = await supabase
+    .from("processo_tarefas")
+    .select("id, origem_tipo, origem_id, ordem, label, concluida")
+    .eq("processo_id", id)
+    .in("origem_id", origensAtivas.length > 0 ? origensAtivas : ["00000000-0000-0000-0000-000000000000"])
+    .order("ordem");
+
+  const gruposTarefas = Array.from(
+    (tarefasRaw ?? []).reduce((acc, t) => {
+      const grupo = acc.get(t.origem_id) ?? {
+        origemId: t.origem_id,
+        origemTipo: t.origem_tipo,
+        nome: nomeOrigem.get(t.origem_id) ?? t.origem_tipo,
+        tarefas: [] as { id: string; label: string; concluida: boolean }[],
+      };
+      grupo.tarefas.push({ id: t.id, label: t.label, concluida: t.concluida });
+      acc.set(t.origem_id, grupo);
+      return acc;
+    }, new Map<string, { origemId: string; origemTipo: string; nome: string; tarefas: { id: string; label: string; concluida: boolean }[] }>()).values(),
+  );
+
   return (
     <main style={{ padding: 32, maxWidth: 640 }}>
       <p>
@@ -100,6 +147,8 @@ export default async function ProcessoPage({
         tagsAtivas={tagsAtivas}
         tagsDisponiveis={tagsDisponiveis ?? []}
       />
+
+      <Checklist grupos={gruposTarefas} />
 
       <Andamentos
         processoId={p.id}

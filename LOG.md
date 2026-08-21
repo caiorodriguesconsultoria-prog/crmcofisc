@@ -123,5 +123,11 @@ Caio confirmou a separação Kanban×Evento como já estava, com os 5 nomes de K
 ## 2026-08-20 · SQL — Migração 0011 (checklist de tarefas)
 Duas tabelas novas: `tarefas_padrao` (lista fixa por contexto kanban/evento + chave, editável só por admin) e `processo_tarefas` (snapshot da lista no processo, marcada como concluída pela equipe — não muda retroativamente se `tarefas_padrao` mudar depois). Triggers de `registrar_kanban_historico`/`registrar_tag_historico` estendidos pra gerar o checklist automaticamente a cada entrada de etapa/ativação de evento. Marcar uma tarefa como concluída gera um andamento automático (trigger `registrar_tarefa_andamento`), igual ao comportamento do protótipo. "Concluir etapa" não trava por tarefa pendente (mesmo comportamento do protótipo). Backfill gera checklist pros processos/eventos já ativos antes desta migração.
 
+## 2026-08-20 · Acerto a repetir — Migração 0011 confirmada
+Caio testou trocar etapa e ativar evento em produção depois de rodar o SQL — sem erro, triggers estendidos funcionando normal.
+
+## 2026-08-20 · Acerto a repetir — Checklist no painel do processo
+Painel do processo ganhou seção "Checklist": um grupo por etapa/evento ativo, com as tarefas de `processo_tarefas` (marcar/desmarcar concluída, contagem "X/Y tarefas"). Marcar como concluída já dispara o andamento automático (trigger da migração 0011). Sem migração nova — só leitura/escrita no que já existe.
+
 ## 2026-08-20 · Marco — Estrutura bruta fechada
 Todas as telas e funcionalidades combinadas pra essa fase estão no ar em produção: processos (CRUD, kanban, tags/eventos, andamentos, cobertura de férias), fornecedores, coordenações, painel/dashboard e Sentry. Próxima etapa combinada com Caio: passar por um design (visual) antes da auditoria de segurança final (Etapa 6 da metodologia), que continua sendo o requisito pra liberar dados reais no sistema.
