@@ -152,3 +152,6 @@ Caio rodou o SQL 0010 e confirmou: detalhe do processo abre normal, campos de ge
 
 ## 2026-08-21 · Acerto a repetir — NUPs nomeados no painel
 Painel do processo ganhou seção "NUPs": NUP Relatório e NUP Pagamentos, editáveis (NUP Principal continua vindo direto de `processos.nup_principal`, já mostrado no topo — não duplicado em `processo_nups`). Sem migração nova, tabela `processo_nups` já existia com o campo `tipo` certo.
+
+## 2026-08-21 · Decisão — Detalhe do fornecedor com aba Contratos
+Criada `/fornecedores/[id]` (não existia detalhe, só lista e cadastro): dados do fornecedor + tabela de contratos (processos daquele fornecedor com valor global, vigência, etapa, situação), linkando pra `/processos/[id]`. Sem migração nova — só leitura de `processos` filtrada por `fornecedor_id`. Lista de fornecedores passou a linkar o nome pra essa tela nova.
