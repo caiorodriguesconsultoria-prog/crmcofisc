@@ -156,7 +156,10 @@ export default async function ProcessoPage({
       <p>
         <Link href="/processos">← Voltar</Link>
       </p>
-      <h1 style={{ fontSize: 20 }}>{p.numero_contrato}</h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h1 style={{ fontSize: 20 }}>{p.numero_contrato}</h1>
+        <Link href={`/processos/${p.id}/relatorio`}>Ver Relatório →</Link>
+      </div>
       <p style={{ color: "#605D5D" }}>{p.nup_principal}</p>
       <p>{p.objeto}</p>
       <p>
