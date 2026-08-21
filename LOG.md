@@ -173,3 +173,6 @@ Depois do erro acima, deploys direto pela API do Vercel (fora do fluxo normal de
 
 ## 2026-08-21 · Acerto a repetir — Kanban: mover card livremente (drag-and-drop)
 Caio pediu poder mover os cards do Kanban livremente, não só avançar pela ordem fixa. Adicionado arrastar-e-soltar nativo (HTML5 drag/drop, sem biblioteca externa): qualquer card pode ser solto em qualquer coluna, inclusive voltando etapa. Botão "Concluir etapa" mantido como atalho/alternativa sem mouse. Mesma mutação de antes (`processos.etapa_atual`), sem migração nova.
+
+## 2026-08-21 · Decisão — Agenda: calendário mensal
+Nova tela `/agenda`: calendário mensal (navegação anterior/próximo/hoje) mostrando os processos cujo `prazo_data` cai em cada dia, cada um linkando pro processo. Sem biblioteca de calendário externa — grid construído na mão (dia da semana do dia 1 do mês + dias no mês). Sem migração nova, `prazo_data` já existia desde a migração 0010.
