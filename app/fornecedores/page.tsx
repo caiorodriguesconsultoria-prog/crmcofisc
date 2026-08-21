@@ -54,7 +54,9 @@ export default async function FornecedoresPage() {
         <tbody>
           {(fornecedores ?? []).map((f) => (
             <tr key={f.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: 8 }}>{f.nome}</td>
+              <td style={{ padding: 8 }}>
+                <Link href={`/fornecedores/${f.id}`}>{f.nome}</Link>
+              </td>
               <td style={{ padding: 8 }}>{f.cnpj}</td>
               <td style={{ padding: 8 }}>{f.preposto}</td>
               <td style={{ padding: 8 }}>{f.telefone}</td>
