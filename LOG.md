@@ -155,3 +155,6 @@ Painel do processo ganhou seção "NUPs": NUP Relatório e NUP Pagamentos, edit�
 
 ## 2026-08-21 · Decisão — Detalhe do fornecedor com aba Contratos
 Criada `/fornecedores/[id]` (não existia detalhe, só lista e cadastro): dados do fornecedor + tabela de contratos (processos daquele fornecedor com valor global, vigência, etapa, situação), linkando pra `/processos/[id]`. Sem migração nova — só leitura de `processos` filtrada por `fornecedor_id`. Lista de fornecedores passou a linkar o nome pra essa tela nova.
+
+## 2026-08-21 · Falha corrigida — conexão GitHub sem permissão de escrita
+`git push`/API do GitHub retornavam `403 Resource not accessible by integration` desde o início do projeto. Causa raiz: o "Claude" que aparecia em Settings → Connectors do Caio era só uma autorização OAuth de identidade (aba "Authorized GitHub Apps" no GitHub, "Never used"), não uma instalação do GitHub App com permissão de conteúdo — por isso nunca aparecia em "Installed GitHub Apps" e reconectar não mudava nada. Solução: instalar o app dedicado em github.com/apps/claude, selecionando só o repositório CRMCOFISC (não "All repositories", por princípio de menor privilégio). Depois da instalação, `git push` passou a funcionar normalmente. Fluxo de zip manual (Etapa adotada em 2026-08-17) não é mais necessário a partir de agora — push direto disponível.
