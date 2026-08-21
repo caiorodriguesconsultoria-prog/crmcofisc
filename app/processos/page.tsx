@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import ListaProcessos from "./lista";
 
 export default async function ProcessosPage() {
   const supabase = await createClient();
@@ -12,12 +13,24 @@ export default async function ProcessosPage() {
     redirect("/login");
   }
 
-  const { data: processos, error } = await supabase
-    .from("processos")
-    .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacoes(sigla), fornecedores(nome)",
-    )
-    .order("created_at", { ascending: false });
+  const [
+    { data: processos, error },
+    { data: coordenacoes },
+    { data: formasEntrega },
+    { data: eventos },
+    { data: responsaveis },
+  ] = await Promise.all([
+    supabase
+      .from("processos")
+      .select(
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor))",
+      )
+      .order("created_at", { ascending: false }),
+    supabase.from("coordenacoes").select("id, sigla").order("sigla"),
+    supabase.from("tags").select("id, valor").eq("categoria", "forma_entrega").eq("ativo", true).order("valor"),
+    supabase.from("tags").select("id, valor").eq("categoria", "evento").eq("ativo", true).order("valor"),
+    supabase.from("pessoas").select("id, nome").eq("ativo", true).order("nome"),
+  ]);
 
   return (
     <main style={{ padding: 32 }}>
@@ -38,39 +51,13 @@ export default async function ProcessosPage() {
 
       {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
 
-      <table style={{ width: "100%", marginTop: 16, borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 8 }}>Contrato</th>
-            <th style={{ padding: 8 }}>NUP</th>
-            <th style={{ padding: 8 }}>Objeto</th>
-            <th style={{ padding: 8 }}>Coord.</th>
-            <th style={{ padding: 8 }}>Fornecedor</th>
-            <th style={{ padding: 8 }}>Etapa</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(processos ?? []).map((p: any) => (
-            <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: 8 }}>
-                <Link href={`/processos/${p.id}`}>{p.numero_contrato}</Link>
-              </td>
-              <td style={{ padding: 8 }}>{p.nup_principal}</td>
-              <td style={{ padding: 8 }}>{p.objeto}</td>
-              <td style={{ padding: 8 }}>{p.coordenacoes?.sigla}</td>
-              <td style={{ padding: 8 }}>{p.fornecedores?.nome}</td>
-              <td style={{ padding: 8 }}>{p.etapa_atual}</td>
-            </tr>
-          ))}
-          {(processos ?? []).length === 0 && (
-            <tr>
-              <td colSpan={6} style={{ padding: 8, color: "#7D7979" }}>
-                Nenhum processo cadastrado.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <ListaProcessos
+        processos={(processos ?? []) as any}
+        coordenacoes={coordenacoes ?? []}
+        formasEntrega={formasEntrega ?? []}
+        eventos={eventos ?? []}
+        responsaveis={responsaveis ?? []}
+      />
     </main>
   );
 }
