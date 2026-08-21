@@ -162,5 +162,8 @@ Criada `/fornecedores/[id]` (não existia detalhe, só lista e cadastro): dados 
 ## 2026-08-21 · Acerto a repetir — Filtros na lista de processos
 Tela `/processos` ganhou filtros (coordenação, forma de entrega, evento, responsável atual, SEI preenchido/vazio) — filtragem client-side sobre a lista já carregada (volume pequeno, mesmo padrão do "dias parado" do dashboard). "Evento" filtra por tag ativa em `processo_tags`; "SEI" reaproveita `processo_eletronico_numero` preenchido, sem coluna própria. Sem migração nova. Confirmado por Caio em produção.
 
+## 2026-08-21 · Acerto a repetir — Quadro Kanban
+Nova tela `/kanban`: colunas pelas 5 etapas, cards com contrato/coordenação/fornecedor, barra de progresso do checklist (tarefas concluídas/total da etapa ativa) e botão "Concluir etapa" (avança pra próxima coluna na ordem fixa; some na última etapa, já que não existe mais "Concluído" no kanban). Não trava por tarefa pendente, igual ao protótipo. Sem migração nova — reaproveita `processos.etapa_atual`, `processo_kanban_historico` e `processo_tarefas`.
+
 ## 2026-08-21 · Falha corrigida — deploy quebrado por arquivo esquecido no payload
 Ao deployar os filtros de processos direto via API do Vercel (sem passar pelo GitHub), esqueci de incluir `app/processos/lista.tsx` no array de arquivos — só mandei o `page.tsx` que importa ele. Build quebrou com "Module not found: Can't resolve './lista'". Corrigido reenviando o payload completo (42 arquivos) com o arquivo faltante. Lição: ao montar manualmente o payload de deploy, contar os arquivos antes de enviar e conferir que todo import novo tem seu arquivo correspondente na lista.
