@@ -72,6 +72,12 @@ export default async function DashboardPage() {
       <p>
         <Link href="/coordenacoes">Ver coordenações →</Link>
       </p>
+      <p>
+        <Link href="/gestores">Ver gestores →</Link>
+      </p>
+      <p>
+        <Link href="/fiscais">Ver fiscais →</Link>
+      </p>
       <form action="/logout" method="post">
         <button type="submit">Sair</button>
       </form>
