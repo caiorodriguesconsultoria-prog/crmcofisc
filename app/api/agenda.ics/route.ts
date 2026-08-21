@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   const supabase = createServiceClient();
   const { data: processos, error } = await supabase
     .from("processos")
-    .select("id, numero_contrato, prazo_data, coordenacoes(sigla), fornecedores(nome)")
+    .select("id, numero_contrato, etapa_atual, prazo_data, coordenacoes(sigla), fornecedores(nome)")
     .not("prazo_data", "is", null);
 
   if (error) {
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
   const eventos = (processos ?? [])
     .map((p: any) => {
-      const resumo = escaparTexto(`${p.numero_contrato} — prazo`);
+      const resumo = escaparTexto(`CT nº ${p.numero_contrato} - ${p.etapa_atual}`);
       const descricao = escaparTexto(
         `Coordenação: ${p.coordenacoes?.sigla ?? ""} · Fornecedor: ${p.fornecedores?.nome ?? ""}`,
       );
