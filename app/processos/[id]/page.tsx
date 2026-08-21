@@ -5,6 +5,7 @@ import PainelProcesso from "./painel";
 import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
 import Checklist from "./checklist";
+import GestaoFiscalizacao from "./gestao-fiscalizacao";
 
 export default async function ProcessoPage({
   params,
@@ -24,7 +25,7 @@ export default async function ProcessoPage({
   const { data: processo, error: erroProcesso } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacoes(sigla), fornecedores(nome), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, coordenacoes(sigla), fornecedores(nome), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome), fiscal:pessoas!processos_fiscal_id_fkey(id, nome), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome)",
     )
     .eq("id", id)
     .single();
@@ -43,6 +44,7 @@ export default async function ProcessoPage({
     { data: andamentosRaw },
     { data: pessoaAtual },
     { data: pessoas },
+    { data: papeis },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     supabase
@@ -68,12 +70,23 @@ export default async function ProcessoPage({
       .order("data", { ascending: false }),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
     supabase.from("pessoas").select("id, nome").eq("ativo", true).order("nome"),
+    supabase
+      .from("pessoa_papeis")
+      .select("pessoa_id, coordenacao_id, papel, pessoas(nome)")
+      .in("papel", ["gestor", "fiscal"]),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
     id: t.tag_id,
     valor: t.tags?.valor ?? "",
   }));
+
+  const gestoresDaCoordenacao = (papeis ?? [])
+    .filter((pp) => pp.papel === "gestor" && pp.coordenacao_id === p.coordenacao_id)
+    .map((pp: any) => ({ id: pp.pessoa_id, nome: pp.pessoas?.nome ?? "" }));
+  const fiscaisDaCoordenacao = (papeis ?? [])
+    .filter((pp) => pp.papel === "fiscal" && pp.coordenacao_id === p.coordenacao_id)
+    .map((pp: any) => ({ id: pp.pessoa_id, nome: pp.pessoas?.nome ?? "" }));
 
   const [{ data: kanbanAtivo }, { data: tagHistoricoAtivo }] = await Promise.all([
     supabase
@@ -146,6 +159,16 @@ export default async function ProcessoPage({
         etapaAtual={p.etapa_atual}
         tagsAtivas={tagsAtivas}
         tagsDisponiveis={tagsDisponiveis ?? []}
+      />
+
+      <GestaoFiscalizacao
+        processoId={p.id}
+        gestor={p.gestor}
+        gestorSubstituto={p.gestor_substituto}
+        fiscal={p.fiscal}
+        fiscalSubstituto={p.fiscal_substituto}
+        gestores={gestoresDaCoordenacao}
+        fiscais={fiscaisDaCoordenacao}
       />
 
       <Checklist grupos={gruposTarefas} />

@@ -5,17 +5,22 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Opcao = { id: string; nome?: string; sigla?: string; valor?: string; categoria?: string };
+type PessoaPapel = { id: string; nome: string; coordenacaoId: string };
 
 export default function NovoProcessoForm({
   coordenacoes,
   fornecedores,
   tags,
   pessoas,
+  gestores,
+  fiscais,
 }: {
   coordenacoes: Opcao[];
   fornecedores: Opcao[];
   tags: Opcao[];
   pessoas: Opcao[];
+  gestores: PessoaPapel[];
+  fiscais: PessoaPapel[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -32,8 +37,15 @@ export default function NovoProcessoForm({
   const [responsavelAtualId, setResponsavelAtualId] = useState("");
   const [motivoBackup, setMotivoBackup] = useState("");
   const [formaEntregaId, setFormaEntregaId] = useState("");
+  const [gestorId, setGestorId] = useState("");
+  const [gestorSubstitutoId, setGestorSubstitutoId] = useState("");
+  const [fiscalId, setFiscalId] = useState("");
+  const [fiscalSubstitutoId, setFiscalSubstitutoId] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+
+  const gestoresDaCoordenacao = gestores.filter((g) => g.coordenacaoId === coordenacaoId);
+  const fiscaisDaCoordenacao = fiscais.filter((f) => f.coordenacaoId === coordenacaoId);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +70,10 @@ export default function NovoProcessoForm({
         responsavel_atual_id: emCobertura ? responsavelAtualId : titularId,
         motivo_backup: emCobertura ? motivoBackup.trim() : null,
         forma_entrega_tag_id: formaEntregaId || null,
+        gestor_id: gestorId || null,
+        gestor_substituto_id: gestorSubstitutoId || null,
+        fiscal_id: fiscalId || null,
+        fiscal_substituto_id: fiscalSubstitutoId || null,
       })
       .select("id")
       .single();
@@ -113,6 +129,66 @@ export default function NovoProcessoForm({
           {coordenacoes.map((c) => (
             <option key={c.id} value={c.id}>
               {c.sigla}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Gestor
+        <select
+          value={gestorId}
+          onChange={(e) => setGestorId(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Não informado</option>
+          {gestoresDaCoordenacao.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.nome}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Gestor substituto
+        <select
+          value={gestorSubstitutoId}
+          onChange={(e) => setGestorSubstitutoId(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Não informado</option>
+          {gestoresDaCoordenacao.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.nome}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Fiscal
+        <select
+          value={fiscalId}
+          onChange={(e) => setFiscalId(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Não informado</option>
+          {fiscaisDaCoordenacao.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.nome}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Fiscal substituto
+        <select
+          value={fiscalSubstitutoId}
+          onChange={(e) => setFiscalSubstitutoId(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Não informado</option>
+          {fiscaisDaCoordenacao.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.nome}
             </option>
           ))}
         </select>

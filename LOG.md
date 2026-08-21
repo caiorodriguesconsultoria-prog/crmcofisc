@@ -132,6 +132,12 @@ Deploy testado e confirmado por Caio: marcar tarefa como concluída funciona e g
 ## 2026-08-20 · Acerto a repetir — Telas de Gestores e Fiscais
 Criadas `/gestores` e `/fiscais` (lista) + `/gestores/novo` e `/fiscais/novo` (criação, admin-only), reaproveitando um componente compartilhado (`app/_pessoas-papel/`, pasta privada do App Router — não vira rota) já que as duas telas são idênticas, só muda o papel. Sem migração nova: usa `pessoas` + `pessoa_papeis`, que já existiam desde a Etapa 2 e nunca tinham UI. Cadastro pede nome/matrícula/e-mail (e-mail é obrigatório no banco, mas não aparece na lista) + coordenação.
 
+## 2026-08-20 · Acerto a repetir — Gestores e Fiscais confirmados
+Deploy testado e confirmado por Caio: cadastro de gestor e fiscal funcionando, aparecendo na lista com a coordenação certa.
+
+## 2026-08-20 · Acerto a repetir — Gestor/Fiscal vinculados ao processo
+Formulário de novo processo ganhou 4 campos (Gestor/Gestor substituto/Fiscal/Fiscal substituto), opções filtradas pela coordenação selecionada. Painel do processo ganhou seção "Gestão e Fiscalização" com os mesmos 4 campos, editável a qualquer momento. Todos os 4 campos opcionais (não bloqueiam criação do processo se ainda não houver gestor/fiscal cadastrado pra coordenação) — decisão pra não travar o fluxo, revisitar se virar problema.
+
 ## 2026-08-20 · Acerto a repetir — Checklist no painel do processo
 Painel do processo ganhou seção "Checklist": um grupo por etapa/evento ativo, com as tarefas de `processo_tarefas` (marcar/desmarcar concluída, contagem "X/Y tarefas"). Marcar como concluída já dispara o andamento automático (trigger da migração 0011). Sem migração nova — só leitura/escrita no que já existe.
 
