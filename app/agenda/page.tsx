@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import Calendario from "./calendario";
 
@@ -27,6 +28,10 @@ export default async function AgendaPage() {
     fornecedorNome: p.fornecedores?.nome ?? "",
   }));
 
+  const token = process.env.AGENDA_ICS_TOKEN;
+  const host = (await headers()).get("host");
+  const linkIcs = token && host ? `https://${host}/api/agenda.ics?token=${token}` : null;
+
   return (
     <main style={{ padding: 32 }}>
       <p>
@@ -35,6 +40,17 @@ export default async function AgendaPage() {
       <h1 style={{ fontSize: 20, marginTop: 12 }}>Agenda</h1>
 
       {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
+
+      {linkIcs ? (
+        <p style={{ fontSize: 12, color: "#605D5D", marginTop: 4 }}>
+          Link pra assinar no Google Calendar (Outros calendários → Inscrever-se por URL):{" "}
+          <code style={{ userSelect: "all" }}>{linkIcs}</code>
+        </p>
+      ) : (
+        <p style={{ fontSize: 12, color: "#7D7979", marginTop: 4 }}>
+          Exportação pro Google Calendar ainda não configurada (variáveis de ambiente pendentes).
+        </p>
+      )}
 
       <Calendario prazos={prazos} />
     </main>
