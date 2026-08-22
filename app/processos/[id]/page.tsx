@@ -86,7 +86,7 @@ export default async function ProcessoPage({
       .in("tipo", ["relatorio", "pagamento"]),
     supabase
       .from("processo_execucoes")
-      .select("id, numero, quantidade, unidade, data_prevista, situacao")
+      .select("id, numero, quantidade, unidade, data_prevista, data_entrega, situacao")
       .eq("processo_id", id)
       .order("numero"),
   ]);

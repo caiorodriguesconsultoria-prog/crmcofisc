@@ -35,7 +35,7 @@ export default async function RelatorioPage({
 
   const { data: execucoes } = await supabase
     .from("processo_execucoes")
-    .select("id, numero, quantidade, unidade, data_prevista")
+    .select("id, numero, quantidade, unidade, data_prevista, data_entrega")
     .eq("processo_id", id)
     .order("numero");
 
