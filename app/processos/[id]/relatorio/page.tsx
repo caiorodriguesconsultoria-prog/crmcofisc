@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import QuadroResumitivo from "./quadro-resumitivo";
 import CronogramaRelatorio from "./cronograma-relatorio";
+import PautaDistribuicao from "./pauta-distribuicao";
+import DadosEntrega from "./dados-entrega";
 
 export default async function RelatorioPage({
   params,
@@ -39,6 +41,20 @@ export default async function RelatorioPage({
     .eq("processo_id", id)
     .order("numero");
 
+  const { data: pauta } = await supabase
+    .from("processo_pauta_distribuicao")
+    .select("id, uf, quantidade")
+    .eq("processo_id", id)
+    .order("created_at");
+
+  const { data: entregas } = await supabase
+    .from("processo_entregas")
+    .select(
+      "id, local_entrega, quantidade, valor_total_nf, danfe_venda, danfe_remessa, lote, data_fabricacao, data_validade, data_entrega, responsavel, atraso_dias, percentual_transcurso",
+    )
+    .eq("processo_id", id)
+    .order("created_at");
+
   return (
     <main style={{ padding: 32, maxWidth: 760 }}>
       <p>
@@ -51,6 +67,12 @@ export default async function RelatorioPage({
       <QuadroResumitivo processoId={id} processo={p} />
 
       <CronogramaRelatorio execucoes={(execucoes ?? []) as any} />
+
+      <h2 style={{ fontSize: 16, marginTop: 24 }}>Execução do contrato</h2>
+
+      <PautaDistribuicao processoId={id} pauta={(pauta ?? []) as any} />
+
+      <DadosEntrega processoId={id} entregas={(entregas ?? []) as any} />
     </main>
   );
 }
