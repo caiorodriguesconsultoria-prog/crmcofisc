@@ -70,7 +70,7 @@ export default async function ProcessoPage({
       .order("inicio_em", { ascending: false }),
     supabase
       .from("andamentos")
-      .select("id, tipo, texto, data, sei_numero, autor:pessoas(nome)")
+      .select("id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome)")
       .eq("processo_id", id)
       .order("data", { ascending: false }),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
@@ -209,6 +209,7 @@ export default async function ProcessoPage({
       <Andamentos
         processoId={p.id}
         autorId={pessoaAtual?.id ?? null}
+        numeroContrato={p.numero_contrato}
         andamentos={(andamentosRaw ?? []) as any}
       />
 

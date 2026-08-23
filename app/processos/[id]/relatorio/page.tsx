@@ -5,6 +5,7 @@ import QuadroResumitivo from "./quadro-resumitivo";
 import CronogramaRelatorio from "./cronograma-relatorio";
 import PautaDistribuicao from "./pauta-distribuicao";
 import DadosEntrega from "./dados-entrega";
+import Ocorrencias from "./ocorrencias";
 
 export default async function RelatorioPage({
   params,
@@ -55,6 +56,13 @@ export default async function RelatorioPage({
     .eq("processo_id", id)
     .order("created_at");
 
+  const { data: andamentosIncluidos } = await supabase
+    .from("andamentos")
+    .select("id, texto")
+    .eq("processo_id", id)
+    .eq("incluir_relatorio", true)
+    .order("data");
+
   return (
     <main style={{ padding: 32, maxWidth: 760 }}>
       <p>
@@ -73,6 +81,8 @@ export default async function RelatorioPage({
       <PautaDistribuicao processoId={id} pauta={(pauta ?? []) as any} />
 
       <DadosEntrega processoId={id} entregas={(entregas ?? []) as any} />
+
+      <Ocorrencias andamentos={(andamentosIncluidos ?? []) as any} />
     </main>
   );
 }
