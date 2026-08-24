@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { cor } from "@/lib/theme";
 
 type Execucao = {
   id: string;
@@ -15,6 +16,13 @@ type Execucao = {
 };
 
 const SITUACOES = ["pendente", "em_transito", "entregue", "atrasada"];
+
+const SITUACAO_COR: Record<string, { fg: string; bg: string }> = {
+  pendente: { fg: "#8A6A3B", bg: "rgba(182,130,53,.09)" },
+  em_transito: { fg: "#7D5411", bg: "rgba(182,130,53,.08)" },
+  entregue: { fg: "#4A6B52", bg: "rgba(126,155,126,.18)" },
+  atrasada: { fg: "#8C4A42", bg: "rgba(176,101,92,.16)" },
+};
 
 function calcularAtraso(dataPrevista: string | null, dataEntrega: string | null) {
   if (!dataPrevista || !dataEntrega) return null;
@@ -129,10 +137,10 @@ export default function Cronograma({
   }
 
   return (
-    <section style={{ marginTop: 16 }}>
+    <section>
       <strong>Cronograma de entregas</strong>
 
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
 
       <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse", minWidth: 720 }}>
@@ -222,7 +230,15 @@ export default function Cronograma({
                         value={e.situacao}
                         onChange={(ev) => atualizarSituacao(e.id, ev.target.value)}
                         disabled={carregando === e.id}
-                        style={{ padding: 4 }}
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: 20,
+                          border: "none",
+                          fontWeight: 600,
+                          fontSize: 11,
+                          color: SITUACAO_COR[e.situacao]?.fg,
+                          background: SITUACAO_COR[e.situacao]?.bg,
+                        }}
                       >
                         {SITUACOES.map((s) => (
                           <option key={s} value={s}>
@@ -246,7 +262,7 @@ export default function Cronograma({
           })}
           {execucoes.length === 0 && !novo && (
             <tr>
-              <td colSpan={8} style={{ padding: 6, color: "#7D7979" }}>
+              <td colSpan={8} style={{ padding: 6, color: cor.textoTerciario }}>
                 Nenhuma entrega cadastrada.
               </td>
             </tr>
@@ -257,7 +273,7 @@ export default function Cronograma({
 
       {novo ? (
         <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, color: "#7D7979" }}>Execução {proximoNumero}</span>
+          <span style={{ fontSize: 12, color: cor.textoTerciario }}>Execução {proximoNumero}</span>
           <input
             type="number"
             step="0.001"
@@ -286,7 +302,16 @@ export default function Cronograma({
           </button>
         </div>
       ) : (
-        <button onClick={() => setNovo(true)} style={{ marginTop: 8 }}>
+        <button
+          onClick={() => setNovo(true)}
+          style={{
+            marginTop: 8,
+            width: "100%",
+            border: `1.5px dashed ${cor.borda}`,
+            background: "transparent",
+            color: cor.textoTerciario,
+          }}
+        >
           + Adicionar entrega
         </button>
       )}

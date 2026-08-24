@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { botaoPrimario, cor } from "@/lib/theme";
 
 type Andamento = {
   id: string;
@@ -110,26 +111,26 @@ export default function Andamentos({
   }
 
   return (
-    <section style={{ marginTop: 24 }}>
-      <h2 style={{ fontSize: 16 }}>Andamentos</h2>
-      <p style={{ fontSize: 12, color: "#7D7979" }}>
+    <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <strong>Andamentos</strong>
+      <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
         "Incluir no relatório" define o que entra na seção 5 (Ocorrências) do Relatório.
       </p>
 
-      <ul style={{ marginTop: 8, padding: 0, listStyle: "none" }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
         {andamentos.length === 0 && (
-          <li style={{ color: "#7D7979" }}>Nenhum andamento registrado.</li>
+          <span style={{ color: cor.textoTerciario, fontSize: 13 }}>Nenhum andamento registrado.</span>
         )}
         {andamentos.map((a) => (
-          <li key={a.id} style={{ borderBottom: "1px solid #eee", padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: "#7D7979" }}>
+          <div key={a.id} style={{ borderBottom: `1px solid ${cor.borda}`, padding: "10px 0" }}>
+            <div style={{ fontSize: 11.5, color: cor.textoTerciario }}>
               {new Date(a.data).toLocaleString("pt-BR")} · {a.tipo}
               {a.autor?.nome ? ` · ${a.autor.nome}` : ""}
               {a.sei_numero ? ` · SEI ${a.sei_numero}` : ""}
             </div>
-            <div>{a.texto}</div>
-            <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}>
-              <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ fontSize: 13, marginTop: 3 }}>{a.texto}</div>
+            <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+              <label style={{ fontSize: 11.5, display: "flex", alignItems: "center", gap: 4 }}>
                 <input
                   type="checkbox"
                   checked={a.incluir_relatorio}
@@ -138,18 +139,15 @@ export default function Andamentos({
                 />
                 Incluir no relatório
               </label>
-              <button type="button" onClick={() => copiar(a.texto)} style={{ fontSize: 12 }}>
+              <button type="button" onClick={() => copiar(a.texto)} style={{ fontSize: 10.5, padding: "3px 8px" }}>
                 copiar
               </button>
             </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}
-      >
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <select value={tipo} onChange={(e) => setTipo(e.target.value)} required style={{ padding: 8 }}>
           <option value="">Selecione o tipo</option>
           {TIPOS.map((t) => (
@@ -166,8 +164,13 @@ export default function Andamentos({
             required
             style={{ padding: 8, flex: 1 }}
           />
-          <button type="button" onClick={gerarComIA} disabled={!tipo}>
-            Gerar com IA
+          <button
+            type="button"
+            onClick={gerarComIA}
+            disabled={!tipo}
+            style={{ color: cor.destaque, background: cor.destaqueFundo, fontSize: 11.5, whiteSpace: "nowrap" }}
+          >
+            ✦ Gerar com IA
           </button>
         </div>
         <input
@@ -184,8 +187,8 @@ export default function Andamentos({
           />
           Incluir no relatório
         </label>
-        {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
-        <button type="submit" disabled={salvando}>
+        {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+        <button type="submit" disabled={salvando} style={botaoPrimario}>
           {salvando ? "Salvando..." : "Registrar andamento"}
         </button>
       </form>

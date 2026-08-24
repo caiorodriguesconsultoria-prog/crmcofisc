@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { botaoPrimario, cor } from "@/lib/theme";
 
 const KANBANS = [
   "Ofício de apresentação",
@@ -83,45 +84,88 @@ export default function PainelProcesso({
   }
 
   return (
-    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
-      <div>
-        <strong>Kanban atual</strong>
-        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-          <select
-            value={kanban}
-            onChange={(e) => setKanban(e.target.value)}
-            style={{ padding: 8 }}
-          >
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span
+          style={{
+            fontSize: 10.5,
+            fontWeight: 500,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            color: cor.textoTerciario,
+          }}
+        >
+          Kanban atual
+        </span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <select value={kanban} onChange={(e) => setKanban(e.target.value)} style={{ padding: 8, flex: 1 }}>
             {KANBANS.map((k) => (
               <option key={k} value={k}>
                 {k}
               </option>
             ))}
           </select>
-          <button onClick={salvarKanban} disabled={carregando || kanban === etapaAtual}>
+          <button onClick={salvarKanban} disabled={carregando || kanban === etapaAtual} style={botaoPrimario}>
             Salvar
           </button>
         </div>
       </div>
 
-      <div>
-        <strong>Eventos ativos</strong>
-        <ul style={{ marginTop: 4 }}>
-          {tagsAtivas.length === 0 && <li style={{ color: "#7D7979" }}>Nenhum</li>}
-          {tagsAtivas.map((t) => (
-            <li key={t.id}>
-              {t.valor}{" "}
-              <button onClick={() => removerEvento(t.id)} disabled={carregando}>
-                remover
-              </button>
-            </li>
-          ))}
-        </ul>
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span
+          style={{
+            fontSize: 10.5,
+            fontWeight: 500,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            color: cor.textoTerciario,
+          }}
+        >
+          Eventos ativos
+        </span>
+        {tagsAtivas.length === 0 ? (
+          <span style={{ fontSize: 12.5, color: cor.textoTerciario }}>Nenhum</span>
+        ) : (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {tagsAtivas.map((t) => (
+              <span
+                key={t.id}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  color: cor.destaque,
+                  background: cor.destaqueFundo,
+                  borderRadius: 20,
+                  padding: "5px 8px 5px 11px",
+                }}
+              >
+                {t.valor}
+                <button
+                  onClick={() => removerEvento(t.id)}
+                  disabled={carregando}
+                  aria-label={`Remover ${t.valor}`}
+                  style={{
+                    fontSize: 10,
+                    padding: "1px 6px",
+                    border: "none",
+                    background: "rgba(125,84,17,.12)",
+                    color: cor.destaque,
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
           <select
             value={novaTagId}
             onChange={(e) => setNovaTagId(e.target.value)}
-            style={{ padding: 8 }}
+            style={{ padding: 8, flex: 1 }}
           >
             <option value="">Selecione um evento</option>
             {opcoesParaAdicionar.map((t) => (
@@ -136,7 +180,7 @@ export default function PainelProcesso({
         </div>
       </div>
 
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { botaoPrimario, cor } from "@/lib/theme";
 
 type Tipo = "Regular" | "Irregular";
 
@@ -100,9 +101,9 @@ export default function Conclusao({
 
   if (!editando) {
     return (
-      <section style={{ marginTop: 24 }}>
+      <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <h2 style={{ fontSize: 16 }}>Conclusões</h2>
+          <strong>Conclusões</strong>
           <span
             style={{
               fontSize: 11,
@@ -115,15 +116,17 @@ export default function Conclusao({
           >
             {conclusao.tipo ? "Concluído ✓" : "Pendente"}
           </span>
-          <button onClick={() => setEditando(true)}>Editar</button>
+          <button onClick={() => setEditando(true)} style={{ marginLeft: "auto", fontSize: 11 }}>
+            Editar
+          </button>
         </div>
 
         {!conclusao.tipo ? (
-          <p style={{ color: "#7D7979", marginTop: 4 }}>Ainda não definida.</p>
+          <p style={{ color: cor.textoTerciario, margin: 0, fontSize: 13 }}>Ainda não definida.</p>
         ) : (
-          <div style={{ marginTop: 8 }}>
-            <p style={{ margin: "0 0 8px" }}>Execução {conclusao.tipo.toLowerCase()}</p>
-            <p style={{ fontSize: 12, color: "#7D7979", margin: "0 0 4px" }}>
+          <div>
+            <p style={{ margin: "0 0 8px", fontSize: 13 }}>Execução {conclusao.tipo.toLowerCase()}</p>
+            <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 4px" }}>
               Diante do exposto, considerando:
             </p>
             <ul style={{ margin: "0 0 8px", paddingLeft: 20 }}>
@@ -133,7 +136,7 @@ export default function Conclusao({
                 </li>
               ))}
             </ul>
-            <p style={{ textAlign: "justify", margin: 0 }}>{conclusao.texto}</p>
+            <p style={{ textAlign: "justify", margin: 0, fontSize: 13 }}>{conclusao.texto}</p>
             {conclusao.penalidade && (
               <p style={{ margin: "8px 0 0", fontSize: 13 }}>
                 <strong>Sugestão de penalidade:</strong> {conclusao.penalidade}
@@ -142,7 +145,7 @@ export default function Conclusao({
             <button
               type="button"
               onClick={() => copiar(conclusao.texto ?? "", conclusao.penalidade)}
-              style={{ fontSize: 12, marginTop: 8 }}
+              style={{ fontSize: 10.5, padding: "3px 8px", marginTop: 8 }}
             >
               copiar
             </button>
@@ -153,32 +156,40 @@ export default function Conclusao({
   }
 
   return (
-    <section style={{ marginTop: 24 }}>
-      <h2 style={{ fontSize: 16 }}>Conclusões</h2>
+    <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <strong>Conclusões</strong>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         <button
           type="button"
           onClick={() => escolherTipo("Regular")}
-          style={{ flex: 1, fontWeight: tipo === "Regular" ? 700 : 400 }}
+          style={
+            tipo === "Regular"
+              ? { ...botaoPrimario, flex: 1, textAlign: "center" }
+              : { flex: 1, color: cor.textoSecundario, background: "rgba(96,93,93,.10)", border: "none" }
+          }
         >
           Execução regular
         </button>
         <button
           type="button"
           onClick={() => escolherTipo("Irregular")}
-          style={{ flex: 1, fontWeight: tipo === "Irregular" ? 700 : 400 }}
+          style={
+            tipo === "Irregular"
+              ? { ...botaoPrimario, flex: 1, textAlign: "center" }
+              : { flex: 1, color: cor.textoSecundario, background: "rgba(96,93,93,.10)", border: "none" }
+          }
         >
           Execução irregular
         </button>
       </div>
-      <p style={{ fontSize: 11, color: "#7D7979", marginTop: 4 }}>
+      <p style={{ fontSize: 11, color: cor.textoTerciario, margin: 0 }}>
         Trocar o tipo reinicia o checklist e o texto abaixo para o modelo padrão.
       </p>
 
       {tipo && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
-          <span style={{ fontSize: 12, color: "#7D7979" }}>Diante do exposto, considerando:</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={{ fontSize: 11.5, color: cor.textoTerciario }}>Diante do exposto, considerando:</span>
           {checks.map((c, i) => (
             <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
@@ -193,7 +204,7 @@ export default function Conclusao({
               <button
                 type="button"
                 onClick={() => setChecks(checks.filter((_, j) => j !== i))}
-                style={{ fontSize: 12 }}
+                style={{ fontSize: 10.5, padding: "3px 8px" }}
               >
                 remover
               </button>
@@ -207,7 +218,7 @@ export default function Conclusao({
           />
 
           {tipo === "Irregular" && (
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11.5 }}>
               Sugestão de penalidade (opcional)
               <input
                 value={penalidade}
@@ -218,15 +229,19 @@ export default function Conclusao({
             </label>
           )}
 
-          <button type="button" onClick={() => copiar(texto, tipo === "Irregular" ? penalidade : null)} style={{ alignSelf: "flex-start", fontSize: 12 }}>
+          <button
+            type="button"
+            onClick={() => copiar(texto, tipo === "Irregular" ? penalidade : null)}
+            style={{ alignSelf: "flex-start", fontSize: 10.5, padding: "3px 8px" }}
+          >
             copiar
           </button>
         </div>
       )}
 
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <button onClick={salvar} disabled={salvando}>
+      {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={salvar} disabled={salvando} style={botaoPrimario}>
           {salvando ? "Salvando..." : "Salvar"}
         </button>
         <button onClick={cancelar} disabled={salvando}>

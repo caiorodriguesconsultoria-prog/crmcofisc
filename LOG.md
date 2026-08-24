@@ -234,6 +234,12 @@ A primeira implementação (tabela `coordenacao_contatos` nova + tela de detalhe
 ## 2026-08-25 · Acerto a repetir — Kanban: cards no formato do protótipo confirmado
 Caio testou em produção: NUP, objeto, prazo colorido, "Aguarda", badge de cobertura de férias e arrastar-e-soltar entre colunas — tudo funcionando.
 
+## 2026-08-25 · Decisão — Painel do processo: fidelidade nas seções restantes
+Continuação da fidelização ao protótipo nas 6 seções que faltavam: Cobertura (linhas de campo com `CampoLinha`), Painel/kanban+eventos (eventos ativos viraram pílulas removíveis com "×", em vez de lista com botão "remover"), Cronograma (situação como pílula colorida por status, botão "+ Adicionar entrega" com borda tracejada), Checklist (checkbox customizado quadrado com ✓, barra de progresso por grupo), Andamentos ("Gerar com IA" com destaque âmbar, tipografia/cores padronizadas), Conclusões (botões Regular/Irregular como pílula preenchida quando ativo, em vez de só negrito). Nenhuma mudança de dado/lógica — só o visual (cores, ícones, pílulas), reaproveitando os tokens de `lib/theme.ts` e o `CampoLinha` já usado em NUPs/Prazo/Gestão e Fiscalização.
+
+## 2026-08-25 · Acerto a repetir — Linhas de campo com copiar confirmadas
+Caio testou em produção: NUPs, Gestão e Fiscalização e Prazo com o botão copiar por campo, editar continua funcionando.
+
 ## 2026-08-25 · Decisão — Painel do processo: fidelidade mais profunda ao protótipo
 Caio apontou que a passada anterior só embrulhou as seções em card, sem replicar o formato de linha do protótipo (rótulo pequeno + valor + ícone copiar). Criado `app/_ui/campo.tsx` (componente compartilhado `CampoLinha`/`BotaoCopiar`) e aplicado em NUPs, Gestão e Fiscalização e Prazo — cada campo agora mostra rótulo em uppercase pequeno, valor, botão "copiar" e (quando aplicável) o botão de editar na mesma linha, com separador sutil embaixo, igual ao protótipo. Sem mudança de dados/lógica. Cobertura, Painel (kanban+eventos), Cronograma, Checklist, Andamentos e Conclusões ainda estão no visual anterior (Design 2/N genérico) — ficam pra continuar essa mesma fidelização nas próximas etapas, se Caio quiser.
 
