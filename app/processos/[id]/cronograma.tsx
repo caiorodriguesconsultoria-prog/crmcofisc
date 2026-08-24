@@ -134,7 +134,8 @@ export default function Cronograma({
 
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
 
-      <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse" }}>
+      <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse", minWidth: 720 }}>
         <thead>
           <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
             <th style={{ padding: 6 }}>Execução</th>
@@ -252,9 +253,10 @@ export default function Cronograma({
           )}
         </tbody>
       </table>
+      </div>
 
       {novo ? (
-        <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, color: "#7D7979" }}>Execução {proximoNumero}</span>
           <input
             type="number"
