@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { card, cor } from "@/lib/theme";
@@ -51,6 +51,15 @@ export default function ListaProcessos({
   const [responsavelId, setResponsavelId] = useState("");
   const [sei, setSei] = useState("");
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
+
+  // Se o usuário já tinha visitado /processos antes, o Next reaproveita essa
+  // mesma instância do componente ao clicar num atalho de Atividades (mesma
+  // rota, só muda a query string) — sem isso, o useState acima só pega o
+  // filtro na primeira vez e cliques seguintes na barra lateral não fazem nada.
+  useEffect(() => {
+    setEtapa(searchParams.get("etapa") ?? "");
+    setEventoId(searchParams.get("evento") ?? "");
+  }, [searchParams]);
 
   const filtrados = useMemo(() => {
     return processos.filter((p) => {
