@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { card, cor } from "@/lib/theme";
+
+const ETAPAS = [
+  "Ofício de apresentação",
+  "Aguardando entrega",
+  "Aguardando assinatura",
+  "Aguardando pagamento",
+  "Aguardando Área Técnica",
+];
 
 type Processo = {
   id: string;
@@ -35,11 +44,13 @@ export default function ListaProcessos({
   eventos: Opcao[];
   responsaveis: Opcao[];
 }) {
+  const searchParams = useSearchParams();
   const [coordenacaoId, setCoordenacaoId] = useState("");
   const [formaEntregaId, setFormaEntregaId] = useState("");
-  const [eventoId, setEventoId] = useState("");
+  const [eventoId, setEventoId] = useState(() => searchParams.get("evento") ?? "");
   const [responsavelId, setResponsavelId] = useState("");
   const [sei, setSei] = useState("");
+  const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
 
   const filtrados = useMemo(() => {
     return processos.filter((p) => {
@@ -47,11 +58,12 @@ export default function ListaProcessos({
       if (formaEntregaId && p.forma_entrega_tag_id !== formaEntregaId) return false;
       if (eventoId && !p.processo_tags.some((pt) => pt.tags?.id === eventoId)) return false;
       if (responsavelId && p.responsavel_atual_id !== responsavelId) return false;
+      if (etapa && p.etapa_atual !== etapa) return false;
       if (sei === "com" && !p.processo_eletronico_numero) return false;
       if (sei === "sem" && p.processo_eletronico_numero) return false;
       return true;
     });
-  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, sei]);
+  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, sei]);
 
   return (
     <div>
@@ -65,6 +77,14 @@ export default function ListaProcessos({
           padding: 14,
         }}
       >
+        <select value={etapa} onChange={(e) => setEtapa(e.target.value)}>
+          <option value="">Etapa (todas)</option>
+          {ETAPAS.map((e) => (
+            <option key={e} value={e}>
+              {e}
+            </option>
+          ))}
+        </select>
         <select value={coordenacaoId} onChange={(e) => setCoordenacaoId(e.target.value)}>
           <option value="">Coordenação (todas)</option>
           {coordenacoes.map((c) => (
