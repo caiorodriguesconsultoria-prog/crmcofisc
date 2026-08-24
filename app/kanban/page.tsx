@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Board from "./board";
 import { cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 const KANBANS = [
   "Ofício de apresentação",
@@ -10,6 +11,14 @@ const KANBANS = [
   "Aguardando pagamento",
   "Aguardando Área Técnica",
 ];
+
+function diasRestantes(prazoData: string | null) {
+  if (!prazoData) return null;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const prazo = new Date(`${prazoData}T00:00:00`);
+  return Math.round((prazo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+}
 
 export default async function KanbanPage() {
   const supabase = await createClient();
@@ -23,7 +32,9 @@ export default async function KanbanPage() {
 
   const { data: processos, error } = await supabase
     .from("processos")
-    .select("id, numero_contrato, etapa_atual, coordenacoes(sigla), fornecedores(nome)")
+    .select(
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, titular_id, responsavel_atual_id, coordenacoes(sigla), titular:pessoas!processos_titular_id_fkey(nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(nome)",
+    )
     .order("created_at", { ascending: false });
 
   const { data: kanbanAtivo } = await supabase
@@ -39,27 +50,38 @@ export default async function KanbanPage() {
 
   const { data: tarefas } = await supabase
     .from("processo_tarefas")
-    .select("origem_id, concluida")
+    .select("origem_id, ordem, label, concluida")
     .eq("origem_tipo", "kanban")
-    .in("origem_id", origensAtivas.length > 0 ? origensAtivas : ["00000000-0000-0000-0000-000000000000"]);
+    .in("origem_id", origensAtivas.length > 0 ? origensAtivas : ["00000000-0000-0000-0000-000000000000"])
+    .order("ordem");
 
   const progressoPorOrigem = new Map<string, { total: number; concluidas: number }>();
+  const proximaTarefaPorOrigem = new Map<string, string>();
   for (const t of tarefas ?? []) {
     const atual = progressoPorOrigem.get(t.origem_id) ?? { total: 0, concluidas: 0 };
     atual.total += 1;
     if (t.concluida) atual.concluidas += 1;
+    else if (!proximaTarefaPorOrigem.has(t.origem_id)) proximaTarefaPorOrigem.set(t.origem_id, t.label);
     progressoPorOrigem.set(t.origem_id, atual);
   }
 
   const cards = (processos ?? []).map((p: any) => {
     const origemId = origemPorProcesso.get(p.id);
     const progresso = origemId ? progressoPorOrigem.get(origemId) : undefined;
+    const dias = diasRestantes(p.prazo_data);
+    const emCobertura = !!p.titular_id && p.responsavel_atual_id !== p.titular_id;
     return {
       id: p.id,
       numeroContrato: p.numero_contrato,
+      nup: p.nup_principal,
+      objeto: p.objeto,
       etapaAtual: p.etapa_atual,
       coordenacaoSigla: p.coordenacoes?.sigla ?? "",
-      fornecedorNome: p.fornecedores?.nome ?? "",
+      prazoData: p.prazo_data,
+      dias,
+      aguardando: origemId ? proximaTarefaPorOrigem.get(origemId) ?? null : null,
+      emCobertura,
+      nomeExibido: emCobertura ? p.responsavel?.nome ?? "" : p.titular?.nome ?? "",
       tarefasTotal: progresso?.total ?? 0,
       tarefasConcluidas: progresso?.concluidas ?? 0,
     };
@@ -71,12 +93,10 @@ export default async function KanbanPage() {
   }));
 
   return (
-    <main style={{ padding: 32 }}>
-      <h1 style={{ fontSize: 20 }}>Kanban</h1>
-
+    <Painel titulo="Kanban" voltarHref="/dashboard" maxWidth={1400}>
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
       <Board colunas={colunas} kanbans={KANBANS} />
-    </main>
+    </Painel>
   );
 }
