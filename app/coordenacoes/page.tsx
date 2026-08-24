@@ -51,7 +51,11 @@ export default async function CoordenacoesPage() {
           <tbody>
             {(coordenacoes ?? []).map((c) => (
               <tr key={c.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
-                <td style={{ padding: "10px 12px", fontWeight: 600 }}>{c.sigla}</td>
+                <td style={{ padding: "10px 12px", fontWeight: 600 }}>
+                  <Link href={`/coordenacoes/${c.id}`} style={{ textDecoration: "none" }}>
+                    {c.sigla}
+                  </Link>
+                </td>
                 <td style={{ padding: "10px 12px" }}>{c.nome}</td>
                 <td style={{ padding: "10px 12px" }}>{c.email_generico}</td>
               </tr>
