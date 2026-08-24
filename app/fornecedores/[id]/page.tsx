@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { card, cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 function formatarData(data: string | null) {
   return data ? new Date(data).toLocaleDateString("pt-BR") : "—";
@@ -47,12 +48,8 @@ export default async function FornecedorPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main style={{ padding: 32, maxWidth: 800, margin: "0 auto" }}>
-      <p>
-        <Link href="/fornecedores">← Voltar</Link>
-      </p>
-      <div style={{ ...card, marginTop: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-        <h1 style={{ fontSize: 20, margin: 0 }}>{fornecedor.nome}</h1>
+    <Painel titulo={fornecedor.nome} voltarHref="/fornecedores" maxWidth={800}>
+      <div style={{ ...card, display: "flex", flexDirection: "column", gap: 4 }}>
         <p style={{ color: cor.textoSecundario, margin: 0, fontSize: 13 }}>{fornecedor.cnpj}</p>
         <p style={{ margin: 0, fontSize: 13 }}>
           Preposto: {fornecedor.preposto || "—"} · Telefone: {fornecedor.telefone || "—"}
@@ -113,6 +110,6 @@ export default async function FornecedorPage({
           </tbody>
         </table>
       </div>
-    </main>
+    </Painel>
   );
 }

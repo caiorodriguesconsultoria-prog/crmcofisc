@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { botaoPrimario, cor } from "@/lib/theme";
+import { botaoPrimario } from "@/lib/theme";
 import GradeCoordenacoes from "./grade";
+import Painel from "@/app/_ui/painel";
 
 export default async function CoordenacoesPage() {
   const supabase = await createClient();
@@ -44,28 +45,22 @@ export default async function CoordenacoesPage() {
   }));
 
   return (
-    <main style={{ padding: 32, maxWidth: 1100, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1 style={{ fontSize: 20 }}>Coordenações</h1>
-        {isAdmin && (
+    <Painel
+      titulo="Coordenações"
+      subtitulo="Responsáveis, e-mails e ramais usados nas notificações do processo."
+      voltarHref="/dashboard"
+      maxWidth={1100}
+      acao={
+        isAdmin && (
           <Link href="/coordenacoes/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
             + Nova coordenação
           </Link>
-        )}
-      </div>
-      <p style={{ color: cor.textoTerciario, fontSize: 13, marginTop: 2 }}>
-        Responsáveis, e-mails e ramais usados nas notificações do processo.
-      </p>
-
-      {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
+        )
+      }
+    >
+      {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
 
       <GradeCoordenacoes coordenacoes={grade} isAdmin={isAdmin} />
-    </main>
+    </Painel>
   );
 }

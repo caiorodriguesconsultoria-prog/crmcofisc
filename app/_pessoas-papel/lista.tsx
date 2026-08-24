@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { botaoPrimario, card, cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 type Item = { id: string; nome: string; matricula: string | null };
 
@@ -19,25 +20,21 @@ export default function ListaPessoasPapel({
   erro?: string;
 }) {
   return (
-    <main style={{ padding: 32, maxWidth: 900, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1 style={{ fontSize: 20 }}>{titulo}</h1>
-        {isAdmin && (
+    <Painel
+      titulo={titulo}
+      voltarHref="/dashboard"
+      maxWidth={900}
+      acao={
+        isAdmin && (
           <Link href={novoHref} style={{ ...botaoPrimario, textDecoration: "none" }}>
             + Cadastrar
           </Link>
-        )}
-      </div>
-
+        )
+      }
+    >
       {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro}</p>}
 
-      <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 16 }}>
+      <div style={{ ...card, padding: 0, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
@@ -62,6 +59,6 @@ export default function ListaPessoasPapel({
           </tbody>
         </table>
       </div>
-    </main>
+    </Painel>
   );
 }

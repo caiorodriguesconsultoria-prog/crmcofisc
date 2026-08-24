@@ -56,3 +56,31 @@ th {
   letter-spacing: 0.4px;
   color: #7d7979;
 }
+
+.crm-painel-fundo {
+  padding: 28px 32px 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.crm-painel {
+  width: 100%;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow:
+    0 2px 4px rgba(32, 31, 29, 0.08),
+    0 24px 60px rgba(32, 31, 29, 0.14);
+  padding: 26px 30px 32px;
+}
+
+@media (max-width: 680px) {
+  .crm-painel-fundo {
+    padding: 0;
+  }
+  .crm-painel {
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100vh;
+    padding: 20px 16px 32px;
+  }
+}

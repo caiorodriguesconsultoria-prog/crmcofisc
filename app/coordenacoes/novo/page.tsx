@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import NovaCoordenacaoForm from "./form";
-import { card } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 export default async function NovaCoordenacaoPage() {
   const supabase = await createClient();
@@ -24,11 +24,8 @@ export default async function NovaCoordenacaoPage() {
   }
 
   return (
-    <main style={{ padding: 32, maxWidth: 480, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 20, marginBottom: 16 }}>Nova coordenação</h1>
-      <div style={card}>
-        <NovaCoordenacaoForm />
-      </div>
-    </main>
+    <Painel titulo="Nova coordenação" voltarHref="/coordenacoes" maxWidth={480}>
+      <NovaCoordenacaoForm />
+    </Painel>
   );
 }

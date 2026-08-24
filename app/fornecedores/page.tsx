@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { botaoPrimario, card, cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 export default async function FornecedoresPage() {
   const supabase = await createClient();
@@ -24,25 +25,21 @@ export default async function FornecedoresPage() {
   const isAdmin = pessoa?.is_admin ?? false;
 
   return (
-    <main style={{ padding: 32, maxWidth: 1000, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1 style={{ fontSize: 20 }}>Fornecedores</h1>
-        {isAdmin && (
+    <Painel
+      titulo="Fornecedores"
+      voltarHref="/dashboard"
+      maxWidth={1000}
+      acao={
+        isAdmin && (
           <Link href="/fornecedores/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
             + Novo fornecedor
           </Link>
-        )}
-      </div>
-
+        )
+      }
+    >
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
-      <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 16 }}>
+      <div style={{ ...card, padding: 0, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
@@ -83,6 +80,6 @@ export default async function FornecedoresPage() {
           </tbody>
         </table>
       </div>
-    </main>
+    </Painel>
   );
 }

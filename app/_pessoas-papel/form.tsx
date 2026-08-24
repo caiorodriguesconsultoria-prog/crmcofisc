@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { botaoPrimario, card, cor } from "@/lib/theme";
+import { botaoPrimario, cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 export default function NovaPessoaPapelForm({
   papel,
@@ -55,9 +56,8 @@ export default function NovaPessoaPapelForm({
   }
 
   return (
-    <main style={{ padding: 32, maxWidth: 480, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 20, marginBottom: 16 }}>{titulo}</h1>
-      <form onSubmit={handleSubmit} style={{ ...card, display: "flex", flexDirection: "column", gap: 12 }}>
+    <Painel titulo={titulo} voltarHref={voltarHref} maxWidth={480}>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <label>
           Nome completo
           <input
@@ -81,6 +81,6 @@ export default function NovaPessoaPapelForm({
           {salvando ? "Salvando..." : "Criar cadastro"}
         </button>
       </form>
-    </main>
+    </Painel>
   );
 }
