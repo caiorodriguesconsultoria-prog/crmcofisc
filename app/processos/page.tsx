@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import ListaProcessos from "./lista";
 import { botaoPrimario, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import { getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
 
 export default async function ProcessosPage() {
   const supabase = await createClient();
@@ -20,8 +21,8 @@ export default async function ProcessosPage() {
     { data: processos, error },
     { data: coordenacoes },
     { data: formasEntrega },
-    { data: eventos },
-    { data: responsaveis },
+    eventos,
+    responsaveis,
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -31,8 +32,8 @@ export default async function ProcessosPage() {
       .order("created_at", { ascending: false }),
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
     supabase.from("tags").select("id, valor").eq("categoria", "forma_entrega").eq("ativo", true).order("valor"),
-    supabase.from("tags").select("id, valor").eq("categoria", "evento").eq("ativo", true).order("valor"),
-    supabase.from("pessoas").select("id, nome").eq("ativo", true).order("nome"),
+    getTagsEvento(),
+    getPessoasAtivas(),
   ]);
 
   return (

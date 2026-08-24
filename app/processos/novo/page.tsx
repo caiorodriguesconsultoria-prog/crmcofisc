@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import NovoProcessoForm from "./form";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import { getPessoasAtivas, getPapeisGestorFiscal } from "@/lib/dados-referencia";
 
 export default async function NovoProcessoPage() {
   const supabase = await createClient();
@@ -19,25 +20,20 @@ export default async function NovoProcessoPage() {
     { data: coordenacoes, error: erroCoordenacoes },
     { data: fornecedores, error: erroFornecedores },
     { data: tags, error: erroTags },
-    { data: pessoas, error: erroPessoas },
-    { data: papeis, error: erroPapeis },
+    pessoas,
+    papeis,
   ] = await Promise.all([
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
     supabase.from("fornecedores").select("id, nome").order("nome"),
     supabase.from("tags").select("id, categoria, valor").eq("ativo", true).order("valor"),
-    supabase.from("pessoas").select("id, nome").eq("ativo", true).order("nome"),
-    supabase
-      .from("pessoa_papeis")
-      .select("pessoa_id, papel, pessoas(nome)")
-      .in("papel", ["gestor", "fiscal"]),
+    getPessoasAtivas(),
+    getPapeisGestorFiscal(),
   ]);
 
   const erros = [
     erroCoordenacoes && `coordenações: ${erroCoordenacoes.message}`,
     erroFornecedores && `fornecedores: ${erroFornecedores.message}`,
     erroTags && `tags: ${erroTags.message}`,
-    erroPessoas && `pessoas: ${erroPessoas.message}`,
-    erroPapeis && `gestores/fiscais: ${erroPapeis.message}`,
   ].filter(Boolean);
 
   const gestores = (papeis ?? [])

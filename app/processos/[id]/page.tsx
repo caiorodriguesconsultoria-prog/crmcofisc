@@ -21,6 +21,7 @@ import ConclusaoRelatorio from "./relatorio/conclusao-relatorio";
 import { card, cor, pill } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import PainelAlto from "@/app/_ui/painel-alto";
+import { getPessoasAtivas, getPapeisGestorFiscal, getTagsEvento } from "@/lib/dados-referencia";
 
 function diasRestantes(prazoData: string | null) {
   if (!prazoData) return null;
@@ -88,13 +89,13 @@ export default async function ProcessoPage({
 
   const [
     { data: tagsAtivasRaw },
-    { data: tagsDisponiveis },
+    tagsDisponiveis,
     { data: kanbanHistorico },
     { data: tagHistorico },
     { data: andamentosRaw },
     { data: pessoaAtual },
-    { data: pessoas },
-    { data: papeis },
+    pessoas,
+    papeis,
     { data: nups },
     { data: execucoes },
     { data: pauta },
@@ -102,12 +103,7 @@ export default async function ProcessoPage({
     { data: tagHistoricoAtivo },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
-    supabase
-      .from("tags")
-      .select("id, valor")
-      .eq("categoria", "evento")
-      .eq("ativo", true)
-      .order("valor"),
+    getTagsEvento(),
     supabase
       .from("processo_kanban_historico")
       .select("kanban, entrada_em, saida_em, duracao")
@@ -124,11 +120,8 @@ export default async function ProcessoPage({
       .eq("processo_id", id)
       .order("data", { ascending: false }),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
-    supabase.from("pessoas").select("id, nome").eq("ativo", true).order("nome"),
-    supabase
-      .from("pessoa_papeis")
-      .select("pessoa_id, papel, pessoas(nome)")
-      .in("papel", ["gestor", "fiscal"]),
+    getPessoasAtivas(),
+    getPapeisGestorFiscal(),
     supabase
       .from("processo_nups")
       .select("id, tipo, nup")

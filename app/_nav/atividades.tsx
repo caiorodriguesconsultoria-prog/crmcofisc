@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cor } from "@/lib/theme";
 import { createClient } from "@/lib/supabase/server";
+import { getTagsEvento } from "@/lib/dados-referencia";
 import type { Atividade } from "./sidebar";
 
 const KANBAN_DOT = "#7E9B7E";
@@ -23,9 +24,9 @@ async function buscarAtividades(): Promise<Atividade[]> {
 
   if (!user) return [];
 
-  const [{ data: processos }, { data: tagsEvento }, { data: processoTags }] = await Promise.all([
+  const [{ data: processos }, tagsEvento, { data: processoTags }] = await Promise.all([
     supabase.from("processos").select("etapa_atual"),
-    supabase.from("tags").select("id, valor").eq("categoria", "evento").eq("ativo", true).order("valor"),
+    getTagsEvento(),
     supabase.from("processo_tags").select("tag_id"),
   ]);
 
