@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Opcao = { id: string; nome?: string; sigla?: string; valor?: string; categoria?: string };
-type PessoaPapel = { id: string; nome: string; coordenacaoId: string };
+type PessoaPapel = { id: string; nome: string };
 
 export default function NovoProcessoForm({
   coordenacoes,
@@ -43,9 +43,6 @@ export default function NovoProcessoForm({
   const [fiscalSubstitutoId, setFiscalSubstitutoId] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
-
-  const gestoresDaCoordenacao = gestores.filter((g) => g.coordenacaoId === coordenacaoId);
-  const fiscaisDaCoordenacao = fiscais.filter((f) => f.coordenacaoId === coordenacaoId);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -141,7 +138,7 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Não informado</option>
-          {gestoresDaCoordenacao.map((g) => (
+          {gestores.map((g) => (
             <option key={g.id} value={g.id}>
               {g.nome}
             </option>
@@ -156,7 +153,7 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Não informado</option>
-          {gestoresDaCoordenacao.map((g) => (
+          {gestores.map((g) => (
             <option key={g.id} value={g.id}>
               {g.nome}
             </option>
@@ -171,7 +168,7 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Não informado</option>
-          {fiscaisDaCoordenacao.map((f) => (
+          {fiscais.map((f) => (
             <option key={f.id} value={f.id}>
               {f.nome}
             </option>
@@ -186,7 +183,7 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Não informado</option>
-          {fiscaisDaCoordenacao.map((f) => (
+          {fiscais.map((f) => (
             <option key={f.id} value={f.id}>
               {f.nome}
             </option>

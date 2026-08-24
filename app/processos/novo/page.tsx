@@ -26,7 +26,7 @@ export default async function NovoProcessoPage() {
     supabase.from("pessoas").select("id, nome").eq("ativo", true).order("nome"),
     supabase
       .from("pessoa_papeis")
-      .select("pessoa_id, coordenacao_id, papel, pessoas(nome)")
+      .select("pessoa_id, papel, pessoas(nome)")
       .in("papel", ["gestor", "fiscal"]),
   ]);
 
@@ -40,10 +40,10 @@ export default async function NovoProcessoPage() {
 
   const gestores = (papeis ?? [])
     .filter((p) => p.papel === "gestor")
-    .map((p: any) => ({ id: p.pessoa_id, nome: p.pessoas?.nome ?? "", coordenacaoId: p.coordenacao_id }));
+    .map((p: any) => ({ id: p.pessoa_id, nome: p.pessoas?.nome ?? "" }));
   const fiscais = (papeis ?? [])
     .filter((p) => p.papel === "fiscal")
-    .map((p: any) => ({ id: p.pessoa_id, nome: p.pessoas?.nome ?? "", coordenacaoId: p.coordenacao_id }));
+    .map((p: any) => ({ id: p.pessoa_id, nome: p.pessoas?.nome ?? "" }));
 
   return (
     <main style={{ padding: 32, maxWidth: 480, margin: "0 auto" }}>

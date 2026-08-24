@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { botaoPrimario, card, cor } from "@/lib/theme";
 
-type Item = { id: string; nome: string; matricula: string | null; coordenacaoSigla: string };
+type Item = { id: string; nome: string; matricula: string | null };
 
 export default function ListaPessoasPapel({
   titulo,
@@ -43,7 +43,6 @@ export default function ListaPessoasPapel({
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
               <th style={{ padding: "10px 12px" }}>Nome</th>
               <th style={{ padding: "10px 12px" }}>Matrícula</th>
-              <th style={{ padding: "10px 12px" }}>Coordenação</th>
             </tr>
           </thead>
           <tbody>
@@ -51,12 +50,11 @@ export default function ListaPessoasPapel({
               <tr key={i.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
                 <td style={{ padding: "10px 12px", fontWeight: 600 }}>{i.nome}</td>
                 <td style={{ padding: "10px 12px" }}>{i.matricula}</td>
-                <td style={{ padding: "10px 12px" }}>{i.coordenacaoSigla}</td>
               </tr>
             ))}
             {itens.length === 0 && (
               <tr>
-                <td colSpan={3} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
+                <td colSpan={2} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
                   Nenhum cadastro ainda.
                 </td>
               </tr>

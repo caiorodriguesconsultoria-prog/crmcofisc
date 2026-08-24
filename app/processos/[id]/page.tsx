@@ -79,7 +79,7 @@ export default async function ProcessoPage({
     supabase.from("pessoas").select("id, nome").eq("ativo", true).order("nome"),
     supabase
       .from("pessoa_papeis")
-      .select("pessoa_id, coordenacao_id, papel, pessoas(nome)")
+      .select("pessoa_id, papel, pessoas(nome)")
       .in("papel", ["gestor", "fiscal"]),
     supabase
       .from("processo_nups")
@@ -107,11 +107,11 @@ export default async function ProcessoPage({
     ? { id: nupPagamentoRow.id, tipo: "pagamento" as const, valor: nupPagamentoRow.nup }
     : null;
 
-  const gestoresDaCoordenacao = (papeis ?? [])
-    .filter((pp) => pp.papel === "gestor" && pp.coordenacao_id === p.coordenacao_id)
+  const todosGestores = (papeis ?? [])
+    .filter((pp) => pp.papel === "gestor")
     .map((pp: any) => ({ id: pp.pessoa_id, nome: pp.pessoas?.nome ?? "" }));
-  const fiscaisDaCoordenacao = (papeis ?? [])
-    .filter((pp) => pp.papel === "fiscal" && pp.coordenacao_id === p.coordenacao_id)
+  const todosFiscais = (papeis ?? [])
+    .filter((pp) => pp.papel === "fiscal")
     .map((pp: any) => ({ id: pp.pessoa_id, nome: pp.pessoas?.nome ?? "" }));
 
   const [{ data: kanbanAtivo }, { data: tagHistoricoAtivo }] = await Promise.all([
@@ -213,8 +213,8 @@ export default async function ProcessoPage({
           gestorSubstituto={p.gestor_substituto}
           fiscal={p.fiscal}
           fiscalSubstituto={p.fiscal_substituto}
-          gestores={gestoresDaCoordenacao}
-          fiscais={fiscaisDaCoordenacao}
+          gestores={todosGestores}
+          fiscais={todosFiscais}
         />
       </div>
 

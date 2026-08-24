@@ -22,17 +22,5 @@ export default async function NovoGestorPage() {
     redirect("/gestores");
   }
 
-  const { data: coordenacoes } = await supabase
-    .from("coordenacoes")
-    .select("id, sigla")
-    .order("sigla");
-
-  return (
-    <NovaPessoaPapelForm
-      papel="gestor"
-      titulo="Novo gestor"
-      voltarHref="/gestores"
-      coordenacoes={coordenacoes ?? []}
-    />
-  );
+  return <NovaPessoaPapelForm papel="gestor" titulo="Novo gestor" voltarHref="/gestores" />;
 }

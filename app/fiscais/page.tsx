@@ -16,7 +16,7 @@ export default async function FiscaisPage() {
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
     supabase
       .from("pessoa_papeis")
-      .select("pessoa_id, pessoas(id, nome, matricula), coordenacoes(sigla)")
+      .select("pessoa_id, pessoas(id, nome, matricula)")
       .eq("papel", "fiscal"),
   ]);
 
@@ -25,7 +25,6 @@ export default async function FiscaisPage() {
       id: p.pessoas?.id ?? p.pessoa_id,
       nome: p.pessoas?.nome ?? "",
       matricula: p.pessoas?.matricula ?? null,
-      coordenacaoSigla: p.coordenacoes?.sigla ?? "",
     }))
     .sort((a, b) => a.nome.localeCompare(b.nome));
 

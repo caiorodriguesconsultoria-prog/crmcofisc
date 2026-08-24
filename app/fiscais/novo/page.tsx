@@ -22,17 +22,5 @@ export default async function NovoFiscalPage() {
     redirect("/fiscais");
   }
 
-  const { data: coordenacoes } = await supabase
-    .from("coordenacoes")
-    .select("id, sigla")
-    .order("sigla");
-
-  return (
-    <NovaPessoaPapelForm
-      papel="fiscal"
-      titulo="Novo fiscal"
-      voltarHref="/fiscais"
-      coordenacoes={coordenacoes ?? []}
-    />
-  );
+  return <NovaPessoaPapelForm papel="fiscal" titulo="Novo fiscal" voltarHref="/fiscais" />;
 }
