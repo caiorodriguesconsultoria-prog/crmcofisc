@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { cor } from "@/lib/theme";
+import { CampoLinha } from "@/app/_ui/campo";
 
 type Nup = { id: string; tipo: "relatorio" | "pagamento"; valor: string };
 
@@ -53,7 +55,7 @@ export default function Nups({
   function linha(tipo: "relatorio" | "pagamento", atual: Nup | null) {
     if (editando === tipo) {
       return (
-        <div key={tipo} style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <div key={tipo} style={{ display: "flex", gap: 8 }}>
           <input
             value={valor}
             onChange={(e) => setValor(e.target.value)}
@@ -69,19 +71,25 @@ export default function Nups({
       );
     }
     return (
-      <div key={tipo} style={{ marginTop: 4 }}>
-        {ROTULOS[tipo]}: {atual?.valor ?? "não informado"}{" "}
-        <button onClick={() => abrirEdicao(tipo, atual)}>Editar</button>
-      </div>
+      <CampoLinha
+        key={tipo}
+        label={ROTULOS[tipo]}
+        valor={atual?.valor ?? "não informado"}
+        acao={
+          <button onClick={() => abrirEdicao(tipo, atual)} style={{ fontSize: 11 }}>
+            Editar
+          </button>
+        }
+      />
     );
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <strong>NUPs</strong>
       {linha("relatorio", nupRelatorio)}
       {linha("pagamento", nupPagamento)}
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
     </div>
   );
 }

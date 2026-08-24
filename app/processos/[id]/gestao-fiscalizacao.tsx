@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { botaoPrimario, cor } from "@/lib/theme";
+import { CampoLinha } from "@/app/_ui/campo";
 
 type Pessoa = { id: string; nome: string } | null;
 type Opcao = { id: string; nome: string };
@@ -57,22 +59,21 @@ export default function GestaoFiscalizacao({
 
   if (!editando) {
     return (
-      <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <strong>Gestão e Fiscalização</strong>
-        <p style={{ margin: "4px 0" }}>
-          Gestor: {gestor?.nome ?? "não informado"}
-          {gestorSubstituto && <> · Substituto: {gestorSubstituto.nome}</>}
-          <br />
-          Fiscal: {fiscal?.nome ?? "não informado"}
-          {fiscalSubstituto && <> · Substituto: {fiscalSubstituto.nome}</>}
-        </p>
-        <button onClick={() => setEditando(true)}>Editar</button>
+        <CampoLinha label="Gestor" valor={gestor?.nome ?? "não informado"} />
+        <CampoLinha label="Gestor substituto" valor={gestorSubstituto?.nome ?? "não informado"} />
+        <CampoLinha label="Fiscal" valor={fiscal?.nome ?? "não informado"} />
+        <CampoLinha label="Fiscal substituto" valor={fiscalSubstituto?.nome ?? "não informado"} />
+        <button onClick={() => setEditando(true)} style={{ alignSelf: "flex-start" }}>
+          Editar
+        </button>
       </div>
     );
   }
 
   return (
-    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <strong>Gestão e Fiscalização</strong>
       <label>
         Gestor
@@ -134,9 +135,9 @@ export default function GestaoFiscalizacao({
           ))}
         </select>
       </label>
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={salvar} disabled={salvando}>
+        <button onClick={salvar} disabled={salvando} style={botaoPrimario}>
           Salvar
         </button>
         <button onClick={() => setEditando(false)} disabled={salvando}>

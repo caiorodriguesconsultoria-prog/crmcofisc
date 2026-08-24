@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { cor } from "@/lib/theme";
+import { CampoLinha } from "@/app/_ui/campo";
 
 function formatarData(data: string | null) {
   return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "não informado";
@@ -40,19 +42,25 @@ export default function Prazo({
 
   if (!editando) {
     return (
-      <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <strong>Prazo</strong>
-        <p style={{ margin: "4px 0" }}>
-          {formatarData(prazoData)} <button onClick={() => setEditando(true)}>Editar</button>
-        </p>
+        <CampoLinha
+          label="Data limite"
+          valor={formatarData(prazoData)}
+          acao={
+            <button onClick={() => setEditando(true)} style={{ fontSize: 11 }}>
+              Editar
+            </button>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <strong>Prazo</strong>
-      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         <input
           type="date"
           value={valor}
@@ -66,7 +74,7 @@ export default function Prazo({
           Cancelar
         </button>
       </div>
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
     </div>
   );
 }
