@@ -225,6 +225,9 @@ Caio testou em produção (após promoção manual acima): dropdown de tipos, "G
 ## 2026-08-24 · Acerto a repetir — Relatório (5/6): Conclusões confirmado
 Caio testou em produção (deploy precisou de promoção manual de novo — mesmo bug recorrente do dia 21/24): botões Regular/Irregular preenchendo checklist e texto padrão, edição/remoção de item, texto livre, sugestão de penalidade, Salvar persistindo, e espelho na aba Relatório — tudo funcionando.
 
+## 2026-08-25 · Acerto a repetir — Design (1/N) confirmado
+Caio testou em produção (deploy precisou de promoção manual de novo, mesmo bug recorrente): fonte Manrope aplicada globalmente, navbar funcionando em todas as telas logadas, Dashboard redesenhado (cards, barra de progresso, lista de parados) — tudo funcionando.
+
 ## 2026-08-25 · Decisão — Design (1/N): fundação + Dashboard
 Início da fase de design visual. Reaproveitada a linguagem visual do próprio protótipo original (Claude Design), já aprovada por Caio quando o construiu: fonte Manrope (via `next/font/google`), fundo neutro-quente (#F8F4F4), cards brancos arredondados com sombra leve, paleta de status (verde #7E9B7E / âmbar #C08A3E / vermelho #B0655C) e botão escuro em pílula. Tokens centralizados em `lib/theme.ts` (cores, sombra, estilo de card/botão) pra reuso nas próximas telas, evitando repetir hexadecimais soltos. Criada `app/_nav/navbar.tsx`: barra de navegação persistente (Painel/Processos/Kanban/Agenda/Fornecedores/Coordenações/Gestores/Fiscais + Sair), no layout raiz, escondida em `/login`. `app/layout.tsx` aplica a fonte e o fundo globalmente — efeito imediato em todas as telas, mesmo sem redesenho de conteúdo ainda. Dashboard (`/dashboard`) redesenhado como primeira tela de exemplo: cards de estatística, barra de progresso por etapa, lista de processos parados com indicador colorido — lista de links soltos no rodapé removida (substituída pela navbar). Sem migração, sem mudança de dados/lógica.
 
