@@ -18,7 +18,7 @@ const LINKS = [
 
 export type Atividade = { label: string; count: number; href: string; dot: string };
 
-export default function Sidebar({ atividades }: { atividades: Atividade[] }) {
+export default function Sidebar({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
   const [aberta, setAberta] = useState(false);
 
@@ -99,45 +99,7 @@ export default function Sidebar({ atividades }: { atividades: Atividade[] }) {
         );
       })}
 
-      {atividades.length > 0 && (
-        <>
-          <div
-            style={{
-              fontSize: 10.5,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              color: cor.textoTerciario,
-              padding: "20px 12px 4px",
-            }}
-          >
-            Atividades
-          </div>
-          {atividades.map((a) => (
-            <Link
-              key={a.label}
-              href={a.href}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 12.5,
-                fontWeight: 500,
-                padding: "7px 12px",
-                borderRadius: 10,
-                color: cor.texto,
-                textDecoration: "none",
-              }}
-            >
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: a.dot, flex: "none" }} />
-              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {a.label}
-              </span>
-              <span style={{ fontSize: 11.5, fontWeight: 600, color: cor.textoTerciario }}>{a.count}</span>
-            </Link>
-          ))}
-        </>
-      )}
+      {children}
 
       <form action="/logout" method="post" style={{ marginTop: "auto", paddingTop: 12 }}>
         <button
