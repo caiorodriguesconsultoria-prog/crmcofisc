@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { botaoPrimario, cor } from "@/lib/theme";
 
 export default function NovoFornecedorForm() {
   const router = useRouter();
@@ -154,8 +155,8 @@ export default function NovoFornecedorForm() {
           style={{ display: "block", width: "100%", padding: 8 }}
         />
       </label>
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
-      <button type="submit" disabled={salvando} style={{ padding: 10 }}>
+      {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
+      <button type="submit" disabled={salvando} style={botaoPrimario}>
         {salvando ? "Salvando..." : "Criar fornecedor"}
       </button>
     </form>

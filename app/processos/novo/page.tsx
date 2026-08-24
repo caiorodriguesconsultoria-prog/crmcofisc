@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import NovoProcessoForm from "./form";
+import { card, cor } from "@/lib/theme";
 
 export default async function NovoProcessoPage() {
   const supabase = await createClient();
@@ -45,19 +46,21 @@ export default async function NovoProcessoPage() {
     .map((p: any) => ({ id: p.pessoa_id, nome: p.pessoas?.nome ?? "", coordenacaoId: p.coordenacao_id }));
 
   return (
-    <main style={{ padding: 32, maxWidth: 480 }}>
+    <main style={{ padding: 32, maxWidth: 480, margin: "0 auto" }}>
       <h1 style={{ fontSize: 20, marginBottom: 16 }}>Novo processo</h1>
       {erros.length > 0 && (
-        <p style={{ color: "#B0655C" }}>Erro ao carregar opções — {erros.join("; ")}</p>
+        <p style={{ color: cor.urgente }}>Erro ao carregar opções — {erros.join("; ")}</p>
       )}
-      <NovoProcessoForm
-        coordenacoes={coordenacoes ?? []}
-        fornecedores={fornecedores ?? []}
-        tags={tags ?? []}
-        pessoas={pessoas ?? []}
-        gestores={gestores}
-        fiscais={fiscais}
-      />
+      <div style={card}>
+        <NovoProcessoForm
+          coordenacoes={coordenacoes ?? []}
+          fornecedores={fornecedores ?? []}
+          tags={tags ?? []}
+          pessoas={pessoas ?? []}
+          gestores={gestores}
+          fiscais={fiscais}
+        />
+      </div>
     </main>
   );
 }

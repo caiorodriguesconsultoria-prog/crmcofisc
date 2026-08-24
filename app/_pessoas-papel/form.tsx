@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { botaoPrimario, card, cor } from "@/lib/theme";
 
 type Coordenacao = { id: string; sigla: string };
 
@@ -61,9 +62,9 @@ export default function NovaPessoaPapelForm({
   }
 
   return (
-    <main style={{ padding: 32, maxWidth: 480 }}>
+    <main style={{ padding: 32, maxWidth: 480, margin: "0 auto" }}>
       <h1 style={{ fontSize: 20, marginBottom: 16 }}>{titulo}</h1>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <form onSubmit={handleSubmit} style={{ ...card, display: "flex", flexDirection: "column", gap: 12 }}>
         <label>
           Nome
           <input
@@ -108,8 +109,8 @@ export default function NovaPessoaPapelForm({
             ))}
           </select>
         </label>
-        {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
-        <button type="submit" disabled={salvando} style={{ padding: 10 }}>
+        {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
+        <button type="submit" disabled={salvando} style={botaoPrimario}>
           {salvando ? "Salvando..." : "Criar cadastro"}
         </button>
       </form>

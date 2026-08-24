@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { card, cor } from "@/lib/theme";
 
 function formatarData(data: string | null) {
   return data ? new Date(data).toLocaleDateString("pt-BR") : "—";
@@ -46,66 +47,72 @@ export default async function FornecedorPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main style={{ padding: 32, maxWidth: 800 }}>
+    <main style={{ padding: 32, maxWidth: 800, margin: "0 auto" }}>
       <p>
         <Link href="/fornecedores">← Voltar</Link>
       </p>
-      <h1 style={{ fontSize: 20, marginTop: 12 }}>{fornecedor.nome}</h1>
-      <p style={{ color: "#605D5D" }}>{fornecedor.cnpj}</p>
-      <p>
-        Preposto: {fornecedor.preposto || "—"} · Telefone: {fornecedor.telefone || "—"}
-      </p>
-      <p>
-        E-mails:{" "}
-        {(fornecedor.fornecedor_emails ?? [])
-          .map((e: { email: string; rotulo: string | null }) =>
-            e.rotulo ? `${e.email} (${e.rotulo})` : e.email,
-          )
-          .join(", ") || "—"}
-      </p>
-      {fornecedor.endereco && <p>Endereço: {fornecedor.endereco}</p>}
+      <div style={{ ...card, marginTop: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+        <h1 style={{ fontSize: 20, margin: 0 }}>{fornecedor.nome}</h1>
+        <p style={{ color: cor.textoSecundario, margin: 0, fontSize: 13 }}>{fornecedor.cnpj}</p>
+        <p style={{ margin: 0, fontSize: 13 }}>
+          Preposto: {fornecedor.preposto || "—"} · Telefone: {fornecedor.telefone || "—"}
+        </p>
+        <p style={{ margin: 0, fontSize: 13 }}>
+          E-mails:{" "}
+          {(fornecedor.fornecedor_emails ?? [])
+            .map((e: { email: string; rotulo: string | null }) =>
+              e.rotulo ? `${e.email} (${e.rotulo})` : e.email,
+            )
+            .join(", ") || "—"}
+        </p>
+        {fornecedor.endereco && <p style={{ margin: 0, fontSize: 13 }}>Endereço: {fornecedor.endereco}</p>}
+      </div>
 
       <h2 style={{ fontSize: 16, marginTop: 24 }}>Contratos</h2>
 
       {erroContratos && (
-        <p style={{ color: "#B0655C" }}>Erro ao carregar: {erroContratos.message}</p>
+        <p style={{ color: cor.urgente }}>Erro ao carregar: {erroContratos.message}</p>
       )}
 
-      <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 8 }}>Contrato</th>
-            <th style={{ padding: 8 }}>Coord.</th>
-            <th style={{ padding: 8 }}>Valor global</th>
-            <th style={{ padding: 8 }}>Vigência</th>
-            <th style={{ padding: 8 }}>Etapa</th>
-            <th style={{ padding: 8 }}>Situação</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(contratos ?? []).map((c: any) => (
-            <tr key={c.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: 8 }}>
-                <Link href={`/processos/${c.id}`}>{c.numero_contrato}</Link>
-              </td>
-              <td style={{ padding: 8 }}>{c.coordenacoes?.sigla}</td>
-              <td style={{ padding: 8 }}>{formatarValor(c.valor_global)}</td>
-              <td style={{ padding: 8 }}>
-                {formatarData(c.vigencia_inicio)} – {formatarData(c.vigencia_fim)}
-              </td>
-              <td style={{ padding: 8 }}>{c.etapa_atual}</td>
-              <td style={{ padding: 8 }}>{c.situacao}</td>
+      <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 8 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
+              <th style={{ padding: "10px 12px" }}>Contrato</th>
+              <th style={{ padding: "10px 12px" }}>Coord.</th>
+              <th style={{ padding: "10px 12px" }}>Valor global</th>
+              <th style={{ padding: "10px 12px" }}>Vigência</th>
+              <th style={{ padding: "10px 12px" }}>Etapa</th>
+              <th style={{ padding: "10px 12px" }}>Situação</th>
             </tr>
-          ))}
-          {(contratos ?? []).length === 0 && (
-            <tr>
-              <td colSpan={6} style={{ padding: 8, color: "#7D7979" }}>
-                Nenhum contrato para este fornecedor.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {(contratos ?? []).map((c: any) => (
+              <tr key={c.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
+                <td style={{ padding: "10px 12px" }}>
+                  <Link href={`/processos/${c.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
+                    {c.numero_contrato}
+                  </Link>
+                </td>
+                <td style={{ padding: "10px 12px" }}>{c.coordenacoes?.sigla}</td>
+                <td style={{ padding: "10px 12px" }}>{formatarValor(c.valor_global)}</td>
+                <td style={{ padding: "10px 12px" }}>
+                  {formatarData(c.vigencia_inicio)} – {formatarData(c.vigencia_fim)}
+                </td>
+                <td style={{ padding: "10px 12px" }}>{c.etapa_atual}</td>
+                <td style={{ padding: "10px 12px" }}>{c.situacao}</td>
+              </tr>
+            ))}
+            {(contratos ?? []).length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
+                  Nenhum contrato para este fornecedor.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </main>
   );
 }

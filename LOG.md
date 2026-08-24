@@ -225,6 +225,9 @@ Caio testou em produção (após promoção manual acima): dropdown de tipos, "G
 ## 2026-08-24 · Acerto a repetir — Relatório (5/6): Conclusões confirmado
 Caio testou em produção (deploy precisou de promoção manual de novo — mesmo bug recorrente do dia 21/24): botões Regular/Irregular preenchendo checklist e texto padrão, edição/remoção de item, texto livre, sugestão de penalidade, Salvar persistindo, e espelho na aba Relatório — tudo funcionando.
 
+## 2026-08-25 · Decisão — Design (4/N): cadastros (Fornecedores, Coordenações, Gestores, Fiscais, Novo processo)
+Listas de Fornecedores, Coordenações e Gestores/Fiscais (componente compartilhado `_pessoas-papel/lista.tsx`, cobre as duas telas de uma vez) ganharam tabela em card e botão "+ Novo" em destaque (pílula escura). Detalhe do fornecedor ganhou cabeçalho em card. Formulários de criação (Novo fornecedor, Nova coordenação, Novo gestor/fiscal via `_pessoas-papel/form.tsx`, Novo processo) ganharam moldura em card e botão de salvar em destaque — campos internos (labels/inputs) não foram alterados, já herdam o estilo do `globals.css` (Design 2/N). Links "← Voltar" redundantes com a navbar removidos das 3 listas de topo (mantido no detalhe do fornecedor, que não está na navbar). Sem migração, sem mudança de lógica.
+
 ## 2026-08-25 · Decisão — Design (3/N): Kanban + Agenda
 Kanban: colunas com fundo neutro-quente (mesmo tom do fundo geral), cards brancos arredondados com sombra leve, barra de progresso na cor de status positivo, link "← Voltar" removido (redundante com a navbar). Agenda: link do .ics movido pra dentro de um card, calendário mensal também em card, células do dia com cantos arredondados, prazos do dia como pílula colorida em vez de bloco sólido vermelho. Nenhuma mudança de lógica/dado em nenhum dos dois — drag-and-drop do Kanban e navegação de mês da Agenda continuam iguais. Sem migração.
 
