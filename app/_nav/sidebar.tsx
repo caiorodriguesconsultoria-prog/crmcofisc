@@ -32,7 +32,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
     <>
       <button
         type="button"
-        className="crm-sidebar-toggle"
+        className={`crm-sidebar-toggle${aberta ? " recuado" : ""}`}
         aria-label="Abrir menu"
         onClick={() => setAberta(true)}
         style={{ width: 38, height: 38, borderRadius: "50%", padding: 0, alignItems: "center", justifyContent: "center" }}
@@ -44,10 +44,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
         className={`crm-sidebar${aberta ? " aberta" : ""}`}
         style={{
           flex: "none",
-          width: 240,
           height: "100vh",
-          position: "sticky",
-          top: 0,
           background: cor.branco,
           borderRight: `1px solid ${cor.borda}`,
           padding: "18px 14px",

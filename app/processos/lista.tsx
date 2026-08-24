@@ -51,6 +51,7 @@ export default function ListaProcessos({
   const [responsavelId, setResponsavelId] = useState("");
   const [sei, setSei] = useState("");
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
+  const [busca, setBusca] = useState("");
 
   // Se o usuário já tinha visitado /processos antes, o Next reaproveita essa
   // mesma instância do componente ao clicar num atalho de Atividades (mesma
@@ -62,6 +63,7 @@ export default function ListaProcessos({
   }, [searchParams]);
 
   const filtrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
     return processos.filter((p) => {
       if (coordenacaoId && p.coordenacao_id !== coordenacaoId) return false;
       if (formaEntregaId && p.forma_entrega_tag_id !== formaEntregaId) return false;
@@ -70,19 +72,34 @@ export default function ListaProcessos({
       if (etapa && p.etapa_atual !== etapa) return false;
       if (sei === "com" && !p.processo_eletronico_numero) return false;
       if (sei === "sem" && p.processo_eletronico_numero) return false;
+      if (
+        termo &&
+        !p.numero_contrato.toLowerCase().includes(termo) &&
+        !p.nup_principal.toLowerCase().includes(termo) &&
+        !p.objeto.toLowerCase().includes(termo)
+      )
+        return false;
       return true;
     });
-  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, sei]);
+  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, sei, busca]);
 
   return (
     <div>
+      <input
+        type="search"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar por contrato, NUP ou objeto..."
+        style={{ width: "100%", padding: "10px 14px", marginTop: 16 }}
+      />
+
       <div
         style={{
           ...card,
           display: "flex",
           gap: 8,
           flexWrap: "wrap",
-          marginTop: 16,
+          marginTop: 10,
           padding: 14,
         }}
       >

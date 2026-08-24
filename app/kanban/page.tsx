@@ -34,7 +34,7 @@ export default async function KanbanPage() {
   const { data: processos, error } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, titular_id, responsavel_atual_id, coordenacoes(sigla), titular:pessoas!processos_titular_id_fkey(nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(nome)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, titular_id, responsavel_atual_id, coordenacoes(sigla), titular:pessoas!processos_titular_id_fkey(nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_tags(tags(id, valor))",
     )
     .order("created_at", { ascending: false });
 
@@ -71,6 +71,9 @@ export default async function KanbanPage() {
     const progresso = origemId ? progressoPorOrigem.get(origemId) : undefined;
     const dias = diasRestantes(p.prazo_data);
     const emCobertura = !!p.titular_id && p.responsavel_atual_id !== p.titular_id;
+    const tags = (p.processo_tags ?? [])
+      .map((pt: any) => pt.tags)
+      .filter((t: any): t is { id: string; valor: string } => !!t);
     return {
       id: p.id,
       numeroContrato: p.numero_contrato,
@@ -85,6 +88,7 @@ export default async function KanbanPage() {
       nomeExibido: emCobertura ? p.responsavel?.nome ?? "" : p.titular?.nome ?? "",
       tarefasTotal: progresso?.total ?? 0,
       tarefasConcluidas: progresso?.concluidas ?? 0,
+      tags,
     };
   });
 

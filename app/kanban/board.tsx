@@ -21,6 +21,7 @@ type Card = {
   nomeExibido: string;
   tarefasTotal: number;
   tarefasConcluidas: number;
+  tags: { id: string; valor: string }[];
 };
 
 type Coluna = { nome: string; cards: Card[] };
@@ -175,6 +176,26 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
                   </div>
 
                   <div style={{ fontSize: 12.5, lineHeight: 1.4, color: cor.texto }}>{card.objeto}</div>
+
+                  {card.tags.length > 0 && (
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {card.tags.map((t) => (
+                        <span
+                          key={t.id}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            color: cor.destaque,
+                            background: cor.destaqueFundo,
+                            borderRadius: 7,
+                            padding: "2px 7px",
+                          }}
+                        >
+                          {t.valor}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   {card.emCobertura && (
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
