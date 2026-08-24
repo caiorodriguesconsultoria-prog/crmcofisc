@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
+import { BotaoCopiar } from "@/app/_ui/campo";
 
 type Andamento = {
   id: string;
@@ -102,14 +103,6 @@ export default function Andamentos({
     router.refresh();
   }
 
-  async function copiar(texto: string) {
-    try {
-      await navigator.clipboard.writeText(texto);
-    } catch {
-      // sem permissão de clipboard — ignora silenciosamente
-    }
-  }
-
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <strong>Andamentos</strong>
@@ -139,9 +132,7 @@ export default function Andamentos({
                 />
                 Incluir no relatório
               </label>
-              <button type="button" onClick={() => copiar(a.texto)} style={{ fontSize: 10.5, padding: "3px 8px" }}>
-                copiar
-              </button>
+              <BotaoCopiar texto={a.texto} />
             </div>
           </div>
         ))}

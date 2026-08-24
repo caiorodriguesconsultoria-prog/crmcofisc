@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cor } from "@/lib/theme";
+import { BotaoCopiar } from "@/app/_ui/campo";
 
 type Card = {
   id: string;
@@ -23,14 +24,6 @@ type Card = {
 };
 
 type Coluna = { nome: string; cards: Card[] };
-
-async function copiar(texto: string) {
-  try {
-    await navigator.clipboard.writeText(texto);
-  } catch {
-    // sem permissão de clipboard — ignora silenciosamente
-  }
-}
 
 function corPrazo(dias: number | null) {
   if (dias === null) return null;
@@ -145,21 +138,25 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                    <div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <Link href={`/processos/${card.id}`} style={{ fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
                         {card.numeroContrato}
                       </Link>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-                        <span style={{ fontSize: 11, color: cor.textoSecundario }}>{card.nup}</span>
-                        {card.nup && (
-                          <button
-                            type="button"
-                            onClick={() => copiar(card.nup)}
-                            style={{ fontSize: 9.5, padding: "1px 6px", border: "none", background: "transparent", color: cor.textoTerciario }}
-                          >
-                            copiar
-                          </button>
-                        )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, minWidth: 0 }}>
+                        <span
+                          title={card.nup}
+                          style={{
+                            fontSize: 11,
+                            color: cor.textoSecundario,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            minWidth: 0,
+                          }}
+                        >
+                          {card.nup}
+                        </span>
+                        <BotaoCopiar texto={card.nup} />
                       </div>
                     </div>
                     <span

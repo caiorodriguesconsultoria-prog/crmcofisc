@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, card, cor } from "@/lib/theme";
+import { BotaoCopiar } from "@/app/_ui/campo";
 
 type Responsavel = { id: string; papelId: string; nome: string; email: string | null; ramal: string | null; papel: "coordenador" | "substituto" };
 
@@ -22,15 +23,6 @@ async function copiar(texto: string) {
   } catch {
     // sem permissão de clipboard — ignora silenciosamente
   }
-}
-
-function BotaoCopiar({ texto }: { texto: string }) {
-  if (!texto) return null;
-  return (
-    <button type="button" onClick={() => copiar(texto)} style={{ fontSize: 10.5, padding: "2px 8px" }}>
-      copiar
-    </button>
-  );
 }
 
 function rotuloPapel(papel: string) {

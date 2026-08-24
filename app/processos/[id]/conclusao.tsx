@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
+import { BotaoCopiar } from "@/app/_ui/campo";
 
 type Tipo = "Regular" | "Irregular";
 
@@ -91,12 +92,8 @@ export default function Conclusao({
     router.refresh();
   }
 
-  async function copiar(t: string, p: string | null) {
-    try {
-      await navigator.clipboard.writeText(t + (p ? `\n\nSugestão de penalidade: ${p}` : ""));
-    } catch {
-      // sem permissão de clipboard — ignora silenciosamente
-    }
+  function textoCopia(t: string, p: string | null) {
+    return t + (p ? `\n\nSugestão de penalidade: ${p}` : "");
   }
 
   if (!editando) {
@@ -142,13 +139,9 @@ export default function Conclusao({
                 <strong>Sugestão de penalidade:</strong> {conclusao.penalidade}
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => copiar(conclusao.texto ?? "", conclusao.penalidade)}
-              style={{ fontSize: 10.5, padding: "3px 8px", marginTop: 8 }}
-            >
-              copiar
-            </button>
+            <div style={{ marginTop: 8 }}>
+              <BotaoCopiar texto={textoCopia(conclusao.texto ?? "", conclusao.penalidade)} />
+            </div>
           </div>
         )}
       </section>
@@ -229,13 +222,9 @@ export default function Conclusao({
             </label>
           )}
 
-          <button
-            type="button"
-            onClick={() => copiar(texto, tipo === "Irregular" ? penalidade : null)}
-            style={{ alignSelf: "flex-start", fontSize: 10.5, padding: "3px 8px" }}
-          >
-            copiar
-          </button>
+          <div style={{ alignSelf: "flex-start" }}>
+            <BotaoCopiar texto={textoCopia(texto, tipo === "Irregular" ? penalidade : null)} />
+          </div>
         </div>
       )}
 
