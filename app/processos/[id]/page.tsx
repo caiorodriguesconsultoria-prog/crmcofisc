@@ -15,7 +15,7 @@ import Abas from "./abas";
 import QuadroResumitivo from "./relatorio/quadro-resumitivo";
 import CronogramaRelatorio from "./relatorio/cronograma-relatorio";
 import PautaDistribuicao from "./relatorio/pauta-distribuicao";
-import DadosEntrega from "./relatorio/dados-entrega";
+import EntregasLazy from "./entregas-lazy";
 import Ocorrencias from "./relatorio/ocorrencias";
 import ConclusaoRelatorio from "./relatorio/conclusao-relatorio";
 import { card, cor, pill } from "@/lib/theme";
@@ -64,8 +64,9 @@ export default async function ProcessoPage({
   const { id } = await params;
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/login");
@@ -97,7 +98,6 @@ export default async function ProcessoPage({
     { data: nups },
     { data: execucoes },
     { data: pauta },
-    { data: entregas },
     { data: kanbanAtivo },
     { data: tagHistoricoAtivo },
   ] = await Promise.all([
@@ -142,13 +142,6 @@ export default async function ProcessoPage({
     supabase
       .from("processo_pauta_distribuicao")
       .select("id, uf, quantidade")
-      .eq("processo_id", id)
-      .order("created_at"),
-    supabase
-      .from("processo_entregas")
-      .select(
-        "id, local_entrega, quantidade, valor_total_nf, danfe_venda, danfe_remessa, lote, data_fabricacao, data_validade, data_entrega, responsavel, atraso_dias, percentual_transcurso",
-      )
       .eq("processo_id", id)
       .order("created_at"),
     supabase
@@ -374,7 +367,7 @@ export default async function ProcessoPage({
         <div style={card}>
           <span style={rotuloSecao}>4. Execução do contrato</span>
           <PautaDistribuicao processoId={id} pauta={(pauta ?? []) as any} />
-          <DadosEntrega processoId={id} entregas={(entregas ?? []) as any} />
+          <EntregasLazy processoId={id} />
         </div>
 
         <div style={card}>

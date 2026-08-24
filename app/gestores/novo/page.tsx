@@ -5,8 +5,9 @@ import NovaPessoaPapelForm from "../../_pessoas-papel/form";
 export default async function NovoGestorPage() {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/login");

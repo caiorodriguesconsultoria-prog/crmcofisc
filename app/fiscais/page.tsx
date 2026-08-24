@@ -5,8 +5,9 @@ import ListaPessoasPapel from "../_pessoas-papel/lista";
 export default async function FiscaisPage() {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/login");
