@@ -7,6 +7,16 @@ import PautaDistribuicao from "./pauta-distribuicao";
 import DadosEntrega from "./dados-entrega";
 import Ocorrencias from "./ocorrencias";
 import ConclusaoRelatorio from "./conclusao-relatorio";
+import { card, cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
+
+const rotuloSecao: React.CSSProperties = {
+  fontSize: 11.5,
+  fontWeight: 600,
+  color: cor.destaque,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+};
 
 export default async function RelatorioPage({
   params,
@@ -65,37 +75,48 @@ export default async function RelatorioPage({
     .order("data");
 
   return (
-    <main style={{ padding: 32, maxWidth: 760 }}>
-      <p>
-        <Link href={`/processos/${id}`}>← Voltar ao processo</Link>
-      </p>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
-        <h1 style={{ fontSize: 20 }}>Relatório — {p.numero_contrato}</h1>
-        <Link href={`/processos/${id}/relatorio/pdf`}>Exportar PDF →</Link>
+    <Painel
+      titulo={`Relatório — ${p.numero_contrato}`}
+      voltarHref={`/processos/${id}`}
+      maxWidth={800}
+      acao={<Link href={`/processos/${id}/relatorio/pdf`}>Exportar PDF →</Link>}
+    >
+      {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {(error as any).message}</p>}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={card}>
+          <span style={rotuloSecao}>1. Quadro resumitivo</span>
+          <QuadroResumitivo processoId={id} processo={p} />
+        </div>
+
+        <div style={card}>
+          <span style={rotuloSecao}>3. Cronograma de entrega</span>
+          <CronogramaRelatorio execucoes={(execucoes ?? []) as any} />
+        </div>
+
+        <div style={card}>
+          <span style={rotuloSecao}>4. Execução do contrato</span>
+          <PautaDistribuicao processoId={id} pauta={(pauta ?? []) as any} />
+          <DadosEntrega processoId={id} entregas={(entregas ?? []) as any} />
+        </div>
+
+        <div style={card}>
+          <span style={rotuloSecao}>5. Ocorrências</span>
+          <Ocorrencias andamentos={(andamentosIncluidos ?? []) as any} />
+        </div>
+
+        <div style={card}>
+          <span style={rotuloSecao}>8. Conclusões</span>
+          <ConclusaoRelatorio
+            conclusao={{
+              tipo: p.conclusao_tipo,
+              checks: p.conclusao_checks,
+              texto: p.conclusao_texto,
+              penalidade: p.conclusao_penalidade,
+            }}
+          />
+        </div>
       </div>
-
-      {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {(error as any).message}</p>}
-
-      <QuadroResumitivo processoId={id} processo={p} />
-
-      <CronogramaRelatorio execucoes={(execucoes ?? []) as any} />
-
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>Execução do contrato</h2>
-
-      <PautaDistribuicao processoId={id} pauta={(pauta ?? []) as any} />
-
-      <DadosEntrega processoId={id} entregas={(entregas ?? []) as any} />
-
-      <Ocorrencias andamentos={(andamentosIncluidos ?? []) as any} />
-
-      <ConclusaoRelatorio
-        conclusao={{
-          tipo: p.conclusao_tipo,
-          checks: p.conclusao_checks,
-          texto: p.conclusao_texto,
-          penalidade: p.conclusao_penalidade,
-        }}
-      />
-    </main>
+    </Painel>
   );
 }

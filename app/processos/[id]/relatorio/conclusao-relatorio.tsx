@@ -7,8 +7,7 @@ type Conclusao = {
 
 export default function ConclusaoRelatorio({ conclusao }: { conclusao: Conclusao }) {
   return (
-    <div style={{ marginTop: 16 }}>
-      <strong>Conclusões</strong>
+    <div style={{ marginTop: 8 }}>
       {!conclusao.tipo ? (
         <p style={{ color: "#7D7979", marginTop: 4 }}>Ainda não definida.</p>
       ) : (

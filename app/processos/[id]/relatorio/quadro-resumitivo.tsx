@@ -180,9 +180,8 @@ export default function QuadroResumitivo({
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <strong>Quadro resumitivo</strong>
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         {!editando ? (
           <button onClick={() => setEditando(true)}>Editar</button>
         ) : (

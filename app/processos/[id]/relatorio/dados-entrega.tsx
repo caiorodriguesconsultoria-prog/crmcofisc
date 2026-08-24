@@ -99,8 +99,8 @@ export default function DadosEntrega({ processoId, entregas }: { processoId: str
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <strong>Dados de entrega</strong>
+    <div style={{ marginTop: 20 }}>
+      <strong style={{ fontSize: 13 }}>Dados de entrega</strong>
       <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
         Atraso e % de transcurso não são calculados automaticamente — preencha manualmente.
       </p>

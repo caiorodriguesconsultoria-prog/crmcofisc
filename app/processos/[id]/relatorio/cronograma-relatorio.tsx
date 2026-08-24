@@ -22,9 +22,8 @@ export default function CronogramaRelatorio({ execucoes }: { execucoes: Execucao
   const total = execucoes.reduce((soma, e) => soma + Number(e.quantidade), 0);
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <strong>Cronograma de entrega</strong>
-      <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse" }}>
+    <div style={{ marginTop: 8 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
             <th style={{ padding: 6 }}>Parcela</th>

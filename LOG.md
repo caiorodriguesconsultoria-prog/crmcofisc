@@ -234,6 +234,9 @@ A primeira implementação (tabela `coordenacao_contatos` nova + tela de detalhe
 ## 2026-08-25 · Acerto a repetir — Kanban: cards no formato do protótipo confirmado
 Caio testou em produção: NUP, objeto, prazo colorido, "Aguarda", badge de cobertura de férias e arrastar-e-soltar entre colunas — tudo funcionando.
 
+## 2026-08-25 · Decisão — Design: Relatório com painel flutuante + rótulos numerados
+Tela `/processos/[id]/relatorio` ganhou o painel flutuante responsivo e cada seção virou um card com rótulo numerado em âmbar (1. Quadro resumitivo, 3. Cronograma de entrega, 4. Execução do contrato, 5. Ocorrências, 8. Conclusões — mesma numeração usada na exportação em PDF), removendo os títulos duplicados que cada componente já tinha internamente. Página de exportação em PDF (`/processos/[id]/relatorio/pdf`) não recebeu o painel flutuante de propósito — é uma tela voltada pra impressão, o chrome de painel não faz sentido ali. Sem mudança de dados/lógica.
+
 ## 2026-08-25 · Decisão — Painel do processo: fidelidade nas seções restantes
 Continuação da fidelização ao protótipo nas 6 seções que faltavam: Cobertura (linhas de campo com `CampoLinha`), Painel/kanban+eventos (eventos ativos viraram pílulas removíveis com "×", em vez de lista com botão "remover"), Cronograma (situação como pílula colorida por status, botão "+ Adicionar entrega" com borda tracejada), Checklist (checkbox customizado quadrado com ✓, barra de progresso por grupo), Andamentos ("Gerar com IA" com destaque âmbar, tipografia/cores padronizadas), Conclusões (botões Regular/Irregular como pílula preenchida quando ativo, em vez de só negrito). Nenhuma mudança de dado/lógica — só o visual (cores, ícones, pílulas), reaproveitando os tokens de `lib/theme.ts` e o `CampoLinha` já usado em NUPs/Prazo/Gestão e Fiscalização.
 

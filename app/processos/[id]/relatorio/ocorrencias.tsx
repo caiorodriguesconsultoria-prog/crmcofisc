@@ -2,8 +2,7 @@ type Andamento = { id: string; texto: string };
 
 export default function Ocorrencias({ andamentos }: { andamentos: Andamento[] }) {
   return (
-    <div style={{ marginTop: 16 }}>
-      <strong>Ocorrências</strong>
+    <div style={{ marginTop: 8 }}>
       {andamentos.length === 0 ? (
         <p style={{ color: "#7D7979", marginTop: 4 }}>Nenhum andamento marcado para inclusão.</p>
       ) : (

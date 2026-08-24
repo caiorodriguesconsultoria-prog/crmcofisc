@@ -57,8 +57,8 @@ export default function PautaDistribuicao({ processoId, pauta }: { processoId: s
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <strong>Pauta de distribuição</strong>
+    <div style={{ marginTop: 8 }}>
+      <strong style={{ fontSize: 13 }}>Pauta de distribuição</strong>
       <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
         Forma de entrega: {formaEntrega}
       </p>
