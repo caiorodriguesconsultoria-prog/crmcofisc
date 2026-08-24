@@ -11,6 +11,33 @@ import Prazo from "./prazo";
 import Cronograma from "./cronograma";
 import Conclusao from "./conclusao";
 import { card, cor, pill } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
+
+function diasRestantes(prazoData: string | null) {
+  if (!prazoData) return null;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const prazo = new Date(`${prazoData}T00:00:00`);
+  return Math.round((prazo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function corPrazo(dias: number | null) {
+  if (dias === null) return null;
+  if (dias <= 0) return cor.urgente;
+  if (dias <= 7) return cor.atencao;
+  return cor.positivo;
+}
+
+function textoPrazo(dias: number | null) {
+  if (dias === null) return null;
+  if (dias < 0) return "vencido";
+  if (dias === 0) return "hoje";
+  return `em ${dias} dias`;
+}
+
+function formatarData(data: string | null) {
+  return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "";
+}
 
 export default async function ProcessoPage({
   params,
@@ -162,22 +189,37 @@ export default async function ProcessoPage({
 
   const secao: React.CSSProperties = { ...card, marginTop: 16 };
 
+  const grupoKanban = gruposTarefas.find((g) => g.origemTipo === "kanban");
+  const aguardando = grupoKanban?.tarefas.find((t) => !t.concluida)?.label ?? null;
+  const dias = diasRestantes(p.prazo_data);
+  const dot = corPrazo(dias);
+
   return (
-    <main style={{ padding: 32, maxWidth: 720, margin: "0 auto" }}>
-      <div style={{ ...card, display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h1 style={{ fontSize: 20, margin: 0 }}>{p.numero_contrato}</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
-            <Link href={`/processos/${p.id}/relatorio`}>Ver Relatório →</Link>
+    <Painel
+      titulo={p.numero_contrato}
+      subtitulo={`${p.nup_principal} · ${p.coordenacoes?.sigla ?? ""} · ${p.fornecedores?.nome ?? ""}`}
+      voltarHref="/processos"
+      maxWidth={760}
+      acao={<Link href={`/processos/${p.id}/relatorio`}>Ver Relatório →</Link>}
+    >
+      <div style={{ ...card, display: "flex", alignItems: "center", gap: 10 }}>
+        {dias !== null && (
+          <span style={{ width: 9, height: 9, borderRadius: "50%", background: dot ?? undefined, flex: "none" }} />
+        )}
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>
+            {dias !== null ? `${formatarData(p.prazo_data)} · ${textoPrazo(dias)}` : "Sem prazo definido"}
           </div>
+          {aguardando && (
+            <div style={{ fontSize: 11.5, color: cor.textoSecundario, marginTop: 2 }}>Aguarda: {aguardando}</div>
+          )}
         </div>
-        <p style={{ color: cor.textoSecundario, margin: 0, fontSize: 13 }}>{p.nup_principal}</p>
-        <p style={{ margin: 0 }}>{p.objeto}</p>
-        <p style={{ margin: 0, fontSize: 13, color: cor.textoTerciario }}>
-          Coordenação: {p.coordenacoes?.sigla} · Fornecedor: {p.fornecedores?.nome}
-        </p>
+        <span style={{ ...pill, marginLeft: "auto", background: cor.destaqueFundo, color: cor.destaque }}>
+          {p.etapa_atual}
+        </span>
       </div>
+
+      <p style={{ margin: "12px 0 0", fontSize: 13.5 }}>{p.objeto}</p>
 
       <div style={secao}>
         <Cobertura
@@ -276,6 +318,6 @@ export default async function ProcessoPage({
           ))}
         </ul>
       </div>
-    </main>
+    </Painel>
   );
 }

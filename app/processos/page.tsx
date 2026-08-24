@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListaProcessos from "./lista";
 import { botaoPrimario, cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 export default async function ProcessosPage() {
   const supabase = await createClient();
@@ -34,20 +35,16 @@ export default async function ProcessosPage() {
   ]);
 
   return (
-    <main style={{ padding: 32, maxWidth: 1100, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1 style={{ fontSize: 20 }}>Processos</h1>
+    <Painel
+      titulo="Processos"
+      voltarHref="/dashboard"
+      maxWidth={1100}
+      acao={
         <Link href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
           + Novo processo
         </Link>
-      </div>
-
+      }
+    >
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
       <ListaProcessos
@@ -57,6 +54,6 @@ export default async function ProcessosPage() {
         eventos={eventos ?? []}
         responsaveis={responsaveis ?? []}
       />
-    </main>
+    </Painel>
   );
 }
