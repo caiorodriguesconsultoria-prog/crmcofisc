@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PainelDashboard from "./painel-dashboard";
+import { cor } from "@/lib/theme";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -51,42 +51,17 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main style={{ padding: 32 }}>
-      <h1 style={{ fontSize: 20 }}>CRM-COFISC</h1>
-      <p>Logado como {user.email}</p>
+    <main style={{ padding: 32, maxWidth: 900, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 20 }}>Painel</h1>
+      <p style={{ color: cor.textoTerciario, fontSize: 13 }}>Logado como {user.email}</p>
 
-      {erro && <p style={{ color: "#B0655C" }}>Erro ao carregar: {erro.message}</p>}
+      {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro.message}</p>}
 
       <PainelDashboard
         processos={processosComTempo}
         contagemPorEtapa={contagemPorEtapa}
         eventosAtivos={eventosAtivos ?? 0}
       />
-
-      <p style={{ marginTop: 24 }}>
-        <Link href="/processos">Ver processos →</Link>
-      </p>
-      <p>
-        <Link href="/kanban">Ver kanban →</Link>
-      </p>
-      <p>
-        <Link href="/agenda">Ver agenda →</Link>
-      </p>
-      <p>
-        <Link href="/fornecedores">Ver fornecedores →</Link>
-      </p>
-      <p>
-        <Link href="/coordenacoes">Ver coordenações →</Link>
-      </p>
-      <p>
-        <Link href="/gestores">Ver gestores →</Link>
-      </p>
-      <p>
-        <Link href="/fiscais">Ver fiscais →</Link>
-      </p>
-      <form action="/logout" method="post">
-        <button type="submit">Sair</button>
-      </form>
     </main>
   );
 }

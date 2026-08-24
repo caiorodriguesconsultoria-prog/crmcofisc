@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { card, cor } from "@/lib/theme";
 
 type Processo = {
   id: string;
@@ -25,53 +26,101 @@ export default function PainelDashboard({
     .filter((p) => p.diasParado !== null && p.diasParado >= limiteDias)
     .sort((a, b) => (b.diasParado ?? 0) - (a.diasParado ?? 0));
 
+  const maiorEtapa = Math.max(1, ...Object.values(contagemPorEtapa));
+
   return (
-    <div style={{ marginTop: 16 }}>
-      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-        <div>
-          <strong>Total de processos</strong>
-          <p style={{ fontSize: 24, margin: 0 }}>{processos.length}</p>
+    <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ ...card, flex: "1 1 160px" }}>
+          <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
+            Total de processos
+          </span>
+          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0" }}>{processos.length}</p>
         </div>
-        <div>
-          <strong>Eventos ativos</strong>
-          <p style={{ fontSize: 24, margin: 0 }}>{eventosAtivos}</p>
+        <div style={{ ...card, flex: "1 1 160px" }}>
+          <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
+            Eventos ativos
+          </span>
+          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0" }}>{eventosAtivos}</p>
+        </div>
+        <div style={{ ...card, flex: "1 1 160px" }}>
+          <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
+            Parados (limite atual)
+          </span>
+          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0", color: parados.length > 0 ? cor.urgente : cor.texto }}>
+            {parados.length}
+          </p>
         </div>
       </div>
 
-      <div style={{ marginTop: 16 }}>
-        <strong>Processos por etapa</strong>
-        <ul style={{ marginTop: 4 }}>
+      <div style={card}>
+        <strong style={{ fontSize: 13 }}>Processos por etapa</strong>
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
           {Object.entries(contagemPorEtapa).map(([etapa, n]) => (
-            <li key={etapa}>
-              {etapa}: {n}
-            </li>
+            <div key={etapa} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 12.5, flex: "0 0 220px" }}>{etapa}</span>
+              <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(32,31,29,.08)", overflow: "hidden" }}>
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: 4,
+                    background: cor.positivo,
+                    width: `${(n / maiorEtapa) * 100}%`,
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: cor.textoTerciario, width: 24, textAlign: "right" }}>
+                {n}
+              </span>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
 
-      <div style={{ marginTop: 16 }}>
-        <label>
-          Considerar parado a partir de{" "}
-          <input
-            type="number"
-            min={1}
-            value={limiteDias}
-            onChange={(e) => setLimiteDias(Number(e.target.value) || 1)}
-            style={{ width: 60, padding: 4 }}
-          />{" "}
-          dias na mesma etapa
-        </label>
-        <ul style={{ marginTop: 8 }}>
+      <div style={card}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <strong style={{ fontSize: 13 }}>Processos parados</strong>
+          <label style={{ marginLeft: "auto", fontSize: 12, color: cor.textoTerciario }}>
+            a partir de{" "}
+            <input
+              type="number"
+              min={1}
+              value={limiteDias}
+              onChange={(e) => setLimiteDias(Number(e.target.value) || 1)}
+              style={{ width: 50, padding: 4, borderRadius: 6, border: `1px solid ${cor.borda}` }}
+            />{" "}
+            dias na mesma etapa
+          </label>
+        </div>
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
           {parados.length === 0 && (
-            <li style={{ color: "#7D7979" }}>Nenhum processo parado além do limite.</li>
+            <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>
+              Nenhum processo parado além do limite.
+            </p>
           )}
           {parados.map((p) => (
-            <li key={p.id}>
-              <Link href={`/processos/${p.id}`}>{p.numeroContrato}</Link> — {p.etapaAtual} há{" "}
-              {p.diasParado} dias
-            </li>
+            <Link
+              key={p.id}
+              href={`/processos/${p.id}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "9px 11px",
+                borderRadius: 12,
+                background: cor.fundo,
+                textDecoration: "none",
+                color: cor.texto,
+                fontSize: 12.5,
+              }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: cor.urgente, flex: "none" }} />
+              <strong>{p.numeroContrato}</strong>
+              <span style={{ color: cor.textoTerciario }}>{p.etapaAtual}</span>
+              <span style={{ marginLeft: "auto", color: cor.textoTerciario }}>há {p.diasParado} dias</span>
+            </Link>
           ))}
-        </ul>
+        </div>
       </div>
     </div>
   );
