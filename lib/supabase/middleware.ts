@@ -1,10 +1,5 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { jwtVerify } from "jose/jwt/verify";
-
-const jwtSecret = process.env.SUPABASE_JWT_SECRET
-  ? new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET)
-  : null;
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -32,32 +27,27 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  if (jwtSecret) {
-    // getSession() lê da sessão local (cookie) e só faz chamada de rede se o
-    // token estiver perto de expirar (renovação via refresh token) — no caso
-    // comum, não tem round-trip pro Supabase.
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+  // getSession() lê da sessão local (cookie) e só faz chamada de rede se o
+  // token estiver perto de expirar (renovação via refresh token) — no caso
+  // comum, não tem round-trip pro Supabase.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-    if (session) {
-      try {
-        // valida a assinatura do token localmente, sem round-trip pro Supabase
-        // — mesma garantia criptográfica que getUser() checaria no servidor.
-        await jwtVerify(session.access_token, jwtSecret, { algorithms: ["HS256"] });
-      } catch {
-        // token inválido/adulterado: derruba a sessão pra nenhuma página aceitá-la
-        for (const cookie of request.cookies.getAll()) {
-          if (cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token")) {
-            response.cookies.delete(cookie.name);
-          }
+  if (session) {
+    // getClaims() valida a assinatura do token — com as JWT Signing Keys
+    // (chave assimétrica) do projeto, isso é feito localmente via cache de
+    // JWKS, sem round-trip pro Supabase; só cai pra chamada de rede (getUser())
+    // se o token ainda for do formato antigo (segredo simétrico legado).
+    const { error } = await supabase.auth.getClaims(session.access_token);
+    if (error) {
+      // token inválido/expirado/adulterado: derruba a sessão pra nenhuma página aceitá-la
+      for (const cookie of request.cookies.getAll()) {
+        if (cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token")) {
+          response.cookies.delete(cookie.name);
         }
       }
     }
-  } else {
-    // SUPABASE_JWT_SECRET não configurado: mantém a checagem via rede,
-    // que já revalida a sessão de verdade a cada requisição.
-    await supabase.auth.getUser();
   }
 
   return response;
