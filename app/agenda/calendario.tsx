@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { card, cor } from "@/lib/theme";
 
 type Prazo = {
   id: string;
@@ -71,19 +72,22 @@ export default function Calendario({ prazos }: { prazos: Prazo[] }) {
     ano === hoje.getFullYear() && mes === hoje.getMonth() && dia === hoje.getDate();
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+    <div style={{ ...card, marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <button onClick={() => mudarMes(-1)}>← Anterior</button>
-        <strong>
+        <strong style={{ fontSize: 14 }}>
           {MESES[mes]} {ano}
         </strong>
         <button onClick={() => mudarMes(1)}>Próximo →</button>
         <button onClick={irParaHoje}>Hoje</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 5 }}>
         {DIAS_SEMANA.map((d) => (
-          <div key={d} style={{ fontSize: 12, fontWeight: "bold", textAlign: "center", padding: 4 }}>
+          <div
+            key={d}
+            style={{ fontSize: 11, fontWeight: 700, textAlign: "center", padding: 4, color: cor.textoTerciario }}
+          >
             {d}
           </div>
         ))}
@@ -96,14 +100,20 @@ export default function Calendario({ prazos }: { prazos: Prazo[] }) {
             <div
               key={dia}
               style={{
-                minHeight: 72,
-                border: "1px solid #eee",
-                borderRadius: 4,
-                padding: 4,
-                background: ehHoje(dia) ? "#F5F4F3" : "transparent",
+                minHeight: 76,
+                border: `1px solid ${cor.borda}`,
+                borderRadius: 10,
+                padding: 5,
+                background: ehHoje(dia) ? cor.fundo : "transparent",
               }}
             >
-              <div style={{ fontSize: 12, color: ehHoje(dia) ? "#000" : "#7D7979", fontWeight: ehHoje(dia) ? "bold" : "normal" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: ehHoje(dia) ? cor.texto : cor.textoTerciario,
+                  fontWeight: ehHoje(dia) ? 700 : 400,
+                }}
+              >
                 {dia}
               </div>
               {prazosDoDia.map((p) => (
@@ -112,15 +122,17 @@ export default function Calendario({ prazos }: { prazos: Prazo[] }) {
                   href={`/processos/${p.id}`}
                   style={{
                     display: "block",
-                    fontSize: 11,
-                    marginTop: 2,
-                    padding: "1px 3px",
-                    background: "#B0655C",
-                    color: "#fff",
-                    borderRadius: 2,
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                    marginTop: 3,
+                    padding: "2px 5px",
+                    background: cor.urgenteFundo,
+                    color: cor.urgente,
+                    borderRadius: 6,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
+                    textDecoration: "none",
                   }}
                   title={`${p.numeroContrato} — ${p.fornecedorNome}`}
                 >
@@ -133,7 +145,9 @@ export default function Calendario({ prazos }: { prazos: Prazo[] }) {
       </div>
 
       {prazos.length === 0 && (
-        <p style={{ color: "#7D7979", marginTop: 12 }}>Nenhum processo com prazo definido.</p>
+        <p style={{ color: cor.textoTerciario, marginTop: 12, fontSize: 13 }}>
+          Nenhum processo com prazo definido.
+        </p>
       )}
     </div>
   );

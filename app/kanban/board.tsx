@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { cor, sombraCard } from "@/lib/theme";
 
 type Card = {
   id: string;
@@ -50,9 +51,9 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
 
   return (
     <div style={{ marginTop: 16 }}>
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
-      <p style={{ fontSize: 12, color: "#7D7979" }}>Arraste um card pra qualquer coluna pra mover.</p>
-      <div style={{ display: "flex", gap: 12, overflowX: "auto", alignItems: "flex-start" }}>
+      {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
+      <p style={{ fontSize: 12, color: cor.textoTerciario }}>Arraste um card pra qualquer coluna pra mover.</p>
+      <div style={{ display: "flex", gap: 14, overflowX: "auto", alignItems: "flex-start", paddingBottom: 8 }}>
         {colunas.map((coluna) => (
           <div
             key={coluna.nome}
@@ -69,14 +70,14 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
               if (processoId) moverPara(processoId, etapaAtual, coluna.nome);
             }}
             style={{
-              minWidth: 240,
-              flex: "0 0 240px",
-              background: colunaSobrevoada === coluna.nome ? "#E8E6E4" : "#F5F4F3",
-              borderRadius: 4,
-              padding: 8,
+              minWidth: 250,
+              flex: "0 0 250px",
+              background: colunaSobrevoada === coluna.nome ? "#EDE8E1" : cor.fundo,
+              borderRadius: 14,
+              padding: 10,
             }}
           >
-            <div style={{ fontWeight: "bold", fontSize: 13, padding: "4px 4px 8px" }}>
+            <div style={{ fontWeight: 700, fontSize: 12.5, padding: "4px 6px 10px", color: cor.textoSecundario }}>
               {coluna.nome} ({coluna.cards.length})
             </div>
             {coluna.cards.map((card) => {
@@ -94,34 +95,35 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
                     e.dataTransfer.setData("text/etapa-atual", card.etapaAtual);
                   }}
                   style={{
-                    background: "#fff",
-                    borderRadius: 4,
-                    padding: 8,
+                    background: cor.branco,
+                    borderRadius: 12,
+                    padding: 11,
                     marginBottom: 8,
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                    boxShadow: sombraCard,
+                    border: `1px solid ${cor.borda}`,
                     cursor: "grab",
                     opacity: carregando === card.id ? 0.5 : 1,
                   }}
                 >
-                  <Link href={`/processos/${card.id}`} style={{ fontSize: 13, fontWeight: "bold" }}>
+                  <Link href={`/processos/${card.id}`} style={{ fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
                     {card.numeroContrato}
                   </Link>
-                  <div style={{ fontSize: 12, color: "#605D5D" }}>
+                  <div style={{ fontSize: 12, color: cor.textoSecundario, marginTop: 2 }}>
                     {card.coordenacaoSigla} · {card.fornecedorNome}
                   </div>
                   {percentual !== null && (
-                    <div style={{ marginTop: 6 }}>
-                      <div style={{ background: "#e5e5e5", borderRadius: 2, height: 6 }}>
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ background: "rgba(32,31,29,.08)", borderRadius: 3, height: 6 }}>
                         <div
                           style={{
-                            background: "#7A9D7E",
-                            borderRadius: 2,
+                            background: cor.positivo,
+                            borderRadius: 3,
                             height: 6,
                             width: `${percentual}%`,
                           }}
                         />
                       </div>
-                      <div style={{ fontSize: 11, color: "#7D7979", marginTop: 2 }}>
+                      <div style={{ fontSize: 10.5, color: cor.textoTerciario, marginTop: 3 }}>
                         {card.tarefasConcluidas}/{card.tarefasTotal} tarefas
                       </div>
                     </div>
@@ -130,7 +132,7 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
                     <button
                       onClick={() => concluirEtapa(card.id, card.etapaAtual)}
                       disabled={carregando === card.id}
-                      style={{ marginTop: 8, fontSize: 12, padding: "4px 8px" }}
+                      style={{ marginTop: 8, fontSize: 11, padding: "5px 10px" }}
                     >
                       Concluir etapa
                     </button>
@@ -139,7 +141,7 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
               );
             })}
             {coluna.cards.length === 0 && (
-              <div style={{ fontSize: 12, color: "#7D7979", padding: 4 }}>Nenhum processo</div>
+              <div style={{ fontSize: 12, color: cor.textoTerciario, padding: 6 }}>Nenhum processo</div>
             )}
           </div>
         ))}

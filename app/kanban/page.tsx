@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Board from "./board";
+import { cor } from "@/lib/theme";
 
 const KANBANS = [
   "Ofício de apresentação",
@@ -72,12 +72,9 @@ export default async function KanbanPage() {
 
   return (
     <main style={{ padding: 32 }}>
-      <p>
-        <Link href="/dashboard">← Voltar</Link>
-      </p>
-      <h1 style={{ fontSize: 20, marginTop: 12 }}>Kanban</h1>
+      <h1 style={{ fontSize: 20 }}>Kanban</h1>
 
-      {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
+      {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
       <Board colunas={colunas} kanbans={KANBANS} />
     </main>
