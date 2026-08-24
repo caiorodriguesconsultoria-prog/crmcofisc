@@ -225,6 +225,9 @@ Caio testou em produção (após promoção manual acima): dropdown de tipos, "G
 ## 2026-08-24 · Acerto a repetir — Relatório (5/6): Conclusões confirmado
 Caio testou em produção (deploy precisou de promoção manual de novo — mesmo bug recorrente do dia 21/24): botões Regular/Irregular preenchendo checklist e texto padrão, edição/remoção de item, texto livre, sugestão de penalidade, Salvar persistindo, e espelho na aba Relatório — tudo funcionando.
 
+## 2026-08-25 · Decisão — Design (2/N): estilo base global + Lista de processos + Painel do processo
+`app/globals.css` (novo, importado no layout raiz) dá estilo padrão a `button`/`input`/`select`/`textarea`/`table` em todo o app — cantos arredondados, borda leve, foco âmbar — sem precisar editar cada um dos ~40 arquivos que usam esses elementos com estilo padrão do navegador; efeito imediato em qualquer tela ainda não redesenhada individualmente. Lista de processos (`/processos`) ganhou filtros em card, tabela em card com cabeçalho e etapa em pílula colorida. Painel do processo (`/processos/[id]`) ganhou cabeçalho em card com pílula de etapa, e cada seção (Cobertura, Painel, NUPs, Prazo, Gestão e Fiscalização, Cronograma, Checklist, Andamentos, Conclusões, históricos) agora é um card próprio, mesmo layout de conteúdo de antes — só o wrapper visual mudou, sem alterar lógica/comportamento de nenhum componente interno. Links "← Voltar" redundantes com a navbar removidos das duas telas. Sem migração.
+
 ## 2026-08-25 · Acerto a repetir — Design (1/N) confirmado
 Caio testou em produção (deploy precisou de promoção manual de novo, mesmo bug recorrente): fonte Manrope aplicada globalmente, navbar funcionando em todas as telas logadas, Dashboard redesenhado (cards, barra de progresso, lista de parados) — tudo funcionando.
 

@@ -10,6 +10,7 @@ import Nups from "./nups";
 import Prazo from "./prazo";
 import Cronograma from "./cronograma";
 import Conclusao from "./conclusao";
+import { card, cor, pill } from "@/lib/theme";
 
 export default async function ProcessoPage({
   params,
@@ -159,75 +160,97 @@ export default async function ProcessoPage({
     }, new Map<string, { origemId: string; origemTipo: string; nome: string; tarefas: { id: string; label: string; concluida: boolean }[] }>()).values(),
   );
 
+  const secao: React.CSSProperties = { ...card, marginTop: 16 };
+
   return (
-    <main style={{ padding: 32, maxWidth: 640 }}>
-      <p>
-        <Link href="/processos">← Voltar</Link>
-      </p>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ fontSize: 20 }}>{p.numero_contrato}</h1>
-        <Link href={`/processos/${p.id}/relatorio`}>Ver Relatório →</Link>
+    <main style={{ padding: 32, maxWidth: 720, margin: "0 auto" }}>
+      <div style={{ ...card, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ fontSize: 20, margin: 0 }}>{p.numero_contrato}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
+            <Link href={`/processos/${p.id}/relatorio`}>Ver Relatório →</Link>
+          </div>
+        </div>
+        <p style={{ color: cor.textoSecundario, margin: 0, fontSize: 13 }}>{p.nup_principal}</p>
+        <p style={{ margin: 0 }}>{p.objeto}</p>
+        <p style={{ margin: 0, fontSize: 13, color: cor.textoTerciario }}>
+          Coordenação: {p.coordenacoes?.sigla} · Fornecedor: {p.fornecedores?.nome}
+        </p>
       </div>
-      <p style={{ color: "#605D5D" }}>{p.nup_principal}</p>
-      <p>{p.objeto}</p>
-      <p>
-        Coordenação: {p.coordenacoes?.sigla} · Fornecedor: {p.fornecedores?.nome}
-      </p>
 
-      <Cobertura
-        processoId={p.id}
-        titular={p.titular}
-        responsavelAtual={p.responsavel}
-        motivoBackup={p.motivo_backup}
-        pessoas={pessoas ?? []}
-      />
+      <div style={secao}>
+        <Cobertura
+          processoId={p.id}
+          titular={p.titular}
+          responsavelAtual={p.responsavel}
+          motivoBackup={p.motivo_backup}
+          pessoas={pessoas ?? []}
+        />
+      </div>
 
-      <PainelProcesso
-        processoId={p.id}
-        etapaAtual={p.etapa_atual}
-        tagsAtivas={tagsAtivas}
-        tagsDisponiveis={tagsDisponiveis ?? []}
-      />
+      <div style={secao}>
+        <PainelProcesso
+          processoId={p.id}
+          etapaAtual={p.etapa_atual}
+          tagsAtivas={tagsAtivas}
+          tagsDisponiveis={tagsDisponiveis ?? []}
+        />
+      </div>
 
-      <Nups processoId={p.id} nupRelatorio={nupRelatorio} nupPagamento={nupPagamento} />
+      <div style={secao}>
+        <Nups processoId={p.id} nupRelatorio={nupRelatorio} nupPagamento={nupPagamento} />
+      </div>
 
-      <Prazo processoId={p.id} prazoData={p.prazo_data} />
+      <div style={secao}>
+        <Prazo processoId={p.id} prazoData={p.prazo_data} />
+      </div>
 
-      <GestaoFiscalizacao
-        processoId={p.id}
-        gestor={p.gestor}
-        gestorSubstituto={p.gestor_substituto}
-        fiscal={p.fiscal}
-        fiscalSubstituto={p.fiscal_substituto}
-        gestores={gestoresDaCoordenacao}
-        fiscais={fiscaisDaCoordenacao}
-      />
+      <div style={secao}>
+        <GestaoFiscalizacao
+          processoId={p.id}
+          gestor={p.gestor}
+          gestorSubstituto={p.gestor_substituto}
+          fiscal={p.fiscal}
+          fiscalSubstituto={p.fiscal_substituto}
+          gestores={gestoresDaCoordenacao}
+          fiscais={fiscaisDaCoordenacao}
+        />
+      </div>
 
-      <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} />
+      <div style={secao}>
+        <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} />
+      </div>
 
-      <Checklist grupos={gruposTarefas} />
+      <div style={secao}>
+        <Checklist grupos={gruposTarefas} />
+      </div>
 
-      <Andamentos
-        processoId={p.id}
-        autorId={pessoaAtual?.id ?? null}
-        numeroContrato={p.numero_contrato}
-        andamentos={(andamentosRaw ?? []) as any}
-      />
+      <div style={secao}>
+        <Andamentos
+          processoId={p.id}
+          autorId={pessoaAtual?.id ?? null}
+          numeroContrato={p.numero_contrato}
+          andamentos={(andamentosRaw ?? []) as any}
+        />
+      </div>
 
-      <Conclusao
-        processoId={p.id}
-        numeroContrato={p.numero_contrato}
-        conclusao={{
-          tipo: p.conclusao_tipo,
-          checks: p.conclusao_checks,
-          texto: p.conclusao_texto,
-          penalidade: p.conclusao_penalidade,
-        }}
-      />
+      <div style={secao}>
+        <Conclusao
+          processoId={p.id}
+          numeroContrato={p.numero_contrato}
+          conclusao={{
+            tipo: p.conclusao_tipo,
+            checks: p.conclusao_checks,
+            texto: p.conclusao_texto,
+            penalidade: p.conclusao_penalidade,
+          }}
+        />
+      </div>
 
-      <section style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: 16 }}>Histórico de kanban</h2>
-        <ul>
+      <div style={secao}>
+        <h2 style={{ fontSize: 15, marginTop: 0 }}>Histórico de kanban</h2>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
           {(kanbanHistorico ?? []).map((h: any, i: number) => (
             <li key={i}>
               {h.kanban} — entrada {new Date(h.entrada_em).toLocaleString("pt-BR")}
@@ -237,13 +260,13 @@ export default async function ProcessoPage({
             </li>
           ))}
         </ul>
-      </section>
+      </div>
 
-      <section style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: 16 }}>Histórico de eventos</h2>
-        <ul>
+      <div style={secao}>
+        <h2 style={{ fontSize: 15, marginTop: 0 }}>Histórico de eventos</h2>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
           {(tagHistorico ?? []).length === 0 && (
-            <li style={{ color: "#7D7979" }}>Nenhum registro ainda.</li>
+            <li style={{ color: cor.textoTerciario }}>Nenhum registro ainda.</li>
           )}
           {(tagHistorico ?? []).map((h: any, i: number) => (
             <li key={i}>
@@ -252,7 +275,7 @@ export default async function ProcessoPage({
             </li>
           ))}
         </ul>
-      </section>
+      </div>
     </main>
   );
 }

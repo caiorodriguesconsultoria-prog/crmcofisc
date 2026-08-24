@@ -1,4 +1,5 @@
 import { Manrope } from "next/font/google";
+import "./globals.css";
 import NavBar from "./_nav/navbar";
 import { cor } from "@/lib/theme";
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListaProcessos from "./lista";
+import { botaoPrimario, cor } from "@/lib/theme";
 
 export default async function ProcessosPage() {
   const supabase = await createClient();
@@ -33,23 +34,21 @@ export default async function ProcessosPage() {
   ]);
 
   return (
-    <main style={{ padding: 32 }}>
-      <p>
-        <Link href="/dashboard">← Voltar</Link>
-      </p>
+    <main style={{ padding: 32, maxWidth: 1100, margin: "0 auto" }}>
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginTop: 12,
         }}
       >
         <h1 style={{ fontSize: 20 }}>Processos</h1>
-        <Link href="/processos/novo">+ Novo processo</Link>
+        <Link href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
+          + Novo processo
+        </Link>
       </div>
 
-      {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
+      {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
       <ListaProcessos
         processos={(processos ?? []) as any}

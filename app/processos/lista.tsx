@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { card, cor } from "@/lib/theme";
 
 type Processo = {
   id: string;
@@ -56,15 +57,15 @@ export default function ListaProcessos({
     <div>
       <div
         style={{
+          ...card,
           display: "flex",
           gap: 8,
           flexWrap: "wrap",
           marginTop: 16,
-          padding: 12,
-          background: "#F5F4F3",
+          padding: 14,
         }}
       >
-        <select value={coordenacaoId} onChange={(e) => setCoordenacaoId(e.target.value)} style={{ padding: 6 }}>
+        <select value={coordenacaoId} onChange={(e) => setCoordenacaoId(e.target.value)}>
           <option value="">Coordenação (todas)</option>
           {coordenacoes.map((c) => (
             <option key={c.id} value={c.id}>
@@ -72,7 +73,7 @@ export default function ListaProcessos({
             </option>
           ))}
         </select>
-        <select value={formaEntregaId} onChange={(e) => setFormaEntregaId(e.target.value)} style={{ padding: 6 }}>
+        <select value={formaEntregaId} onChange={(e) => setFormaEntregaId(e.target.value)}>
           <option value="">Forma de entrega (todas)</option>
           {formasEntrega.map((f) => (
             <option key={f.id} value={f.id}>
@@ -80,7 +81,7 @@ export default function ListaProcessos({
             </option>
           ))}
         </select>
-        <select value={eventoId} onChange={(e) => setEventoId(e.target.value)} style={{ padding: 6 }}>
+        <select value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
           <option value="">Evento (todos)</option>
           {eventos.map((ev) => (
             <option key={ev.id} value={ev.id}>
@@ -88,7 +89,7 @@ export default function ListaProcessos({
             </option>
           ))}
         </select>
-        <select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)} style={{ padding: 6 }}>
+        <select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
           <option value="">Responsável (todos)</option>
           {responsaveis.map((r) => (
             <option key={r.id} value={r.id}>
@@ -96,50 +97,67 @@ export default function ListaProcessos({
             </option>
           ))}
         </select>
-        <select value={sei} onChange={(e) => setSei(e.target.value)} style={{ padding: 6 }}>
+        <select value={sei} onChange={(e) => setSei(e.target.value)}>
           <option value="">SEI (todos)</option>
           <option value="com">Com SEI</option>
           <option value="sem">Sem SEI</option>
         </select>
       </div>
 
-      <p style={{ marginTop: 8, color: "#7D7979", fontSize: 13 }}>
+      <p style={{ marginTop: 10, color: cor.textoTerciario, fontSize: 12.5 }}>
         {filtrados.length} de {processos.length} processos
       </p>
 
-      <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 8 }}>Contrato</th>
-            <th style={{ padding: 8 }}>NUP</th>
-            <th style={{ padding: 8 }}>Objeto</th>
-            <th style={{ padding: 8 }}>Coord.</th>
-            <th style={{ padding: 8 }}>Fornecedor</th>
-            <th style={{ padding: 8 }}>Etapa</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtrados.map((p) => (
-            <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: 8 }}>
-                <Link href={`/processos/${p.id}`}>{p.numero_contrato}</Link>
-              </td>
-              <td style={{ padding: 8 }}>{p.nup_principal}</td>
-              <td style={{ padding: 8 }}>{p.objeto}</td>
-              <td style={{ padding: 8 }}>{p.coordenacoes?.sigla}</td>
-              <td style={{ padding: 8 }}>{p.fornecedores?.nome}</td>
-              <td style={{ padding: 8 }}>{p.etapa_atual}</td>
+      <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 6 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
+              <th style={{ padding: "10px 12px" }}>Contrato</th>
+              <th style={{ padding: "10px 12px" }}>NUP</th>
+              <th style={{ padding: "10px 12px" }}>Objeto</th>
+              <th style={{ padding: "10px 12px" }}>Coord.</th>
+              <th style={{ padding: "10px 12px" }}>Fornecedor</th>
+              <th style={{ padding: "10px 12px" }}>Etapa</th>
             </tr>
-          ))}
-          {filtrados.length === 0 && (
-            <tr>
-              <td colSpan={6} style={{ padding: 8, color: "#7D7979" }}>
-                Nenhum processo encontrado com esses filtros.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filtrados.map((p) => (
+              <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
+                <td style={{ padding: "10px 12px" }}>
+                  <Link href={`/processos/${p.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
+                    {p.numero_contrato}
+                  </Link>
+                </td>
+                <td style={{ padding: "10px 12px" }}>{p.nup_principal}</td>
+                <td style={{ padding: "10px 12px" }}>{p.objeto}</td>
+                <td style={{ padding: "10px 12px" }}>{p.coordenacoes?.sigla}</td>
+                <td style={{ padding: "10px 12px" }}>{p.fornecedores?.nome}</td>
+                <td style={{ padding: "10px 12px" }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "3px 9px",
+                      borderRadius: 20,
+                      background: cor.destaqueFundo,
+                      color: cor.destaque,
+                    }}
+                  >
+                    {p.etapa_atual}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {filtrados.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
+                  Nenhum processo encontrado com esses filtros.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
