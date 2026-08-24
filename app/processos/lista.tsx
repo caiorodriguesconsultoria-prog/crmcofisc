@@ -2,8 +2,31 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { card, cor } from "@/lib/theme";
+
+type DocumentComTransicao = Document & {
+  startViewTransition?: (callback: () => void | Promise<void>) => void;
+};
+
+// Abre o painel do processo com a animação de "crescer a partir do link"
+// (View Transitions API nativa do navegador) quando disponível; navegadores
+// sem suporte caem no comportamento normal do Link, sem quebrar nada.
+function abrirComTransicao(
+  e: React.MouseEvent,
+  router: ReturnType<typeof useRouter>,
+  href: string,
+) {
+  const doc = document as DocumentComTransicao;
+  if (!doc.startViewTransition) return;
+  e.preventDefault();
+  doc.startViewTransition(() => {
+    return new Promise<void>((resolve) => {
+      router.push(href);
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+  });
+}
 
 const ETAPAS = [
   "Ofício de apresentação",
@@ -44,6 +67,7 @@ export default function ListaProcessos({
   eventos: Opcao[];
   responsaveis: Opcao[];
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [coordenacaoId, setCoordenacaoId] = useState("");
   const [formaEntregaId, setFormaEntregaId] = useState("");
@@ -170,7 +194,17 @@ export default function ListaProcessos({
             {filtrados.map((p) => (
               <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
                 <td style={{ padding: "10px 12px" }}>
-                  <Link href={`/processos/${p.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
+                  <Link
+                    href={`/processos/${p.id}`}
+                    onClick={(e) => abrirComTransicao(e, router, `/processos/${p.id}`)}
+                    style={
+                      {
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        viewTransitionName: `processo-${p.id}`,
+                      } as React.CSSProperties
+                    }
+                  >
                     {p.numero_contrato}
                   </Link>
                 </td>

@@ -14,8 +14,10 @@ export const metadata = {
 
 export default function RootLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   return (
     <html lang="pt-BR" className={manrope.variable}>
@@ -35,6 +37,7 @@ export default function RootLayout({
           </Suspense>
         </Sidebar>
         <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+        {modal}
       </body>
     </html>
   );
