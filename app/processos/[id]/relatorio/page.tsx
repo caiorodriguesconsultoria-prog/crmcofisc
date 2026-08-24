@@ -6,6 +6,7 @@ import CronogramaRelatorio from "./cronograma-relatorio";
 import PautaDistribuicao from "./pauta-distribuicao";
 import DadosEntrega from "./dados-entrega";
 import Ocorrencias from "./ocorrencias";
+import ConclusaoRelatorio from "./conclusao-relatorio";
 
 export default async function RelatorioPage({
   params,
@@ -25,7 +26,7 @@ export default async function RelatorioPage({
   const { data: processo, error } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, objeto, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, fornecedores(nome, cnpj), gestor:pessoas!processos_gestor_id_fkey(nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(nome, matricula)",
+      "id, numero_contrato, objeto, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, fornecedores(nome, cnpj), gestor:pessoas!processos_gestor_id_fkey(nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(nome, matricula)",
     )
     .eq("id", id)
     .single();
@@ -83,6 +84,15 @@ export default async function RelatorioPage({
       <DadosEntrega processoId={id} entregas={(entregas ?? []) as any} />
 
       <Ocorrencias andamentos={(andamentosIncluidos ?? []) as any} />
+
+      <ConclusaoRelatorio
+        conclusao={{
+          tipo: p.conclusao_tipo,
+          checks: p.conclusao_checks,
+          texto: p.conclusao_texto,
+          penalidade: p.conclusao_penalidade,
+        }}
+      />
     </main>
   );
 }

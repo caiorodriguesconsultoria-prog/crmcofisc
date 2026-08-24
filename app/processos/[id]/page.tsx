@@ -9,6 +9,7 @@ import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import Nups from "./nups";
 import Prazo from "./prazo";
 import Cronograma from "./cronograma";
+import Conclusao from "./conclusao";
 
 export default async function ProcessoPage({
   params,
@@ -28,7 +29,7 @@ export default async function ProcessoPage({
   const { data: processo, error: erroProcesso } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, prazo_data, coordenacoes(sigla), fornecedores(nome), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome), fiscal:pessoas!processos_fiscal_id_fkey(id, nome), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, prazo_data, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome), fiscal:pessoas!processos_fiscal_id_fkey(id, nome), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome)",
     )
     .eq("id", id)
     .single();
@@ -211,6 +212,17 @@ export default async function ProcessoPage({
         autorId={pessoaAtual?.id ?? null}
         numeroContrato={p.numero_contrato}
         andamentos={(andamentosRaw ?? []) as any}
+      />
+
+      <Conclusao
+        processoId={p.id}
+        numeroContrato={p.numero_contrato}
+        conclusao={{
+          tipo: p.conclusao_tipo,
+          checks: p.conclusao_checks,
+          texto: p.conclusao_texto,
+          penalidade: p.conclusao_penalidade,
+        }}
       />
 
       <section style={{ marginTop: 24 }}>
