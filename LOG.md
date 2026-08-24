@@ -215,3 +215,9 @@ Caio instalou a integração oficial Supabase↔GitHub↔Vercel. Ela vem com "De
 
 ## 2026-08-21 · Decisão — Agenda: calendário mensal
 Nova tela `/agenda`: calendário mensal (navegação anterior/próximo/hoje) mostrando os processos cujo `prazo_data` cai em cada dia, cada um linkando pro processo. Sem biblioteca de calendário externa — grid construído na mão (dia da semana do dia 1 do mês + dias no mês). Sem migração nova, `prazo_data` já existia desde a migração 0010.
+
+## 2026-08-24 · Falha corrigida — deploy de produção "preso em preview" voltou a acontecer
+O ajuste de "Production Branch" do dia 21 não se mostrou definitivo: o push seguinte (commit `57d14e9`, Andamentos com modelos) gerou de novo um deploy `READY` com `target: null`. Caio promoveu manualmente pra produção (Deployments → "..." → Promote to Production), confirmado por `target: "production"` no deploy `dpl_8w6NcArTBNRQFfEcjyUhQfem6myh`. Causa raiz definitiva ainda não identificada — assumido por ora como workaround recorrente (promover manualmente a cada push), já que a configuração de Vercel ficou a cargo do Caio.
+
+## 2026-08-24 · Acerto a repetir — Relatório (4/6): Andamentos com modelos de texto confirmado
+Caio testou em produção (após promoção manual acima): dropdown de tipos, "Gerar com IA" substituindo `[X]` pelo número do contrato, toggle "Incluir no relatório" e reflexo na seção "Ocorrências" do Relatório — tudo funcionando.
