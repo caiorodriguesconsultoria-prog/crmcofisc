@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import Calendario from "./calendario";
 import { card, cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 export default async function AgendaPage() {
   const supabase = await createClient();
@@ -33,12 +34,10 @@ export default async function AgendaPage() {
   const linkIcs = token && host ? `https://${host}/api/agenda.ics?token=${token}` : null;
 
   return (
-    <main style={{ padding: 32, maxWidth: 900, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 20 }}>Agenda</h1>
-
+    <Painel titulo="Agenda" voltarHref="/dashboard" maxWidth={900}>
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
-      <div style={{ ...card, marginTop: 12, padding: "10px 14px" }}>
+      <div style={{ ...card, padding: "10px 14px" }}>
         {linkIcs ? (
           <p style={{ fontSize: 12, color: cor.textoSecundario, margin: 0 }}>
             Link pra assinar no Google Calendar (Outros calendários → Inscrever-se por URL):{" "}
@@ -52,6 +51,6 @@ export default async function AgendaPage() {
       </div>
 
       <Calendario prazos={prazos} />
-    </main>
+    </Painel>
   );
 }

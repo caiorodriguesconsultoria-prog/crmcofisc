@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PainelDashboard from "./painel-dashboard";
 import { cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -51,10 +52,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main style={{ padding: 32, maxWidth: 900, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 20 }}>Painel</h1>
-      <p style={{ color: cor.textoTerciario, fontSize: 13 }}>Logado como {user.email}</p>
-
+    <Painel titulo="Painel" subtitulo={`Logado como ${user.email}`} maxWidth={900}>
       {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro.message}</p>}
 
       <PainelDashboard
@@ -62,6 +60,6 @@ export default async function DashboardPage() {
         contagemPorEtapa={contagemPorEtapa}
         eventosAtivos={eventosAtivos ?? 0}
       />
-    </main>
+    </Painel>
   );
 }

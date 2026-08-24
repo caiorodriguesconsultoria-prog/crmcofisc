@@ -234,6 +234,9 @@ A primeira implementação (tabela `coordenacao_contatos` nova + tela de detalhe
 ## 2026-08-25 · Acerto a repetir — Kanban: cards no formato do protótipo confirmado
 Caio testou em produção: NUP, objeto, prazo colorido, "Aguarda", badge de cobertura de férias e arrastar-e-soltar entre colunas — tudo funcionando.
 
+## 2026-08-25 · Marco — Design: painel flutuante aplicado em todo o app
+Agenda e Dashboard ganharam o painel flutuante responsivo, fechando a etapa de design iniciada com a pergunta de Caio sobre replicar os painéis do protótipo. `app/_ui/painel.tsx` ganhou suporte a `voltarHref` opcional — quando omitido, o botão "×" some; usado só no Dashboard, que é a tela raiz (não tem uma tela "anterior" natural pra voltar). Todas as outras telas do app (Processos, Kanban, Coordenações, Fornecedores, Gestores/Fiscais, Relatório, Agenda) já estavam com o painel desde as etapas anteriores. Sem mudança de dados/lógica.
+
 ## 2026-08-25 · Decisão — Design: Relatório com painel flutuante + rótulos numerados
 Tela `/processos/[id]/relatorio` ganhou o painel flutuante responsivo e cada seção virou um card com rótulo numerado em âmbar (1. Quadro resumitivo, 3. Cronograma de entrega, 4. Execução do contrato, 5. Ocorrências, 8. Conclusões — mesma numeração usada na exportação em PDF), removendo os títulos duplicados que cada componente já tinha internamente. Página de exportação em PDF (`/processos/[id]/relatorio/pdf`) não recebeu o painel flutuante de propósito — é uma tela voltada pra impressão, o chrome de painel não faz sentido ali. Sem mudança de dados/lógica.
 
