@@ -6,12 +6,21 @@ import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
 import Checklist from "./checklist";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
-import Nups from "./nups";
+import DadosPrincipais from "./dados-principais";
+import DadosProcesso from "./dados-processo";
 import Prazo from "./prazo";
 import Cronograma from "./cronograma";
 import Conclusao from "./conclusao";
+import Abas from "./abas";
+import QuadroResumitivo from "./relatorio/quadro-resumitivo";
+import CronogramaRelatorio from "./relatorio/cronograma-relatorio";
+import PautaDistribuicao from "./relatorio/pauta-distribuicao";
+import DadosEntrega from "./relatorio/dados-entrega";
+import Ocorrencias from "./relatorio/ocorrencias";
+import ConclusaoRelatorio from "./relatorio/conclusao-relatorio";
 import { card, cor, pill } from "@/lib/theme";
-import Painel from "@/app/_ui/painel";
+import { BotaoCopiar } from "@/app/_ui/campo";
+import PainelAlto from "@/app/_ui/painel-alto";
 
 function diasRestantes(prazoData: string | null) {
   if (!prazoData) return null;
@@ -39,6 +48,14 @@ function formatarData(data: string | null) {
   return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "";
 }
 
+const rotuloSecao: React.CSSProperties = {
+  fontSize: 11.5,
+  fontWeight: 600,
+  color: cor.destaque,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+};
+
 export default async function ProcessoPage({
   params,
 }: {
@@ -57,7 +74,7 @@ export default async function ProcessoPage({
   const { data: processo, error: erroProcesso } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, prazo_data, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome), fiscal:pessoas!processos_fiscal_id_fkey(id, nome), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome, cnpj), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula)",
     )
     .eq("id", id)
     .single();
@@ -79,6 +96,8 @@ export default async function ProcessoPage({
     { data: papeis },
     { data: nups },
     { data: execucoes },
+    { data: pauta },
+    { data: entregas },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     supabase
@@ -118,6 +137,18 @@ export default async function ProcessoPage({
       .select("id, numero, quantidade, unidade, data_prevista, data_entrega, situacao")
       .eq("processo_id", id)
       .order("numero"),
+    supabase
+      .from("processo_pauta_distribuicao")
+      .select("id, uf, quantidade")
+      .eq("processo_id", id)
+      .order("created_at"),
+    supabase
+      .from("processo_entregas")
+      .select(
+        "id, local_entrega, quantidade, valor_total_nf, danfe_venda, danfe_remessa, lote, data_fabricacao, data_validade, data_entrega, responsavel, atraso_dias, percentual_transcurso",
+      )
+      .eq("processo_id", id)
+      .order("created_at"),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
@@ -193,33 +224,52 @@ export default async function ProcessoPage({
   const aguardando = grupoKanban?.tarefas.find((t) => !t.concluida)?.label ?? null;
   const dias = diasRestantes(p.prazo_data);
   const dot = corPrazo(dias);
+  const emCobertura = !!p.titular && p.responsavel?.id !== p.titular?.id;
+  const formaEntrega = pauta && pauta.length > 1 ? "Descentralizada" : pauta && pauta.length === 1 ? "Centralizada" : "não definida";
 
-  return (
-    <Painel
-      titulo={p.numero_contrato}
-      subtitulo={`${p.nup_principal} · ${p.coordenacoes?.sigla ?? ""} · ${p.fornecedores?.nome ?? ""}`}
-      voltarHref="/processos"
-      maxWidth={760}
-      acao={<Link href={`/processos/${p.id}/relatorio`}>Ver Relatório →</Link>}
-    >
-      <div style={{ ...card, display: "flex", alignItems: "center", gap: 10 }}>
-        {dias !== null && (
-          <span style={{ width: 9, height: 9, borderRadius: "50%", background: dot ?? undefined, flex: "none" }} />
-        )}
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>
-            {dias !== null ? `${formatarData(p.prazo_data)} · ${textoPrazo(dias)}` : "Sem prazo definido"}
-          </div>
-          {aguardando && (
-            <div style={{ fontSize: 11.5, color: cor.textoSecundario, marginTop: 2 }}>Aguarda: {aguardando}</div>
-          )}
-        </div>
-        <span style={{ ...pill, marginLeft: "auto", background: cor.destaqueFundo, color: cor.destaque }}>
-          {p.etapa_atual}
-        </span>
+  const andamentosIncluidos = (andamentosRaw ?? []).filter((a: any) => a.incluir_relatorio);
+
+  const conteudoProcesso = (
+    <div>
+      <DadosPrincipais
+        processoId={p.id}
+        nupPrincipal={p.nup_principal}
+        nupRelatorio={nupRelatorio}
+        nupPagamento={nupPagamento}
+        fornecedorNome={p.fornecedores?.nome ?? ""}
+        cnpj={p.fornecedores?.cnpj ?? ""}
+        objeto={p.objeto}
+      />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 16,
+          marginTop: 16,
+        }}
+      >
+        <DadosProcesso
+          quantidadeContratada={p.quantidade_contratada}
+          numeroExecucoes={(execucoes ?? []).length}
+          dataAssinatura={p.data_assinatura}
+          vigenciaInicio={p.vigencia_inicio}
+          vigenciaFim={p.vigencia_fim}
+          formaEntrega={formaEntrega}
+          naturezaDespesa={p.natureza_despesa}
+          valorGlobal={p.valor_global}
+        />
+
+        <GestaoFiscalizacao
+          processoId={p.id}
+          gestor={p.gestor}
+          gestorSubstituto={p.gestor_substituto}
+          fiscal={p.fiscal}
+          fiscalSubstituto={p.fiscal_substituto}
+          gestores={todosGestores}
+          fiscais={todosFiscais}
+        />
       </div>
-
-      <p style={{ margin: "12px 0 0", fontSize: 13.5 }}>{p.objeto}</p>
 
       <div style={secao}>
         <Cobertura
@@ -241,23 +291,7 @@ export default async function ProcessoPage({
       </div>
 
       <div style={secao}>
-        <Nups processoId={p.id} nupRelatorio={nupRelatorio} nupPagamento={nupPagamento} />
-      </div>
-
-      <div style={secao}>
         <Prazo processoId={p.id} prazoData={p.prazo_data} />
-      </div>
-
-      <div style={secao}>
-        <GestaoFiscalizacao
-          processoId={p.id}
-          gestor={p.gestor}
-          gestorSubstituto={p.gestor_substituto}
-          fiscal={p.fiscal}
-          fiscalSubstituto={p.fiscal_substituto}
-          gestores={todosGestores}
-          fiscais={todosFiscais}
-        />
       </div>
 
       <div style={secao}>
@@ -318,6 +352,82 @@ export default async function ProcessoPage({
           ))}
         </ul>
       </div>
-    </Painel>
+    </div>
+  );
+
+  const conteudoRelatorio = (
+    <div>
+      <p style={{ margin: "0 0 16px" }}>
+        <Link href={`/processos/${id}/relatorio/pdf`}>Exportar PDF →</Link>
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={card}>
+          <span style={rotuloSecao}>1. Quadro resumitivo</span>
+          <QuadroResumitivo processoId={id} processo={p} />
+        </div>
+
+        <div style={card}>
+          <span style={rotuloSecao}>3. Cronograma de entrega</span>
+          <CronogramaRelatorio execucoes={(execucoes ?? []) as any} />
+        </div>
+
+        <div style={card}>
+          <span style={rotuloSecao}>4. Execução do contrato</span>
+          <PautaDistribuicao processoId={id} pauta={(pauta ?? []) as any} />
+          <DadosEntrega processoId={id} entregas={(entregas ?? []) as any} />
+        </div>
+
+        <div style={card}>
+          <span style={rotuloSecao}>5. Ocorrências</span>
+          <Ocorrencias andamentos={andamentosIncluidos as any} />
+        </div>
+
+        <div style={card}>
+          <span style={rotuloSecao}>8. Conclusões</span>
+          <ConclusaoRelatorio
+            conclusao={{
+              tipo: p.conclusao_tipo,
+              checks: p.conclusao_checks,
+              texto: p.conclusao_texto,
+              penalidade: p.conclusao_penalidade,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <PainelAlto
+      voltarHref="/processos"
+      maxWidth={820}
+      topo={
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h1 style={{ fontSize: 19, margin: 0 }}>{p.numero_contrato}</h1>
+            <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+            <span style={{ fontSize: 12, color: cor.textoTerciario }}>{p.nup_principal}</span>
+            <BotaoCopiar texto={p.nup_principal} />
+          </div>
+          {emCobertura && (
+            <p style={{ fontSize: 11.5, color: cor.destaque, margin: "4px 0 0" }}>
+              Cobertura de férias · {p.responsavel?.nome}
+            </p>
+          )}
+          {dias !== null && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11.5, fontWeight: 600, color: dot ?? undefined }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: dot ?? undefined, flex: "none" }} />
+              {formatarData(p.prazo_data)} · {textoPrazo(dias)}
+              {aguardando && <span style={{ color: cor.textoSecundario, fontWeight: 400 }}>· Aguarda: {aguardando}</span>}
+            </div>
+          )}
+        </div>
+      }
+    >
+      <Abas processo={conteudoProcesso} relatorio={conteudoRelatorio} />
+    </PainelAlto>
   );
 }

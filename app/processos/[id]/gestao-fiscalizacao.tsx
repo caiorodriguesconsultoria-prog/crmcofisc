@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { botaoPrimario, cor } from "@/lib/theme";
-import { CampoLinha } from "@/app/_ui/campo";
+import { botaoPrimario, card, cor } from "@/lib/theme";
+import { LinhaChave } from "@/app/_ui/campo";
+import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
 
 type Pessoa = { id: string; nome: string } | null;
 type Opcao = { id: string; nome: string };
@@ -59,21 +60,20 @@ export default function GestaoFiscalizacao({
 
   if (!editando) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <strong>Gestão e Fiscalização</strong>
-        <CampoLinha label="Gestor" valor={gestor?.nome ?? "não informado"} />
-        <CampoLinha label="Gestor substituto" valor={gestorSubstituto?.nome ?? "não informado"} />
-        <CampoLinha label="Fiscal" valor={fiscal?.nome ?? "não informado"} />
-        <CampoLinha label="Fiscal substituto" valor={fiscalSubstituto?.nome ?? "não informado"} />
-        <button onClick={() => setEditando(true)} style={{ alignSelf: "flex-start" }}>
+      <CartaoColapsavel titulo="Gestão e Fiscalização">
+        <LinhaChave label="Gestor" valor={gestor?.nome ?? "não informado"} />
+        <LinhaChave label="Gestor substituto" valor={gestorSubstituto?.nome ?? "não informado"} />
+        <LinhaChave label="Fiscal" valor={fiscal?.nome ?? "não informado"} />
+        <LinhaChave label="Fiscal substituto" valor={fiscalSubstituto?.nome ?? "não informado"} />
+        <button onClick={() => setEditando(true)} style={{ marginTop: 10, fontSize: 11 }}>
           Editar
         </button>
-      </div>
+      </CartaoColapsavel>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ ...card, display: "flex", flexDirection: "column", gap: 8 }}>
       <strong>Gestão e Fiscalização</strong>
       <label>
         Gestor
