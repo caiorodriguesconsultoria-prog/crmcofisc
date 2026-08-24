@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { botaoPrimario, card, cor } from "@/lib/theme";
+import { botaoPrimario, cor } from "@/lib/theme";
+import GradeCoordenacoes from "./grade";
 
 export default async function CoordenacoesPage() {
   const supabase = await createClient();
@@ -13,15 +14,37 @@ export default async function CoordenacoesPage() {
     redirect("/login");
   }
 
-  const [{ data: pessoa }, { data: coordenacoes, error }] = await Promise.all([
+  const [{ data: pessoa }, { data: coordenacoes, error }, { data: papeis }] = await Promise.all([
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
-    supabase.from("coordenacoes").select("id, sigla, nome, email_generico").order("sigla"),
+    supabase.from("coordenacoes").select("id, sigla, nome, email_generico, telefone").order("sigla"),
+    supabase
+      .from("pessoa_papeis")
+      .select("id, coordenacao_id, papel, pessoas(id, nome, email, ramal)")
+      .in("papel", ["coordenador", "substituto"]),
   ]);
 
   const isAdmin = pessoa?.is_admin ?? false;
 
+  const grade = (coordenacoes ?? []).map((c) => ({
+    id: c.id,
+    sigla: c.sigla,
+    nome: c.nome,
+    emailGenerico: c.email_generico,
+    telefone: c.telefone,
+    responsaveis: (papeis ?? [])
+      .filter((pp) => pp.coordenacao_id === c.id)
+      .map((pp: any) => ({
+        papelId: pp.id,
+        id: pp.pessoas?.id ?? pp.id,
+        nome: pp.pessoas?.nome ?? "",
+        email: pp.pessoas?.email ?? null,
+        ramal: pp.pessoas?.ramal ?? null,
+        papel: pp.papel as "coordenador" | "substituto",
+      })),
+  }));
+
   return (
-    <main style={{ padding: 32, maxWidth: 900, margin: "0 auto" }}>
+    <main style={{ padding: 32, maxWidth: 1100, margin: "0 auto" }}>
       <div
         style={{
           display: "flex",
@@ -36,40 +59,13 @@ export default async function CoordenacoesPage() {
           </Link>
         )}
       </div>
+      <p style={{ color: cor.textoTerciario, fontSize: 13, marginTop: 2 }}>
+        Responsáveis, e-mails e ramais usados nas notificações do processo.
+      </p>
 
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
-      <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 16 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
-              <th style={{ padding: "10px 12px" }}>Sigla</th>
-              <th style={{ padding: "10px 12px" }}>Nome</th>
-              <th style={{ padding: "10px 12px" }}>E-mail genérico</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(coordenacoes ?? []).map((c) => (
-              <tr key={c.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
-                <td style={{ padding: "10px 12px", fontWeight: 600 }}>
-                  <Link href={`/coordenacoes/${c.id}`} style={{ textDecoration: "none" }}>
-                    {c.sigla}
-                  </Link>
-                </td>
-                <td style={{ padding: "10px 12px" }}>{c.nome}</td>
-                <td style={{ padding: "10px 12px" }}>{c.email_generico}</td>
-              </tr>
-            ))}
-            {(coordenacoes ?? []).length === 0 && (
-              <tr>
-                <td colSpan={3} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
-                  Nenhuma coordenação cadastrada.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <GradeCoordenacoes coordenacoes={grade} isAdmin={isAdmin} />
     </main>
   );
 }

@@ -12,6 +12,7 @@ export default function NovaCoordenacaoForm() {
   const [sigla, setSigla] = useState("");
   const [nome, setNome] = useState("");
   const [emailGenerico, setEmailGenerico] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -24,6 +25,7 @@ export default function NovaCoordenacaoForm() {
       sigla,
       nome,
       email_generico: emailGenerico || null,
+      telefone: telefone || null,
     });
 
     if (error) {
@@ -62,6 +64,14 @@ export default function NovaCoordenacaoForm() {
           type="email"
           value={emailGenerico}
           onChange={(e) => setEmailGenerico(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        />
+      </label>
+      <label>
+        Telefone
+        <input
+          value={telefone}
+          onChange={(e) => setTelefone(e.target.value)}
           style={{ display: "block", width: "100%", padding: 8 }}
         />
       </label>
