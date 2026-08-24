@@ -98,6 +98,8 @@ export default async function ProcessoPage({
     { data: execucoes },
     { data: pauta },
     { data: entregas },
+    { data: kanbanAtivo },
+    { data: tagHistoricoAtivo },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     supabase
@@ -149,6 +151,17 @@ export default async function ProcessoPage({
       )
       .eq("processo_id", id)
       .order("created_at"),
+    supabase
+      .from("processo_kanban_historico")
+      .select("id")
+      .eq("processo_id", id)
+      .is("saida_em", null)
+      .maybeSingle(),
+    supabase
+      .from("processo_tag_historico")
+      .select("id, tags(valor)")
+      .eq("processo_id", id)
+      .is("fim_em", null),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
@@ -171,20 +184,6 @@ export default async function ProcessoPage({
   const todosFiscais = (papeis ?? [])
     .filter((pp) => pp.papel === "fiscal")
     .map((pp: any) => ({ id: pp.pessoa_id, nome: pp.pessoas?.nome ?? "" }));
-
-  const [{ data: kanbanAtivo }, { data: tagHistoricoAtivo }] = await Promise.all([
-    supabase
-      .from("processo_kanban_historico")
-      .select("id")
-      .eq("processo_id", id)
-      .is("saida_em", null)
-      .maybeSingle(),
-    supabase
-      .from("processo_tag_historico")
-      .select("id, tags(valor)")
-      .eq("processo_id", id)
-      .is("fim_em", null),
-  ]);
 
   const origensAtivas = [
     ...(kanbanAtivo ? [kanbanAtivo.id] : []),
