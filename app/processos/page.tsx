@@ -40,7 +40,7 @@ export default async function ProcessosPage() {
     <Painel
       titulo="Processos"
       voltarHref="/dashboard"
-      maxWidth={1100}
+      maxWidth={1300}
       acao={
         <Link href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
           + Novo processo
