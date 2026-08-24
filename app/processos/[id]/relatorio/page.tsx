@@ -69,7 +69,10 @@ export default async function RelatorioPage({
       <p>
         <Link href={`/processos/${id}`}>← Voltar ao processo</Link>
       </p>
-      <h1 style={{ fontSize: 20, marginTop: 12 }}>Relatório — {p.numero_contrato}</h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+        <h1 style={{ fontSize: 20 }}>Relatório — {p.numero_contrato}</h1>
+        <Link href={`/processos/${id}/relatorio/pdf`}>Exportar PDF →</Link>
+      </div>
 
       {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {(error as any).message}</p>}
 
