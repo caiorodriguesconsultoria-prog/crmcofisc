@@ -50,7 +50,12 @@ type Processo = {
   responsavel: { nome: string } | null;
   processo_eletronico_numero: string | null;
   processo_tags: { tags: { id: string; valor: string } | null }[];
+  proximoAgendamento: { data: string; horario: string } | null;
 };
+
+function formatarDataAgendamento(data: string) {
+  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+}
 
 type Opcao = { id: string; nome?: string; sigla?: string; valor?: string };
 
@@ -73,7 +78,6 @@ export default function ListaProcessos({
   const [formaEntregaId, setFormaEntregaId] = useState("");
   const [eventoId, setEventoId] = useState(() => searchParams.get("evento") ?? "");
   const [responsavelId, setResponsavelId] = useState("");
-  const [sei, setSei] = useState("");
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
   const [busca, setBusca] = useState("");
 
@@ -94,8 +98,6 @@ export default function ListaProcessos({
       if (eventoId && !p.processo_tags.some((pt) => pt.tags?.id === eventoId)) return false;
       if (responsavelId && p.responsavel_atual_id !== responsavelId) return false;
       if (etapa && p.etapa_atual !== etapa) return false;
-      if (sei === "com" && !p.processo_eletronico_numero) return false;
-      if (sei === "sem" && p.processo_eletronico_numero) return false;
       if (
         termo &&
         !p.numero_contrato.toLowerCase().includes(termo) &&
@@ -105,7 +107,7 @@ export default function ListaProcessos({
         return false;
       return true;
     });
-  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, sei, busca]);
+  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, busca]);
 
   return (
     <div>
@@ -167,11 +169,6 @@ export default function ListaProcessos({
             </option>
           ))}
         </select>
-        <select value={sei} onChange={(e) => setSei(e.target.value)}>
-          <option value="">SEI (todos)</option>
-          <option value="com">Com SEI</option>
-          <option value="sem">Sem SEI</option>
-        </select>
       </div>
 
       <p style={{ marginTop: 10, color: cor.textoTerciario, fontSize: 12.5 }}>
@@ -213,18 +210,25 @@ export default function ListaProcessos({
                 <td style={{ padding: "10px 12px" }}>{p.coordenacoes?.sigla}</td>
                 <td style={{ padding: "10px 12px" }}>{p.fornecedores?.nome}</td>
                 <td style={{ padding: "10px 12px" }}>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: "3px 9px",
-                      borderRadius: 20,
-                      background: cor.destaqueFundo,
-                      color: cor.destaque,
-                    }}
-                  >
-                    {p.etapa_atual}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "3px 9px",
+                        borderRadius: 20,
+                        background: cor.destaqueFundo,
+                        color: cor.destaque,
+                      }}
+                    >
+                      {p.etapa_atual}
+                    </span>
+                    {p.proximoAgendamento && (
+                      <span style={{ fontSize: 11, color: cor.textoTerciario, whiteSpace: "nowrap" }}>
+                        {formatarDataAgendamento(p.proximoAgendamento.data)} {p.proximoAgendamento.horario.slice(0, 5)}
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

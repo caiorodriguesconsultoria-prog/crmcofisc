@@ -32,7 +32,7 @@ export default async function FornecedorPage({
 
   const { data: fornecedor, error: erroFornecedor } = await supabase
     .from("fornecedores")
-    .select("id, nome, cnpj, endereco, preposto, telefone, fornecedor_emails(email, rotulo)")
+    .select("id, nome, cnpj, preposto, telefone, fornecedor_emails(email, rotulo)")
     .eq("id", id)
     .single();
 
@@ -63,7 +63,6 @@ export default async function FornecedorPage({
             )
             .join(", ") || "—"}
         </p>
-        {fornecedor.endereco && <p style={{ margin: 0, fontSize: 13 }}>Endereço: {fornecedor.endereco}</p>}
       </div>
 
       <h2 style={{ fontSize: 16, marginTop: 24 }}>Contratos</h2>

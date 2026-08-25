@@ -12,6 +12,15 @@ type Prazo = {
   fornecedorNome: string;
 };
 
+type Agendamento = {
+  id: string;
+  processoId: string;
+  numeroContrato: string;
+  data: string;
+  horario: string;
+  observacao: string | null;
+};
+
 const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MESES = [
   "Janeiro",
@@ -32,7 +41,7 @@ function chavePrazo(prazoData: string) {
   return prazoData.slice(0, 10);
 }
 
-export default function Calendario({ prazos }: { prazos: Prazo[] }) {
+export default function Calendario({ prazos, agendamentos }: { prazos: Prazo[]; agendamentos: Agendamento[] }) {
   const hoje = new Date();
   const [ano, setAno] = useState(hoje.getFullYear());
   const [mes, setMes] = useState(hoje.getMonth());
@@ -43,6 +52,14 @@ export default function Calendario({ prazos }: { prazos: Prazo[] }) {
     const lista = prazosPorDia.get(chave) ?? [];
     lista.push(p);
     prazosPorDia.set(chave, lista);
+  }
+
+  const agendamentosPorDia = new Map<string, Agendamento[]>();
+  for (const a of agendamentos) {
+    const chave = chavePrazo(a.data);
+    const lista = agendamentosPorDia.get(chave) ?? [];
+    lista.push(a);
+    agendamentosPorDia.set(chave, lista);
   }
 
   const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
@@ -96,6 +113,7 @@ export default function Calendario({ prazos }: { prazos: Prazo[] }) {
             return <div key={`vazio-${i}`} />;
           }
           const prazosDoDia = prazosPorDia.get(chaveDoDia(dia)) ?? [];
+          const agendamentosDoDia = agendamentosPorDia.get(chaveDoDia(dia)) ?? [];
           return (
             <div
               key={dia}
@@ -137,6 +155,29 @@ export default function Calendario({ prazos }: { prazos: Prazo[] }) {
                   title={`${p.numeroContrato} — ${p.fornecedorNome}`}
                 >
                   {p.numeroContrato}
+                </Link>
+              ))}
+              {agendamentosDoDia.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/processos/${a.processoId}`}
+                  style={{
+                    display: "block",
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                    marginTop: 3,
+                    padding: "2px 5px",
+                    background: cor.destaqueFundo,
+                    color: cor.destaque,
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    textDecoration: "none",
+                  }}
+                  title={`${a.numeroContrato} — ${a.horario.slice(0, 5)}${a.observacao ? ` (${a.observacao})` : ""}`}
+                >
+                  {a.horario.slice(0, 5)} {a.numeroContrato}
                 </Link>
               ))}
             </div>

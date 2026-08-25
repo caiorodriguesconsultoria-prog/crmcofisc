@@ -18,17 +18,25 @@ export default async function DashboardPage() {
   const [
     { data: processos, error: erroProcessos },
     { data: kanbanAtivo, error: erroKanban },
-    { count: eventosAtivos, error: erroEventos },
   ] = await Promise.all([
-    supabase.from("processos").select("id, numero_contrato, etapa_atual"),
+    supabase.from("processos").select("id, numero_contrato, etapa_atual, prazo_data, conclusao_tipo"),
     supabase
       .from("processo_kanban_historico")
       .select("processo_id, entrada_em")
       .is("saida_em", null),
-    supabase.from("processo_tags").select("*", { count: "exact", head: true }),
   ]);
 
-  const erro = erroProcessos || erroKanban || erroEventos;
+  const erro = erroProcessos || erroKanban;
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const hojeTime = hoje.getTime();
+
+  const ativos = (processos ?? []).filter((p) => !p.conclusao_tipo).length;
+  const concluidos = (processos ?? []).filter((p) => p.conclusao_tipo).length;
+  const vencendoHoje = (processos ?? []).filter(
+    (p) => p.prazo_data && new Date(`${p.prazo_data}T00:00:00`).getTime() === hojeTime,
+  ).length;
 
   const entradaPorProcesso = new Map(
     (kanbanAtivo ?? []).map((k) => [k.processo_id, k.entrada_em]),
@@ -59,7 +67,9 @@ export default async function DashboardPage() {
       <PainelDashboard
         processos={processosComTempo}
         contagemPorEtapa={contagemPorEtapa}
-        eventosAtivos={eventosAtivos ?? 0}
+        ativos={ativos}
+        concluidos={concluidos}
+        vencendoHoje={vencendoHoje}
       />
     </Painel>
   );

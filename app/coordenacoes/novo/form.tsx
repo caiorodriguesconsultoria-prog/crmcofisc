@@ -11,8 +11,9 @@ export default function NovaCoordenacaoForm() {
 
   const [sigla, setSigla] = useState("");
   const [nome, setNome] = useState("");
-  const [emailGenerico, setEmailGenerico] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [coordenadorNome, setCoordenadorNome] = useState("");
+  const [coordenadorEmail, setCoordenadorEmail] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -24,8 +25,9 @@ export default function NovaCoordenacaoForm() {
     const { error } = await supabase.from("coordenacoes").insert({
       sigla,
       nome,
-      email_generico: emailGenerico || null,
       telefone: telefone || null,
+      coordenador_nome: coordenadorNome || null,
+      coordenador_email: coordenadorEmail || null,
     });
 
     if (error) {
@@ -59,19 +61,27 @@ export default function NovaCoordenacaoForm() {
         />
       </label>
       <label>
-        E-mail genérico
-        <input
-          type="email"
-          value={emailGenerico}
-          onChange={(e) => setEmailGenerico(e.target.value)}
-          style={{ display: "block", width: "100%", padding: 8 }}
-        />
-      </label>
-      <label>
         Telefone
         <input
           value={telefone}
           onChange={(e) => setTelefone(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        />
+      </label>
+      <label>
+        Nome do coordenador
+        <input
+          value={coordenadorNome}
+          onChange={(e) => setCoordenadorNome(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        />
+      </label>
+      <label>
+        E-mail do coordenador
+        <input
+          type="email"
+          value={coordenadorEmail}
+          onChange={(e) => setCoordenadorEmail(e.target.value)}
           style={{ display: "block", width: "100%", padding: 8 }}
         />
       </label>

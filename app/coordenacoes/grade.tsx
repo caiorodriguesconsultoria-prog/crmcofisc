@@ -6,15 +6,16 @@ import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, card, cor } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
 
-type Responsavel = { id: string; papelId: string; nome: string; email: string | null; ramal: string | null; papel: "coordenador" | "substituto" };
+type MembroEquipe = { id: string; papelId: string; nome: string; email: string | null; ramal: string | null };
 
 type Coordenacao = {
   id: string;
   sigla: string;
   nome: string;
-  emailGenerico: string | null;
   telefone: string | null;
-  responsaveis: Responsavel[];
+  coordenadorNome: string | null;
+  coordenadorEmail: string | null;
+  equipe: MembroEquipe[];
 };
 
 async function copiar(texto: string) {
@@ -25,10 +26,6 @@ async function copiar(texto: string) {
   }
 }
 
-function rotuloPapel(papel: string) {
-  return papel === "coordenador" ? "Coordenador" : "Substituto";
-}
-
 function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boolean }) {
   const router = useRouter();
   const supabase = createClient();
@@ -36,24 +33,29 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
 
   const [editando, setEditando] = useState(false);
   const [nome, setNome] = useState(c.nome);
-  const [emailGenerico, setEmailGenerico] = useState(c.emailGenerico ?? "");
   const [telefone, setTelefone] = useState(c.telefone ?? "");
+  const [coordenadorNome, setCoordenadorNome] = useState(c.coordenadorNome ?? "");
+  const [coordenadorEmail, setCoordenadorEmail] = useState(c.coordenadorEmail ?? "");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [carregando, setCarregando] = useState<string | null>(null);
 
-  const [novoResp, setNovoResp] = useState(false);
-  const [respNome, setRespNome] = useState("");
-  const [respEmail, setRespEmail] = useState("");
-  const [respRamal, setRespRamal] = useState("");
-  const [respPapel, setRespPapel] = useState<"coordenador" | "substituto">("coordenador");
+  const [novoMembro, setNovoMembro] = useState(false);
+  const [membroNome, setMembroNome] = useState("");
+  const [membroEmail, setMembroEmail] = useState("");
+  const [membroRamal, setMembroRamal] = useState("");
 
   async function salvar() {
     setErro(null);
     setSalvando(true);
     const { error } = await supabase
       .from("coordenacoes")
-      .update({ nome, email_generico: emailGenerico || null, telefone: telefone || null })
+      .update({
+        nome,
+        telefone: telefone || null,
+        coordenador_nome: coordenadorNome || null,
+        coordenador_email: coordenadorEmail || null,
+      })
       .eq("id", c.id);
     setSalvando(false);
     if (error) {
@@ -64,37 +66,36 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
     router.refresh();
   }
 
-  async function adicionarResponsavel() {
-    if (!respNome.trim() || !respEmail.trim()) return;
+  async function adicionarMembro() {
+    if (!membroNome.trim() || !membroEmail.trim()) return;
     setErro(null);
     setCarregando("novo");
     const { data: pessoa, error: erroPessoa } = await supabase
       .from("pessoas")
-      .insert({ nome: respNome.trim(), email: respEmail.trim(), ramal: respRamal.trim() || null })
+      .insert({ nome: membroNome.trim(), email: membroEmail.trim(), ramal: membroRamal.trim() || null })
       .select("id")
       .single();
     if (erroPessoa || !pessoa) {
-      setErro(erroPessoa?.message ?? "Erro ao criar responsável.");
+      setErro(erroPessoa?.message ?? "Erro ao criar membro da equipe.");
       setCarregando(null);
       return;
     }
     const { error: erroPapel } = await supabase
       .from("pessoa_papeis")
-      .insert({ pessoa_id: pessoa.id, coordenacao_id: c.id, papel: respPapel });
+      .insert({ pessoa_id: pessoa.id, coordenacao_id: c.id, papel: "equipe" });
     setCarregando(null);
     if (erroPapel) {
       setErro(erroPapel.message);
       return;
     }
-    setNovoResp(false);
-    setRespNome("");
-    setRespEmail("");
-    setRespRamal("");
-    setRespPapel("coordenador");
+    setNovoMembro(false);
+    setMembroNome("");
+    setMembroEmail("");
+    setMembroRamal("");
     router.refresh();
   }
 
-  async function removerResponsavel(papelId: string) {
+  async function removerMembro(papelId: string) {
     setErro(null);
     setCarregando(papelId);
     const { error } = await supabase.from("pessoa_papeis").delete().eq("id", papelId);
@@ -107,7 +108,7 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
   }
 
   function copiarEmails() {
-    const emails = c.responsaveis.map((r) => r.email).filter((e): e is string => !!e);
+    const emails = c.equipe.map((r) => r.email).filter((e): e is string => !!e);
     copiar(emails.join("; "));
   }
 
@@ -125,7 +126,6 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
       {!editando ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <Campo label="Coordenação" valor={`${c.nome} - ${c.sigla}`} />
-          <Campo label="E-mail institucional" valor={c.emailGenerico ?? "não informado"} />
           <Campo label="Telefone" valor={c.telefone ?? "não informado"} />
         </div>
       ) : (
@@ -135,28 +135,52 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
             <input value={nome} onChange={(e) => setNome(e.target.value)} style={{ display: "block", width: "100%", padding: 6 }} />
           </label>
           <label>
-            E-mail institucional
-            <input value={emailGenerico} onChange={(e) => setEmailGenerico(e.target.value)} style={{ display: "block", width: "100%", padding: 6 }} />
-          </label>
-          <label>
             Telefone
             <input value={telefone} onChange={(e) => setTelefone(e.target.value)} style={{ display: "block", width: "100%", padding: 6 }} />
           </label>
         </div>
       )}
 
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ fontSize: 10.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: 1, color: cor.textoTerciario }}>
+          Coordenador
+        </span>
+        {!editando ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 12.5, fontWeight: 500 }}>
+              <span>{c.coordenadorNome || "não informado"}</span>
+              {c.coordenadorNome && <BotaoCopiar texto={c.coordenadorNome} />}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 12, color: cor.textoSecundario }}>
+              <span>{c.coordenadorEmail || "e-mail não informado"}</span>
+              {c.coordenadorEmail && <BotaoCopiar texto={c.coordenadorEmail} />}
+            </div>
+          </>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <input
+              placeholder="Nome do coordenador"
+              value={coordenadorNome}
+              onChange={(e) => setCoordenadorNome(e.target.value)}
+              style={{ padding: 6 }}
+            />
+            <input
+              placeholder="E-mail do coordenador"
+              value={coordenadorEmail}
+              onChange={(e) => setCoordenadorEmail(e.target.value)}
+              style={{ padding: 6 }}
+            />
+          </div>
+        )}
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <span style={{ fontSize: 10.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: 1, color: cor.textoTerciario }}>
-          Responsáveis
+          Equipe
         </span>
-        {c.responsaveis.map((r) => (
+        {c.equipe.map((r) => (
           <div key={r.papelId} style={{ borderBottom: `1px solid ${cor.borda}`, paddingBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600 }}>{r.nome}</span>
-              <span style={{ fontSize: 10.5, fontWeight: 600, color: cor.textoTerciario, background: "rgba(96,93,93,.12)", borderRadius: 7, padding: "3px 8px" }}>
-                {rotuloPapel(r.papel)}
-              </span>
-            </div>
+            <span style={{ fontSize: 12.5, fontWeight: 600 }}>{r.nome}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: cor.textoSecundario, marginTop: 2 }}>
               <span>{r.email ?? "—"}</span>
               {r.email && <BotaoCopiar texto={r.email} />}
@@ -167,7 +191,7 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
               {isAdmin && (
                 <button
                   type="button"
-                  onClick={() => removerResponsavel(r.papelId)}
+                  onClick={() => removerMembro(r.papelId)}
                   disabled={carregando === r.papelId}
                   style={{ marginLeft: "auto", fontSize: 10.5 }}
                 >
@@ -179,20 +203,16 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
         ))}
 
         {isAdmin &&
-          (novoResp ? (
+          (novoMembro ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, background: cor.fundo, borderRadius: 10, padding: 10 }}>
-              <input placeholder="Nome" value={respNome} onChange={(e) => setRespNome(e.target.value)} />
-              <input placeholder="E-mail" value={respEmail} onChange={(e) => setRespEmail(e.target.value)} />
-              <input placeholder="Ramal" value={respRamal} onChange={(e) => setRespRamal(e.target.value)} />
-              <select value={respPapel} onChange={(e) => setRespPapel(e.target.value as "coordenador" | "substituto")}>
-                <option value="coordenador">Coordenador(a)</option>
-                <option value="substituto">Substituto(a)</option>
-              </select>
+              <input placeholder="Nome" value={membroNome} onChange={(e) => setMembroNome(e.target.value)} />
+              <input placeholder="E-mail" value={membroEmail} onChange={(e) => setMembroEmail(e.target.value)} />
+              <input placeholder="Ramal" value={membroRamal} onChange={(e) => setMembroRamal(e.target.value)} />
               <div style={{ display: "flex", gap: 6 }}>
-                <button onClick={adicionarResponsavel} disabled={carregando === "novo" || !respNome.trim() || !respEmail.trim()} style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}>
+                <button onClick={adicionarMembro} disabled={carregando === "novo" || !membroNome.trim() || !membroEmail.trim()} style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}>
                   Salvar
                 </button>
-                <button onClick={() => setNovoResp(false)} disabled={carregando === "novo"} style={{ fontSize: 11 }}>
+                <button onClick={() => setNovoMembro(false)} disabled={carregando === "novo"} style={{ fontSize: 11 }}>
                   Cancelar
                 </button>
               </div>
@@ -200,10 +220,10 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
           ) : (
             <button
               type="button"
-              onClick={() => setNovoResp(true)}
+              onClick={() => setNovoMembro(true)}
               style={{ fontSize: 12, color: cor.textoTerciario, borderStyle: "dashed" }}
             >
-              + Cadastrar responsável
+              + Cadastrar membro da equipe
             </button>
           ))}
       </div>
@@ -228,7 +248,7 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
           <button
             type="button"
             onClick={copiarEmails}
-            disabled={c.responsaveis.length === 0}
+            disabled={c.equipe.length === 0}
             style={{ flex: 1, fontSize: 12, color: cor.destaque, background: cor.destaqueFundo }}
           >
             Copiar e-mails

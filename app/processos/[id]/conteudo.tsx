@@ -9,6 +9,7 @@ import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import DadosPrincipais from "./dados-principais";
 import DadosProcesso from "./dados-processo";
 import Prazo from "./prazo";
+import Agendamentos from "./agendamentos";
 import Cronograma from "./cronograma";
 import Conclusao from "./conclusao";
 import Abas from "./abas";
@@ -18,7 +19,7 @@ import PautaDistribuicao from "./relatorio/pauta-distribuicao";
 import EntregasLazy from "./entregas-lazy";
 import Ocorrencias from "./relatorio/ocorrencias";
 import ConclusaoRelatorio from "./relatorio/conclusao-relatorio";
-import { card, cor, pill } from "@/lib/theme";
+import { card, cor, pill, tituloDestaque } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import { getPessoasAtivas, getPapeisGestorFiscal, getTagsEvento } from "@/lib/dados-referencia";
 
@@ -96,6 +97,7 @@ export async function carregarProcesso(id: string) {
     { data: nups },
     { data: execucoes },
     { data: pauta },
+    { data: agendamentos },
     { data: kanbanAtivo },
     { data: tagHistoricoAtivo },
   ] = await Promise.all([
@@ -134,6 +136,12 @@ export async function carregarProcesso(id: string) {
       .select("id, uf, quantidade")
       .eq("processo_id", id)
       .order("created_at"),
+    supabase
+      .from("processo_agendamentos")
+      .select("id, data, horario, observacao")
+      .eq("processo_id", id)
+      .order("data")
+      .order("horario"),
     supabase
       .from("processo_kanban_historico")
       .select("id")
@@ -277,6 +285,10 @@ export async function carregarProcesso(id: string) {
       </div>
 
       <div style={secao}>
+        <Agendamentos processoId={p.id} agendamentos={(agendamentos ?? []) as any} />
+      </div>
+
+      <div style={secao}>
         <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} />
       </div>
 
@@ -383,7 +395,7 @@ export async function carregarProcesso(id: string) {
   const topo = (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <h1 style={{ fontSize: 19, margin: 0 }}>{p.numero_contrato}</h1>
+        <h1 style={{ fontSize: 19, fontWeight: 800, margin: 0, ...tituloDestaque }}>{p.numero_contrato}</h1>
         <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>

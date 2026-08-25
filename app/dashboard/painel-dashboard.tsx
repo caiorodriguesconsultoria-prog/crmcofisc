@@ -14,11 +14,15 @@ type Processo = {
 export default function PainelDashboard({
   processos,
   contagemPorEtapa,
-  eventosAtivos,
+  ativos,
+  concluidos,
+  vencendoHoje,
 }: {
   processos: Processo[];
   contagemPorEtapa: Record<string, number>;
-  eventosAtivos: number;
+  ativos: number;
+  concluidos: number;
+  vencendoHoje: number;
 }) {
   const [limiteDias, setLimiteDias] = useState(15);
 
@@ -39,16 +43,22 @@ export default function PainelDashboard({
         </div>
         <div style={{ ...card, flex: "1 1 160px" }}>
           <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-            Eventos ativos
+            Ativos
           </span>
-          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0" }}>{eventosAtivos}</p>
+          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0" }}>{ativos}</p>
         </div>
         <div style={{ ...card, flex: "1 1 160px" }}>
           <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-            Parados (limite atual)
+            Concluídos
           </span>
-          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0", color: parados.length > 0 ? cor.urgente : cor.texto }}>
-            {parados.length}
+          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0", color: cor.positivo }}>{concluidos}</p>
+        </div>
+        <div style={{ ...card, flex: "1 1 160px" }}>
+          <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
+            Vencendo hoje
+          </span>
+          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0", color: vencendoHoje > 0 ? cor.urgente : cor.texto }}>
+            {vencendoHoje}
           </p>
         </div>
       </div>

@@ -16,11 +16,18 @@ export default async function AgendaPage() {
     redirect("/login");
   }
 
-  const { data: processos, error } = await supabase
-    .from("processos")
-    .select("id, numero_contrato, prazo_data, coordenacoes(sigla), fornecedores(nome)")
-    .not("prazo_data", "is", null)
-    .order("prazo_data");
+  const [{ data: processos, error }, { data: agendamentosRaw }] = await Promise.all([
+    supabase
+      .from("processos")
+      .select("id, numero_contrato, prazo_data, coordenacoes(sigla), fornecedores(nome)")
+      .not("prazo_data", "is", null)
+      .order("prazo_data"),
+    supabase
+      .from("processo_agendamentos")
+      .select("id, data, horario, observacao, processos(id, numero_contrato)")
+      .order("data")
+      .order("horario"),
+  ]);
 
   const prazos = (processos ?? []).map((p: any) => ({
     id: p.id,
@@ -29,6 +36,17 @@ export default async function AgendaPage() {
     coordenacaoSigla: p.coordenacoes?.sigla ?? "",
     fornecedorNome: p.fornecedores?.nome ?? "",
   }));
+
+  const agendamentos = (agendamentosRaw ?? [])
+    .filter((a: any) => a.processos)
+    .map((a: any) => ({
+      id: a.id,
+      processoId: a.processos.id,
+      numeroContrato: a.processos.numero_contrato,
+      data: a.data as string,
+      horario: a.horario as string,
+      observacao: a.observacao as string | null,
+    }));
 
   const token = process.env.AGENDA_ICS_TOKEN;
   const host = (await headers()).get("host");
@@ -51,7 +69,7 @@ export default async function AgendaPage() {
         )}
       </div>
 
-      <Calendario prazos={prazos} />
+      <Calendario prazos={prazos} agendamentos={agendamentos} />
     </Painel>
   );
 }

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { botaoPrimario, card, cor } from "@/lib/theme";
+import { BotaoCopiar } from "@/app/_ui/campo";
 import Painel from "@/app/_ui/painel";
 
-type Item = { id: string; nome: string; matricula: string | null };
+type Item = { id: string; nome: string; matricula: string | null; ramal: string | null };
 
 export default function ListaPessoasPapel({
   titulo,
@@ -40,18 +41,45 @@ export default function ListaPessoasPapel({
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
               <th style={{ padding: "10px 12px" }}>Nome</th>
               <th style={{ padding: "10px 12px" }}>Matrícula</th>
+              <th style={{ padding: "10px 12px" }}>Ramal</th>
+              <th style={{ padding: "10px 12px" }}></th>
             </tr>
           </thead>
           <tbody>
             {itens.map((i) => (
               <tr key={i.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
-                <td style={{ padding: "10px 12px", fontWeight: 600 }}>{i.nome}</td>
-                <td style={{ padding: "10px 12px" }}>{i.matricula}</td>
+                <td style={{ padding: "10px 12px", fontWeight: 600 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {i.nome}
+                    <BotaoCopiar texto={i.nome} />
+                  </div>
+                </td>
+                <td style={{ padding: "10px 12px" }}>
+                  {i.matricula && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {i.matricula}
+                      <BotaoCopiar texto={i.matricula} />
+                    </div>
+                  )}
+                </td>
+                <td style={{ padding: "10px 12px" }}>
+                  {i.ramal && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {i.ramal}
+                      <BotaoCopiar texto={i.ramal} />
+                    </div>
+                  )}
+                </td>
+                <td style={{ padding: "10px 12px" }}>
+                  {i.matricula && (
+                    <BotaoCopiar texto={`${i.nome}, matrícula SIAPE nº ${i.matricula}`} rotulo="Copiar nome + matrícula" />
+                  )}
+                </td>
               </tr>
             ))}
             {itens.length === 0 && (
               <tr>
-                <td colSpan={2} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
+                <td colSpan={4} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
                   Nenhum cadastro ainda.
                 </td>
               </tr>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cor } from "@/lib/theme";
+import { cor, tituloDestaque } from "@/lib/theme";
 
 export default function Painel({
   titulo,
@@ -21,7 +21,7 @@ export default function Painel({
       <div className="crm-painel" style={{ maxWidth }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
           <div>
-            <h1 style={{ fontSize: 19, margin: 0, letterSpacing: -0.3 }}>{titulo}</h1>
+            <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, ...tituloDestaque }}>{titulo}</h1>
             {subtitulo && (
               <p style={{ fontSize: 12.5, color: cor.textoSecundario, margin: "4px 0 0" }}>{subtitulo}</p>
             )}

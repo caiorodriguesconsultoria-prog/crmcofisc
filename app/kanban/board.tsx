@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cor } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
+import { corEvento } from "@/lib/cores-evento";
 
 type Card = {
   id: string;
@@ -22,6 +23,7 @@ type Card = {
   tarefasTotal: number;
   tarefasConcluidas: number;
   tags: { id: string; valor: string }[];
+  agendamentos: { data: string; horario: string }[];
 };
 
 type Coluna = { nome: string; cards: Card[] };
@@ -179,21 +181,24 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
 
                   {card.tags.length > 0 && (
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {card.tags.map((t) => (
-                        <span
-                          key={t.id}
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 600,
-                            color: cor.destaque,
-                            background: cor.destaqueFundo,
-                            borderRadius: 7,
-                            padding: "2px 7px",
-                          }}
-                        >
-                          {t.valor}
-                        </span>
-                      ))}
+                      {card.tags.map((t) => {
+                        const c = corEvento(t.id);
+                        return (
+                          <span
+                            key={t.id}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              color: c.texto,
+                              background: c.fundo,
+                              borderRadius: 7,
+                              padding: "2px 7px",
+                            }}
+                          >
+                            {t.valor}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -210,10 +215,29 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
                     </div>
                   )}
 
-                  {card.dias !== null && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: dot ?? undefined }}>
-                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: dot ?? undefined, flex: "none" }} />
-                      {formatarData(card.prazoData)} · {textoPrazo(card.dias)}
+                  {(card.dias !== null || card.agendamentos.length > 0) && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      {card.dias !== null && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: dot ?? undefined }}>
+                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: dot ?? undefined, flex: "none" }} />
+                          {formatarData(card.prazoData)} · {textoPrazo(card.dias)}
+                        </div>
+                      )}
+                      {card.agendamentos.map((a, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            color: cor.destaque,
+                            background: cor.destaqueFundo,
+                            borderRadius: 7,
+                            padding: "2px 7px",
+                          }}
+                        >
+                          {formatarData(a.data)} {a.horario.slice(0, 5)}
+                        </span>
+                      ))}
                     </div>
                   )}
 

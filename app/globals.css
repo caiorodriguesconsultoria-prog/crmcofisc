@@ -3,7 +3,7 @@
 }
 
 a {
-  color: #7d5411;
+  color: #2f5fdb;
 }
 
 button {
@@ -42,7 +42,7 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 2px solid rgba(182, 130, 53, 0.35);
+  outline: 2px solid rgba(47, 95, 219, 0.35);
   outline-offset: 1px;
 }
 

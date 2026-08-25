@@ -43,6 +43,21 @@ export default async function KanbanPage() {
     .select("id, processo_id")
     .is("saida_em", null);
 
+  const hoje = new Date().toISOString().slice(0, 10);
+  const { data: agendamentosRaw } = await supabase
+    .from("processo_agendamentos")
+    .select("processo_id, data, horario")
+    .gte("data", hoje)
+    .order("data")
+    .order("horario");
+
+  const agendamentosPorProcesso = new Map<string, { data: string; horario: string }[]>();
+  for (const a of agendamentosRaw ?? []) {
+    const lista = agendamentosPorProcesso.get(a.processo_id) ?? [];
+    lista.push({ data: a.data, horario: a.horario });
+    agendamentosPorProcesso.set(a.processo_id, lista);
+  }
+
   const origemPorProcesso = new Map(
     (kanbanAtivo ?? []).map((k) => [k.processo_id, k.id]),
   );
@@ -89,6 +104,7 @@ export default async function KanbanPage() {
       tarefasTotal: progresso?.total ?? 0,
       tarefasConcluidas: progresso?.concluidas ?? 0,
       tags,
+      agendamentos: agendamentosPorProcesso.get(p.id) ?? [],
     };
   });
 

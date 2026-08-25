@@ -18,11 +18,14 @@ export default async function CoordenacoesPage() {
 
   const [{ data: pessoa }, { data: coordenacoes, error }, { data: papeis }] = await Promise.all([
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
-    supabase.from("coordenacoes").select("id, sigla, nome, email_generico, telefone").order("sigla"),
+    supabase
+      .from("coordenacoes")
+      .select("id, sigla, nome, telefone, coordenador_nome, coordenador_email")
+      .order("sigla"),
     supabase
       .from("pessoa_papeis")
       .select("id, coordenacao_id, papel, pessoas(id, nome, email, ramal)")
-      .in("papel", ["coordenador", "substituto"]),
+      .in("papel", ["coordenador", "substituto", "equipe"]),
   ]);
 
   const isAdmin = pessoa?.is_admin ?? false;
@@ -31,9 +34,10 @@ export default async function CoordenacoesPage() {
     id: c.id,
     sigla: c.sigla,
     nome: c.nome,
-    emailGenerico: c.email_generico,
     telefone: c.telefone,
-    responsaveis: (papeis ?? [])
+    coordenadorNome: c.coordenador_nome,
+    coordenadorEmail: c.coordenador_email,
+    equipe: (papeis ?? [])
       .filter((pp) => pp.coordenacao_id === c.id)
       .map((pp: any) => ({
         papelId: pp.id,
@@ -41,7 +45,6 @@ export default async function CoordenacoesPage() {
         nome: pp.pessoas?.nome ?? "",
         email: pp.pessoas?.email ?? null,
         ramal: pp.pessoas?.ramal ?? null,
-        papel: pp.papel as "coordenador" | "substituto",
       })),
   }));
 

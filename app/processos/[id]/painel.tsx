@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
+import { corEvento } from "@/lib/cores-evento";
 
 const KANBANS = [
   "Ofício de apresentação",
@@ -127,38 +128,41 @@ export default function PainelProcesso({
           <span style={{ fontSize: 12.5, color: cor.textoTerciario }}>Nenhum</span>
         ) : (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {tagsAtivas.map((t) => (
-              <span
-                key={t.id}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  color: cor.destaque,
-                  background: cor.destaqueFundo,
-                  borderRadius: 20,
-                  padding: "5px 8px 5px 11px",
-                }}
-              >
-                {t.valor}
-                <button
-                  onClick={() => removerEvento(t.id)}
-                  disabled={carregando}
-                  aria-label={`Remover ${t.valor}`}
+            {tagsAtivas.map((t) => {
+              const c = corEvento(t.id);
+              return (
+                <span
+                  key={t.id}
                   style={{
-                    fontSize: 10,
-                    padding: "1px 6px",
-                    border: "none",
-                    background: "rgba(125,84,17,.12)",
-                    color: cor.destaque,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: c.texto,
+                    background: c.fundo,
+                    borderRadius: 20,
+                    padding: "5px 8px 5px 11px",
                   }}
                 >
-                  ×
-                </button>
-              </span>
-            ))}
+                  {t.valor}
+                  <button
+                    onClick={() => removerEvento(t.id)}
+                    disabled={carregando}
+                    aria-label={`Remover ${t.valor}`}
+                    style={{
+                      fontSize: 10,
+                      padding: "1px 6px",
+                      border: "none",
+                      background: "rgba(0,0,0,.08)",
+                      color: c.texto,
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
           </div>
         )}
         <div style={{ display: "flex", gap: 8 }}>

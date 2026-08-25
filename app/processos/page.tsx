@@ -6,7 +6,12 @@ import { botaoPrimario, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
 import { getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
 
-export default async function ProcessosPage() {
+export default async function ProcessosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ etapa?: string; evento?: string }>;
+}) {
+  const sp = await searchParams;
   const supabase = await createClient();
   const {
     data: { session },
@@ -23,6 +28,7 @@ export default async function ProcessosPage() {
     { data: formasEntrega },
     eventos,
     responsaveis,
+    { data: agendamentosRaw },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -34,11 +40,32 @@ export default async function ProcessosPage() {
     supabase.from("tags").select("id, valor").eq("categoria", "forma_entrega").eq("ativo", true).order("valor"),
     getTagsEvento(),
     getPessoasAtivas(),
+    supabase
+      .from("processo_agendamentos")
+      .select("processo_id, data, horario")
+      .gte("data", new Date().toISOString().slice(0, 10))
+      .order("data")
+      .order("horario"),
   ]);
+
+  const proximoAgendamentoPorProcesso = new Map<string, { data: string; horario: string }>();
+  for (const a of agendamentosRaw ?? []) {
+    if (!proximoAgendamentoPorProcesso.has(a.processo_id)) {
+      proximoAgendamentoPorProcesso.set(a.processo_id, { data: a.data, horario: a.horario });
+    }
+  }
+  const processosComAgendamento = (processos ?? []).map((p) => ({
+    ...p,
+    proximoAgendamento: proximoAgendamentoPorProcesso.get(p.id) ?? null,
+  }));
+
+  const eventoSelecionado = sp.evento ? (eventos ?? []).find((e) => e.id === sp.evento) : null;
+  const titulo = sp.etapa || eventoSelecionado?.valor || "Processos";
 
   return (
     <Painel
-      titulo="Processos"
+      titulo={titulo}
+      subtitulo={titulo !== "Processos" ? "Processos" : undefined}
       voltarHref="/dashboard"
       maxWidth={1300}
       acao={
@@ -50,7 +77,7 @@ export default async function ProcessosPage() {
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
       <ListaProcessos
-        processos={(processos ?? []) as any}
+        processos={processosComAgendamento as any}
         coordenacoes={coordenacoes ?? []}
         formasEntrega={formasEntrega ?? []}
         eventos={eventos ?? []}

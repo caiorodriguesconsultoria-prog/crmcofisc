@@ -11,11 +11,9 @@ export default function NovoFornecedorForm() {
 
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
-  const [endereco, setEndereco] = useState("");
   const [preposto, setPreposto] = useState("");
   const [telefone, setTelefone] = useState("");
   const [emails, setEmails] = useState([{ email: "", rotulo: "" }]);
-  const [bancoConta, setBancoConta] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -41,10 +39,8 @@ export default function NovoFornecedorForm() {
       .insert({
         nome,
         cnpj,
-        endereco: endereco || null,
         preposto: preposto || null,
         telefone: telefone || null,
-        banco_conta: bancoConta || null,
       })
       .select("id")
       .single();
@@ -96,14 +92,6 @@ export default function NovoFornecedorForm() {
         />
       </label>
       <label>
-        Endereço
-        <input
-          value={endereco}
-          onChange={(e) => setEndereco(e.target.value)}
-          style={{ display: "block", width: "100%", padding: 8 }}
-        />
-      </label>
-      <label>
         Preposto
         <input
           value={preposto}
@@ -147,14 +135,6 @@ export default function NovoFornecedorForm() {
           + Adicionar e-mail
         </button>
       </div>
-      <label>
-        Banco / conta
-        <input
-          value={bancoConta}
-          onChange={(e) => setBancoConta(e.target.value)}
-          style={{ display: "block", width: "100%", padding: 8 }}
-        />
-      </label>
       {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
       <button type="submit" disabled={salvando} style={botaoPrimario}>
         {salvando ? "Salvando..." : "Criar fornecedor"}

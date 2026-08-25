@@ -28,27 +28,41 @@ function IconeCopiar() {
   );
 }
 
-export function BotaoCopiar({ texto }: { texto: string }) {
+export function BotaoCopiar({ texto, rotulo }: { texto: string; rotulo?: string }) {
   if (!texto) return null;
   return (
     <button
       type="button"
       onClick={() => copiar(texto)}
-      title="Copiar"
-      aria-label="Copiar"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 22,
-        height: 22,
-        padding: 0,
-        flex: "none",
-        color: cor.textoTerciario,
-        background: "transparent",
-      }}
+      title={rotulo ?? "Copiar"}
+      aria-label={rotulo ?? "Copiar"}
+      style={
+        rotulo
+          ? {
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              padding: "5px 10px",
+              flex: "none",
+              color: cor.destaque,
+              background: cor.destaqueFundo,
+            }
+          : {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 22,
+              height: 22,
+              padding: 0,
+              flex: "none",
+              color: cor.textoTerciario,
+              background: "transparent",
+            }
+      }
     >
       <IconeCopiar />
+      {rotulo}
     </button>
   );
 }
