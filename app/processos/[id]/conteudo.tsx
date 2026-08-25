@@ -105,7 +105,9 @@ export async function carregarProcesso(id: string) {
     getTagsEvento(),
     supabase
       .from("andamentos")
-      .select("id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome)")
+      .select(
+        "id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome), agendamento_data, agendamento_horario, google_event_id, andamento_tags(tags(id, valor))",
+      )
       .eq("processo_id", id)
       .order("data", { ascending: false }),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
@@ -230,6 +232,9 @@ export async function carregarProcesso(id: string) {
     ...(tarefasRaw ?? [])
       .filter((t: any) => t.agendamento_data && !t.concluida)
       .map((t: any) => t.agendamento_data as string),
+    ...(andamentosRaw ?? [])
+      .filter((a: any) => a.agendamento_data)
+      .map((a: any) => a.agendamento_data as string),
     ...(execucoes ?? [])
       .filter((e: any) => e.data_prevista && !e.data_entrega)
       .map((e: any) => e.data_prevista as string),
@@ -336,7 +341,20 @@ export async function carregarProcesso(id: string) {
             processoId={p.id}
             autorId={pessoaAtual?.id ?? null}
             numeroContrato={p.numero_contrato}
-            andamentos={(andamentosRaw ?? []) as any}
+            tagsAtivas={tagsAtivas}
+            andamentos={(andamentosRaw ?? []).map((a: any) => ({
+              id: a.id,
+              tipo: a.tipo,
+              texto: a.texto,
+              data: a.data,
+              sei_numero: a.sei_numero,
+              incluir_relatorio: a.incluir_relatorio,
+              autor: a.autor,
+              agendamentoData: a.agendamento_data,
+              agendamentoHorario: a.agendamento_horario,
+              googleEventId: a.google_event_id,
+              tags: (a.andamento_tags ?? []).map((at: any) => at.tags).filter(Boolean),
+            }))}
           />
         </CartaoColapsavel>
       </div>

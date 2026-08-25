@@ -31,7 +31,7 @@ export default async function AgendaPage({
   const ehAdmin = !!pessoaAtual?.is_admin;
   const conectadoGoogle = await googleConectado();
 
-  const [{ data: processos, error }, { data: agendamentosRaw }, { data: tarefasAgendadasRaw }] = await Promise.all([
+  const [{ data: processos, error }, { data: agendamentosRaw }, { data: andamentosAgendadosRaw }] = await Promise.all([
     supabase
       .from("processos")
       .select("id, numero_contrato, prazo_data, coordenacoes(sigla), fornecedores(nome)")
@@ -43,10 +43,8 @@ export default async function AgendaPage({
       .order("data")
       .order("horario"),
     supabase
-      .from("processo_tarefas")
-      .select("id, label, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
-      .eq("origem_tipo", "evento")
-      .eq("concluida", false)
+      .from("andamentos")
+      .select("id, texto, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
       .not("agendamento_data", "is", null)
       .order("agendamento_data")
       .order("agendamento_horario"),
@@ -71,15 +69,15 @@ export default async function AgendaPage({
         horario: a.horario as string,
         observacao: a.observacao as string | null,
       })),
-    ...(tarefasAgendadasRaw ?? [])
-      .filter((t: any) => t.processos)
-      .map((t: any) => ({
-        id: t.id,
-        processoId: t.processos.id,
-        numeroContrato: t.processos.numero_contrato,
-        data: t.agendamento_data as string,
-        horario: t.agendamento_horario as string,
-        observacao: t.label as string | null,
+    ...(andamentosAgendadosRaw ?? [])
+      .filter((a: any) => a.processos)
+      .map((a: any) => ({
+        id: a.id,
+        processoId: a.processos.id,
+        numeroContrato: a.processos.numero_contrato,
+        data: a.agendamento_data as string,
+        horario: a.agendamento_horario as string,
+        observacao: a.texto as string | null,
       })),
   ];
 

@@ -3,8 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { botaoPrimario, cor } from "@/lib/theme";
+import { botaoPrimario, cor, pill } from "@/lib/theme";
+import { corEvento } from "@/lib/cores-evento";
 import { BotaoCopiar } from "@/app/_ui/campo";
+import { sincronizarGoogle } from "@/lib/google-sync-cliente";
+
+type Tag = { id: string; valor: string };
 
 type Andamento = {
   id: string;
@@ -14,6 +18,10 @@ type Andamento = {
   sei_numero: string | null;
   incluir_relatorio: boolean;
   autor: { nome: string } | null;
+  tags: Tag[];
+  agendamentoData: string | null;
+  agendamentoHorario: string | null;
+  googleEventId: string | null;
 };
 
 const MODELOS: Record<string, string> = {
@@ -34,23 +42,35 @@ const MODELOS: Record<string, string> = {
 
 const TIPOS = Object.keys(MODELOS);
 
+function formatarAgendamento(data: string | null, horario: string | null) {
+  if (!data) return null;
+  const dataFmt = new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+  return horario ? `${dataFmt} ${horario.slice(0, 5)}` : dataFmt;
+}
+
 export default function Andamentos({
   processoId,
   autorId,
   numeroContrato,
   andamentos,
+  tagsAtivas,
 }: {
   processoId: string;
   autorId: string | null;
   numeroContrato: string;
   andamentos: Andamento[];
+  tagsAtivas: Tag[];
 }) {
   const router = useRouter();
   const supabase = createClient();
+  const [modalAberto, setModalAberto] = useState(false);
   const [tipo, setTipo] = useState("");
   const [texto, setTexto] = useState("");
   const [seiNumero, setSeiNumero] = useState("");
   const [incluirRelatorio, setIncluirRelatorio] = useState(false);
+  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [agendamentoData, setAgendamentoData] = useState("");
+  const [agendamentoHorario, setAgendamentoHorario] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [carregandoId, setCarregandoId] = useState<string | null>(null);
@@ -60,31 +80,75 @@ export default function Andamentos({
     setTexto(modelo.replaceAll("[X]", numeroContrato));
   }
 
+  function alternarTag(tagId: string) {
+    setTagIds((atual) => (atual.includes(tagId) ? atual.filter((id) => id !== tagId) : [...atual, tagId]));
+  }
+
+  function fecharModal() {
+    setModalAberto(false);
+    setTipo("");
+    setTexto("");
+    setSeiNumero("");
+    setIncluirRelatorio(false);
+    setTagIds([]);
+    setAgendamentoData("");
+    setAgendamentoHorario("");
+    setErro(null);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
     setSalvando(true);
 
-    const { error } = await supabase.from("andamentos").insert({
-      processo_id: processoId,
-      tipo,
-      texto,
-      sei_numero: seiNumero || null,
-      autor_id: autorId,
-      incluir_relatorio: incluirRelatorio,
-    });
+    const { data: criado, error } = await supabase
+      .from("andamentos")
+      .insert({
+        processo_id: processoId,
+        tipo,
+        texto,
+        sei_numero: seiNumero || null,
+        autor_id: autorId,
+        incluir_relatorio: incluirRelatorio,
+        agendamento_data: agendamentoData || null,
+        agendamento_horario: agendamentoHorario || null,
+      })
+      .select("id")
+      .single();
 
-    setSalvando(false);
-
-    if (error) {
-      setErro(error.message);
+    if (error || !criado) {
+      setSalvando(false);
+      setErro(error?.message ?? "Erro ao salvar");
       return;
     }
 
-    setTipo("");
-    setTexto("");
-    setSeiNumero("");
-    setIncluirRelatorio(false);
+    if (tagIds.length > 0) {
+      const { error: erroTags } = await supabase
+        .from("andamento_tags")
+        .insert(tagIds.map((tagId) => ({ andamento_id: criado.id, tag_id: tagId })));
+      if (erroTags) {
+        setSalvando(false);
+        setErro(erroTags.message);
+        return;
+      }
+    }
+
+    if (agendamentoData && agendamentoHorario) {
+      sincronizarGoogle({
+        tipo: "andamento",
+        acao: "salvar",
+        id: criado.id,
+        googleEventId: null,
+        numeroContrato,
+        descricao: texto.trim() || tipo,
+        data: agendamentoData,
+        horario: agendamentoHorario,
+        processoId,
+      });
+    }
+
+    setSalvando(false);
+    fecharModal();
     router.refresh();
   }
 
@@ -105,9 +169,20 @@ export default function Andamentos({
 
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
-        "Incluir no relatório" define o que entra na seção 5 (Ocorrências) do Relatório.
-      </p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
+          "Incluir no relatório" define o que entra na seção 5 (Ocorrências) do Relatório.
+        </p>
+        <button
+          type="button"
+          onClick={() => setModalAberto(true)}
+          style={{ ...botaoPrimario, fontSize: 11.5, padding: "6px 14px", whiteSpace: "nowrap" }}
+        >
+          + Criar andamento
+        </button>
+      </div>
+
+      {erro && !modalAberto && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
 
       <div style={{ display: "flex", flexDirection: "column" }}>
         {andamentos.length === 0 && (
@@ -121,6 +196,23 @@ export default function Andamentos({
               {a.sei_numero ? ` · SEI ${a.sei_numero}` : ""}
             </div>
             <div style={{ fontSize: 13, marginTop: 3 }}>{a.texto}</div>
+            {(a.tags.length > 0 || a.agendamentoData) && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                {a.tags.map((t) => {
+                  const c = corEvento(t.id);
+                  return (
+                    <span key={t.id} style={{ ...pill, background: c.fundo, color: c.texto }}>
+                      {t.valor}
+                    </span>
+                  );
+                })}
+                {a.agendamentoData && (
+                  <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>
+                    {formatarAgendamento(a.agendamentoData, a.agendamentoHorario)}
+                  </span>
+                )}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
               <label style={{ fontSize: 11.5, display: "flex", alignItems: "center", gap: 4 }}>
                 <input
@@ -137,51 +229,165 @@ export default function Andamentos({
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <select value={tipo} onChange={(e) => setTipo(e.target.value)} required style={{ padding: 8 }}>
-          <option value="">Selecione o tipo</option>
-          {TIPOS.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-          <textarea
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder="Texto do andamento — as lacunas [ ] são editáveis."
-            required
-            style={{ padding: 8, flex: 1 }}
-          />
-          <button
-            type="button"
-            onClick={gerarComIA}
-            disabled={!tipo}
-            style={{ color: cor.destaque, background: cor.destaqueFundo, fontSize: 11.5, whiteSpace: "nowrap" }}
+      {modalAberto && (
+        <div
+          onClick={fecharModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 60,
+            background: "rgba(32,31,29,.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleSubmit}
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: 18,
+              width: "100%",
+              maxWidth: 460,
+              maxHeight: "85vh",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
           >
-            ✦ Gerar com IA
-          </button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <strong style={{ fontSize: 13 }}>Criar andamento</strong>
+              <button
+                type="button"
+                onClick={fecharModal}
+                aria-label="Fechar"
+                style={{ width: 26, height: 26, borderRadius: "50%", border: "none", background: "rgba(32,31,29,.08)" }}
+              >
+                ×
+              </button>
+            </div>
+
+            <select value={tipo} onChange={(e) => setTipo(e.target.value)} required style={{ padding: 8 }}>
+              <option value="">Selecione o tipo</option>
+              {TIPOS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <textarea
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder="Texto do andamento — as lacunas [ ] são editáveis."
+                required
+                style={{ padding: 8, flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={gerarComIA}
+                disabled={!tipo}
+                style={{ color: cor.destaque, background: cor.destaqueFundo, fontSize: 11.5, whiteSpace: "nowrap" }}
+              >
+                ✦ Gerar com IA
+              </button>
+            </div>
+
+            <input
+              value={seiNumero}
+              onChange={(e) => setSeiNumero(e.target.value)}
+              placeholder="Nº SEI (opcional)"
+              style={{ padding: 8 }}
+            />
+
+            {tagsAtivas.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                    color: cor.textoTerciario,
+                  }}
+                >
+                  Tags de eventos relacionadas
+                </span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {tagsAtivas.map((t) => {
+                    const c = corEvento(t.id);
+                    const ativa = tagIds.includes(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => alternarTag(t.id)}
+                        style={{
+                          ...pill,
+                          border: "none",
+                          cursor: "pointer",
+                          background: ativa ? c.fundo : "rgba(96,93,93,.10)",
+                          color: ativa ? c.texto : cor.textoSecundario,
+                        }}
+                      >
+                        {t.valor}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  color: cor.textoTerciario,
+                }}
+              >
+                Agendamento (opcional)
+              </span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="date"
+                  value={agendamentoData}
+                  onChange={(e) => setAgendamentoData(e.target.value)}
+                  style={{ padding: 8, flex: 1 }}
+                />
+                <input
+                  type="time"
+                  value={agendamentoHorario}
+                  onChange={(e) => setAgendamentoHorario(e.target.value)}
+                  style={{ padding: 8, flex: 1 }}
+                />
+              </div>
+            </div>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={incluirRelatorio}
+                onChange={(e) => setIncluirRelatorio(e.target.checked)}
+              />
+              Incluir no relatório
+            </label>
+
+            {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+
+            <button type="submit" disabled={salvando} style={botaoPrimario}>
+              {salvando ? "Salvando..." : "Criar"}
+            </button>
+          </form>
         </div>
-        <input
-          value={seiNumero}
-          onChange={(e) => setSeiNumero(e.target.value)}
-          placeholder="Nº SEI (opcional)"
-          style={{ padding: 8 }}
-        />
-        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input
-            type="checkbox"
-            checked={incluirRelatorio}
-            onChange={(e) => setIncluirRelatorio(e.target.checked)}
-          />
-          Incluir no relatório
-        </label>
-        {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
-        <button type="submit" disabled={salvando} style={botaoPrimario}>
-          {salvando ? "Salvando..." : "Registrar andamento"}
-        </button>
-      </form>
+      )}
     </section>
   );
 }

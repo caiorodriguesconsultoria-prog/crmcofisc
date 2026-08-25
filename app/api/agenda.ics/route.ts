@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   const [
     { data: processos, error },
     { data: agendamentos, error: erroAgendamentos },
-    { data: tarefasAgendadas, error: erroTarefas },
+    { data: andamentosAgendados, error: erroAndamentos },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -44,14 +44,12 @@ export async function GET(request: Request) {
       .from("processo_agendamentos")
       .select("id, data, horario, observacao, processos(id, numero_contrato)"),
     supabase
-      .from("processo_tarefas")
-      .select("id, label, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
-      .eq("origem_tipo", "evento")
-      .eq("concluida", false)
+      .from("andamentos")
+      .select("id, texto, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
       .not("agendamento_data", "is", null),
   ]);
 
-  if (error || erroAgendamentos || erroTarefas) {
+  if (error || erroAgendamentos || erroAndamentos) {
     return new Response("Erro ao carregar agenda", { status: 500 });
   }
 
@@ -91,15 +89,15 @@ export async function GET(request: Request) {
         horario: a.horario as string,
         tarefa: (a.observacao as string | null) ?? "Agendamento de entrega",
       })),
-    ...(tarefasAgendadas ?? [])
-      .filter((t: any) => t.processos)
-      .map((t: any) => ({
-        id: `tarefa-${t.id}`,
-        processoId: t.processos.id,
-        numeroContrato: t.processos.numero_contrato,
-        data: t.agendamento_data as string,
-        horario: t.agendamento_horario as string,
-        tarefa: t.label as string,
+    ...(andamentosAgendados ?? [])
+      .filter((a: any) => a.processos)
+      .map((a: any) => ({
+        id: `andamento-${a.id}`,
+        processoId: a.processos.id,
+        numeroContrato: a.processos.numero_contrato,
+        data: a.agendamento_data as string,
+        horario: a.agendamento_horario as string,
+        tarefa: a.texto as string,
       })),
   ]
     .map((e) => {

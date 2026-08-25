@@ -233,9 +233,7 @@ export default function Checklist({
   const supabase = createClient();
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState<string | null>(null);
-  const [abaAtiva, setAbaAtiva] = useState<string | null>(null);
   const [abertoTarefas, setAbertoTarefas] = useState(true);
-  const [abertoEventos, setAbertoEventos] = useState(true);
   const [novaTarefaEm, setNovaTarefaEm] = useState<string | null>(null);
   const [tarefaLabel, setTarefaLabel] = useState("");
   const [tarefaData, setTarefaData] = useState("");
@@ -246,8 +244,6 @@ export default function Checklist({
   const [salvandoObs, setSalvandoObs] = useState(false);
 
   const grupoKanban = grupos.find((g) => g.origemTipo === "kanban");
-  const gruposEvento = grupos.filter((g) => g.origemTipo === "evento");
-  const grupoAtivo = gruposEvento.find((g) => g.origemId === abaAtiva) ?? gruposEvento[0] ?? null;
 
   async function alternar(tarefa: Tarefa) {
     setErro(null);
@@ -473,58 +469,6 @@ export default function Checklist({
           )}
         </div>
       )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <CabecalhoRecolhivel titulo="Eventos" aberto={abertoEventos} onToggle={() => setAbertoEventos((a) => !a)} />
-
-        {abertoEventos &&
-          (gruposEvento.length > 0 ? (
-            <>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                {gruposEvento.map((g) => {
-                  const ativo = grupoAtivo?.origemId === g.origemId;
-                  return (
-                    <button
-                      key={g.origemId}
-                      type="button"
-                      onClick={() => setAbaAtiva(g.origemId)}
-                      style={{
-                        fontSize: 11.5,
-                        padding: "6px 12px",
-                        borderRadius: 9,
-                        border: "none",
-                        background: ativo ? cor.destaque : "rgba(96,93,93,.10)",
-                        color: ativo ? "#fff" : cor.textoSecundario,
-                      }}
-                    >
-                      {g.nome} ({g.tarefas.filter((t) => t.concluida).length}/{g.tarefas.length})
-                    </button>
-                  );
-                })}
-              </div>
-
-              {grupoAtivo && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <Progresso
-                    concluidas={grupoAtivo.tarefas.filter((t) => t.concluida).length}
-                    total={grupoAtivo.tarefas.length}
-                  />
-                  <ListaTarefas
-                    tarefas={grupoAtivo.tarefas}
-                    carregando={carregando}
-                    onAlternar={alternar}
-                    onAgendar={agendar}
-                    onReordenar={reordenar}
-                    onObservar={abrirObservacoes}
-                  />
-                  {formularioNovaTarefa(grupoAtivo)}
-                </div>
-              )}
-            </>
-          ) : (
-            <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo.</p>
-          ))}
-      </div>
 
       {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
 

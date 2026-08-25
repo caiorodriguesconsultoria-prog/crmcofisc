@@ -44,7 +44,7 @@ export default async function KanbanPage() {
     .is("saida_em", null);
 
   const hoje = new Date().toISOString().slice(0, 10);
-  const [{ data: agendamentosRaw }, { data: tarefasAgendadasRaw }] = await Promise.all([
+  const [{ data: agendamentosRaw }, { data: andamentosAgendadosRaw }] = await Promise.all([
     supabase
       .from("processo_agendamentos")
       .select("processo_id, data, horario")
@@ -52,10 +52,8 @@ export default async function KanbanPage() {
       .order("data")
       .order("horario"),
     supabase
-      .from("processo_tarefas")
-      .select("processo_id, label, agendamento_data, agendamento_horario")
-      .eq("origem_tipo", "evento")
-      .eq("concluida", false)
+      .from("andamentos")
+      .select("processo_id, texto, agendamento_data, agendamento_horario")
       .not("agendamento_data", "is", null)
       .gte("agendamento_data", hoje)
       .order("agendamento_data")
@@ -68,9 +66,9 @@ export default async function KanbanPage() {
     lista.push({ data: a.data, horario: a.horario, rotulo: null });
     agendamentosPorProcesso.set(a.processo_id, lista);
   }
-  for (const t of tarefasAgendadasRaw ?? []) {
+  for (const t of andamentosAgendadosRaw ?? []) {
     const lista = agendamentosPorProcesso.get(t.processo_id) ?? [];
-    lista.push({ data: t.agendamento_data as string, horario: t.agendamento_horario as string, rotulo: t.label });
+    lista.push({ data: t.agendamento_data as string, horario: t.agendamento_horario as string, rotulo: t.texto });
     agendamentosPorProcesso.set(t.processo_id, lista);
   }
 

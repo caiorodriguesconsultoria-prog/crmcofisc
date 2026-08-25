@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { tipo, acao, id, googleEventId, numeroContrato, descricao, data, horario, urlProcesso } = body as {
-    tipo: "agendamento" | "tarefa";
+    tipo: "agendamento" | "tarefa" | "andamento";
     acao: "salvar" | "remover";
     id: string;
     googleEventId: string | null;
@@ -30,10 +30,15 @@ export async function POST(request: NextRequest) {
     urlProcesso: string;
   };
 
-  if (tipo !== "agendamento" && tipo !== "tarefa") {
+  const TABELAS = {
+    agendamento: "processo_agendamentos",
+    tarefa: "processo_tarefas",
+    andamento: "andamentos",
+  } as const;
+  const tabela = TABELAS[tipo];
+  if (!tabela) {
     return NextResponse.json({ error: "tipo inválido" }, { status: 400 });
   }
-  const tabela = tipo === "agendamento" ? "processo_agendamentos" : "processo_tarefas";
 
   if (acao === "remover") {
     if (googleEventId) await removerEventoGoogle(googleEventId);
