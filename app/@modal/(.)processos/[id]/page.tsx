@@ -10,7 +10,7 @@ export default async function ProcessoModalPage({
   const { topo, corpo } = await carregarProcesso(id);
 
   return (
-    <PainelAltoModal maxWidth={820} viewTransitionName={`processo-${id}`} topo={topo}>
+    <PainelAltoModal maxWidth={1040} viewTransitionName={`processo-${id}`} topo={topo}>
       {corpo}
     </PainelAltoModal>
   );
