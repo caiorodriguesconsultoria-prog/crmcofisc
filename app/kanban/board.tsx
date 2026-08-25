@@ -23,7 +23,7 @@ type Card = {
   tarefasTotal: number;
   tarefasConcluidas: number;
   tags: { id: string; valor: string }[];
-  agendamentos: { data: string; horario: string }[];
+  agendamentos: { data: string; horario: string; rotulo: string | null }[];
 };
 
 type Coluna = { nome: string; cards: Card[] };
@@ -226,6 +226,7 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
                       {card.agendamentos.map((a, i) => (
                         <span
                           key={i}
+                          title={a.rotulo ?? undefined}
                           style={{
                             fontSize: 10,
                             fontWeight: 600,
@@ -236,6 +237,7 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
                           }}
                         >
                           {formatarData(a.data)} {a.horario.slice(0, 5)}
+                          {a.rotulo ? ` · ${a.rotulo}` : ""}
                         </span>
                       ))}
                     </div>

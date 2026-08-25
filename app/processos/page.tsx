@@ -22,6 +22,8 @@ export default async function ProcessosPage({
     redirect("/login");
   }
 
+  const hoje = new Date().toISOString().slice(0, 10);
+
   const [
     { data: processos, error },
     { data: coordenacoes },
@@ -29,6 +31,7 @@ export default async function ProcessosPage({
     eventos,
     responsaveis,
     { data: agendamentosRaw },
+    { data: tarefasAgendadasRaw },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -40,19 +43,28 @@ export default async function ProcessosPage({
     supabase.from("tags").select("id, valor").eq("categoria", "forma_entrega").eq("ativo", true).order("valor"),
     getTagsEvento(),
     getPessoasAtivas(),
+    supabase.from("processo_agendamentos").select("processo_id, data, horario").gte("data", hoje),
     supabase
-      .from("processo_agendamentos")
-      .select("processo_id, data, horario")
-      .gte("data", new Date().toISOString().slice(0, 10))
-      .order("data")
-      .order("horario"),
+      .from("processo_tarefas")
+      .select("processo_id, agendamento_data, agendamento_horario")
+      .eq("origem_tipo", "evento")
+      .eq("concluida", false)
+      .not("agendamento_data", "is", null)
+      .gte("agendamento_data", hoje),
   ]);
 
   const proximoAgendamentoPorProcesso = new Map<string, { data: string; horario: string }>();
-  for (const a of agendamentosRaw ?? []) {
-    if (!proximoAgendamentoPorProcesso.has(a.processo_id)) {
-      proximoAgendamentoPorProcesso.set(a.processo_id, { data: a.data, horario: a.horario });
+  function considerar(processoId: string, data: string, horario: string) {
+    const atual = proximoAgendamentoPorProcesso.get(processoId);
+    if (!atual || data < atual.data || (data === atual.data && horario < atual.horario)) {
+      proximoAgendamentoPorProcesso.set(processoId, { data, horario });
     }
+  }
+  for (const a of agendamentosRaw ?? []) {
+    considerar(a.processo_id, a.data, a.horario);
+  }
+  for (const t of tarefasAgendadasRaw ?? []) {
+    considerar(t.processo_id, t.agendamento_data as string, t.agendamento_horario as string);
   }
   const processosComAgendamento = (processos ?? []).map((p) => ({
     ...p,

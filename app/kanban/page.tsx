@@ -44,18 +44,34 @@ export default async function KanbanPage() {
     .is("saida_em", null);
 
   const hoje = new Date().toISOString().slice(0, 10);
-  const { data: agendamentosRaw } = await supabase
-    .from("processo_agendamentos")
-    .select("processo_id, data, horario")
-    .gte("data", hoje)
-    .order("data")
-    .order("horario");
+  const [{ data: agendamentosRaw }, { data: tarefasAgendadasRaw }] = await Promise.all([
+    supabase
+      .from("processo_agendamentos")
+      .select("processo_id, data, horario")
+      .gte("data", hoje)
+      .order("data")
+      .order("horario"),
+    supabase
+      .from("processo_tarefas")
+      .select("processo_id, label, agendamento_data, agendamento_horario")
+      .eq("origem_tipo", "evento")
+      .eq("concluida", false)
+      .not("agendamento_data", "is", null)
+      .gte("agendamento_data", hoje)
+      .order("agendamento_data")
+      .order("agendamento_horario"),
+  ]);
 
-  const agendamentosPorProcesso = new Map<string, { data: string; horario: string }[]>();
+  const agendamentosPorProcesso = new Map<string, { data: string; horario: string; rotulo: string | null }[]>();
   for (const a of agendamentosRaw ?? []) {
     const lista = agendamentosPorProcesso.get(a.processo_id) ?? [];
-    lista.push({ data: a.data, horario: a.horario });
+    lista.push({ data: a.data, horario: a.horario, rotulo: null });
     agendamentosPorProcesso.set(a.processo_id, lista);
+  }
+  for (const t of tarefasAgendadasRaw ?? []) {
+    const lista = agendamentosPorProcesso.get(t.processo_id) ?? [];
+    lista.push({ data: t.agendamento_data as string, horario: t.agendamento_horario as string, rotulo: t.label });
+    agendamentosPorProcesso.set(t.processo_id, lista);
   }
 
   const origemPorProcesso = new Map(

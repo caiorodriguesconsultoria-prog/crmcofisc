@@ -160,6 +160,9 @@ export async function carregarProcesso(id: string) {
     valor: t.tags?.valor ?? "",
   }));
 
+  const idsTagsAtivas = new Set(tagsAtivas.map((t) => t.id));
+  const tagsParaAdicionar = (tagsDisponiveis ?? []).filter((t) => !idsTagsAtivas.has(t.id));
+
   const nupRelatorioRow = (nups ?? []).find((n) => n.tipo === "relatorio");
   const nupPagamentoRow = (nups ?? []).find((n) => n.tipo === "pagamento");
   const nupRelatorio = nupRelatorioRow
@@ -189,10 +192,18 @@ export async function carregarProcesso(id: string) {
 
   const { data: tarefasRaw } = await supabase
     .from("processo_tarefas")
-    .select("id, origem_tipo, origem_id, ordem, label, concluida")
+    .select("id, origem_tipo, origem_id, ordem, label, concluida, agendamento_data, agendamento_horario")
     .eq("processo_id", id)
     .in("origem_id", origensAtivas.length > 0 ? origensAtivas : ["00000000-0000-0000-0000-000000000000"])
     .order("ordem");
+
+  type TarefaGrupo = {
+    id: string;
+    label: string;
+    concluida: boolean;
+    agendamentoData: string | null;
+    agendamentoHorario: string | null;
+  };
 
   const gruposTarefas = Array.from(
     (tarefasRaw ?? []).reduce((acc, t) => {
@@ -200,12 +211,18 @@ export async function carregarProcesso(id: string) {
         origemId: t.origem_id,
         origemTipo: t.origem_tipo,
         nome: nomeOrigem.get(t.origem_id) ?? t.origem_tipo,
-        tarefas: [] as { id: string; label: string; concluida: boolean }[],
+        tarefas: [] as TarefaGrupo[],
       };
-      grupo.tarefas.push({ id: t.id, label: t.label, concluida: t.concluida });
+      grupo.tarefas.push({
+        id: t.id,
+        label: t.label,
+        concluida: t.concluida,
+        agendamentoData: t.agendamento_data,
+        agendamentoHorario: t.agendamento_horario,
+      });
       acc.set(t.origem_id, grupo);
       return acc;
-    }, new Map<string, { origemId: string; origemTipo: string; nome: string; tarefas: { id: string; label: string; concluida: boolean }[] }>()).values(),
+    }, new Map<string, { origemId: string; origemTipo: string; nome: string; tarefas: TarefaGrupo[] }>()).values(),
   );
 
   const secao: React.CSSProperties = { ...card, marginTop: 16 };
@@ -266,7 +283,7 @@ export async function carregarProcesso(id: string) {
 
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Checklist" abertoInicial={false}>
-          <Checklist grupos={gruposTarefas} />
+          <Checklist processoId={p.id} grupos={gruposTarefas} tagsDisponiveis={tagsParaAdicionar} />
         </CartaoColapsavel>
       </div>
 
