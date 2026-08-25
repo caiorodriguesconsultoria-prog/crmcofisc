@@ -1,6 +1,8 @@
 export const cor = {
-  fundo: "#F6F3F0",
-  branco: "#FDFDFF",
+  // Azul bem clarinho, no mesmo nível de claridade do bege antigo (#F6F3F0)
+  // — mesma "temperatura" visual, só troca o matiz quente pelo frio.
+  fundo: "#EFF3FB",
+  branco: "#FFFFFF",
   texto: "#201F1D",
   textoSecundario: "#605D5D",
   textoTerciario: "#7D7979",
@@ -34,7 +36,7 @@ export const card: React.CSSProperties = {
 
 export const botaoPrimario: React.CSSProperties = {
   background: `linear-gradient(180deg, #4C7EF0, ${cor.azul})`,
-  color: "#12131A",
+  color: "#fff",
   fontSize: 13,
   fontWeight: 700,
   padding: "10px 18px",

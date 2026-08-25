@@ -19,7 +19,8 @@ import PautaDistribuicao from "./relatorio/pauta-distribuicao";
 import EntregasLazy from "./entregas-lazy";
 import Ocorrencias from "./relatorio/ocorrencias";
 import ConclusaoRelatorio from "./relatorio/conclusao-relatorio";
-import { card, cor, pill, tituloDestaque } from "@/lib/theme";
+import { card, cor, pill } from "@/lib/theme";
+import TituloDestaque from "@/app/_ui/titulo";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import { getPessoasAtivas, getPapeisGestorFiscal, getTagsEvento } from "@/lib/dados-referencia";
 
@@ -395,7 +396,7 @@ export async function carregarProcesso(id: string) {
   const topo = (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 800, margin: 0, ...tituloDestaque }}>{p.numero_contrato}</h1>
+        <TituloDestaque fontSize={19}>{p.numero_contrato}</TituloDestaque>
         <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
