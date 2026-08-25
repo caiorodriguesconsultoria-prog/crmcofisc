@@ -17,11 +17,9 @@ type Card = {
   coordenacaoSigla: string;
   prazoData: string | null;
   dias: number | null;
-  aguardando: string | null;
+  aguardando: { label: string; agendamentoData: string | null; agendamentoHorario: string | null } | null;
   emCobertura: boolean;
   nomeExibido: string;
-  tarefasTotal: number;
-  tarefasConcluidas: number;
   tags: { id: string; valor: string }[];
   agendamentos: { data: string; horario: string; rotulo: string | null }[];
 };
@@ -46,7 +44,7 @@ function formatarData(data: string | null) {
   return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "";
 }
 
-export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans: string[] }) {
+export default function Board({ colunas }: { colunas: Coluna[] }) {
   const router = useRouter();
   const supabase = createClient();
   const [carregando, setCarregando] = useState<string | null>(null);
@@ -68,13 +66,6 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
       return;
     }
     router.refresh();
-  }
-
-  async function concluirEtapa(processoId: string, etapaAtual: string) {
-    const indiceAtual = kanbans.indexOf(etapaAtual);
-    const proximaEtapa = kanbans[indiceAtual + 1];
-    if (!proximaEtapa) return;
-    await moverPara(processoId, etapaAtual, proximaEtapa);
   }
 
   return (
@@ -109,11 +100,6 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
               {coluna.nome} ({coluna.cards.length})
             </div>
             {coluna.cards.map((card) => {
-              const percentual =
-                card.tarefasTotal > 0
-                  ? Math.round((card.tarefasConcluidas / card.tarefasTotal) * 100)
-                  : null;
-              const temProxima = kanbans.indexOf(card.etapaAtual) < kanbans.length - 1;
               const dot = corPrazo(card.dias);
               return (
                 <div
@@ -244,42 +230,13 @@ export default function Board({ colunas, kanbans }: { colunas: Coluna[]; kanbans
                   )}
 
                   {card.aguardando && (
-                    <div style={{ fontSize: 11.5, color: cor.textoTerciario }}>Aguarda: {card.aguardando}</div>
-                  )}
-
-                  {percentual !== null && (
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ flex: 1, background: "rgba(32,31,29,.10)", borderRadius: 2, height: 3 }}>
-                          <div
-                            style={{
-                              background: cor.positivo,
-                              borderRadius: 2,
-                              height: 3,
-                              width: `${percentual}%`,
-                            }}
-                          />
+                    <div style={{ fontSize: 11.5, color: cor.textoTerciario }}>
+                      Aguarda: {card.aguardando.label}
+                      {card.aguardando.agendamentoData && (
+                        <div style={{ fontSize: 11, color: cor.destaque, fontWeight: 600, marginTop: 2 }}>
+                          {formatarData(card.aguardando.agendamentoData)}
+                          {card.aguardando.agendamentoHorario ? ` ${card.aguardando.agendamentoHorario.slice(0, 5)}` : ""}
                         </div>
-                        <span style={{ fontSize: 10.5, fontWeight: 600, color: cor.textoTerciario, whiteSpace: "nowrap" }}>
-                          {card.tarefasConcluidas}/{card.tarefasTotal} tarefas
-                        </span>
-                      </div>
-                      {temProxima && (
-                        <button
-                          onClick={() => concluirEtapa(card.id, card.etapaAtual)}
-                          disabled={carregando === card.id}
-                          style={{
-                            marginTop: 8,
-                            width: "100%",
-                            fontSize: 11.5,
-                            fontWeight: 400,
-                            color: cor.textoSecundario,
-                            background: "transparent",
-                            border: `1px solid ${cor.borda}`,
-                          }}
-                        >
-                          Concluir etapa
-                        </button>
                       )}
                     </div>
                   )}

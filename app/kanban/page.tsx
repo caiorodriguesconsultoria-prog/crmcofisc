@@ -82,24 +82,27 @@ export default async function KanbanPage() {
 
   const { data: tarefas } = await supabase
     .from("processo_tarefas")
-    .select("origem_id, ordem, label, concluida")
+    .select("origem_id, ordem, label, concluida, agendamento_data, agendamento_horario")
     .eq("origem_tipo", "kanban")
     .in("origem_id", origensAtivas.length > 0 ? origensAtivas : ["00000000-0000-0000-0000-000000000000"])
     .order("ordem");
 
-  const progressoPorOrigem = new Map<string, { total: number; concluidas: number }>();
-  const proximaTarefaPorOrigem = new Map<string, string>();
+  const proximaTarefaPorOrigem = new Map<
+    string,
+    { label: string; agendamentoData: string | null; agendamentoHorario: string | null }
+  >();
   for (const t of tarefas ?? []) {
-    const atual = progressoPorOrigem.get(t.origem_id) ?? { total: 0, concluidas: 0 };
-    atual.total += 1;
-    if (t.concluida) atual.concluidas += 1;
-    else if (!proximaTarefaPorOrigem.has(t.origem_id)) proximaTarefaPorOrigem.set(t.origem_id, t.label);
-    progressoPorOrigem.set(t.origem_id, atual);
+    if (!t.concluida && !proximaTarefaPorOrigem.has(t.origem_id)) {
+      proximaTarefaPorOrigem.set(t.origem_id, {
+        label: t.label,
+        agendamentoData: t.agendamento_data,
+        agendamentoHorario: t.agendamento_horario,
+      });
+    }
   }
 
   const cards = (processos ?? []).map((p: any) => {
     const origemId = origemPorProcesso.get(p.id);
-    const progresso = origemId ? progressoPorOrigem.get(origemId) : undefined;
     const dias = diasRestantes(p.prazo_data);
     const emCobertura = !!p.titular_id && p.responsavel_atual_id !== p.titular_id;
     const tags = (p.processo_tags ?? [])
@@ -117,8 +120,6 @@ export default async function KanbanPage() {
       aguardando: origemId ? proximaTarefaPorOrigem.get(origemId) ?? null : null,
       emCobertura,
       nomeExibido: emCobertura ? p.responsavel?.nome ?? "" : p.titular?.nome ?? "",
-      tarefasTotal: progresso?.total ?? 0,
-      tarefasConcluidas: progresso?.concluidas ?? 0,
       tags,
       agendamentos: agendamentosPorProcesso.get(p.id) ?? [],
     };
@@ -133,7 +134,7 @@ export default async function KanbanPage() {
     <Painel titulo="Kanban" voltarHref="/dashboard" maxWidth={1400}>
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
-      <Board colunas={colunas} kanbans={KANBANS} />
+      <Board colunas={colunas} />
     </Painel>
   );
 }

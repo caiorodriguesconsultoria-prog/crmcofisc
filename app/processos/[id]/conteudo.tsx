@@ -16,6 +16,7 @@ import QuadroResumitivo from "./relatorio/quadro-resumitivo";
 import CronogramaRelatorio from "./relatorio/cronograma-relatorio";
 import PautaDistribuicao from "./relatorio/pauta-distribuicao";
 import EntregasLazy from "./entregas-lazy";
+import HistoricoLazy from "./historico-lazy";
 import Ocorrencias from "./relatorio/ocorrencias";
 import { card, cor, pill } from "@/lib/theme";
 import TituloDestaque from "@/app/_ui/titulo";
@@ -88,8 +89,6 @@ export async function carregarProcesso(id: string) {
   const [
     { data: tagsAtivasRaw },
     tagsDisponiveis,
-    { data: kanbanHistorico },
-    { data: tagHistorico },
     { data: andamentosRaw },
     { data: pessoaAtual },
     pessoas,
@@ -103,16 +102,6 @@ export async function carregarProcesso(id: string) {
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     getTagsEvento(),
-    supabase
-      .from("processo_kanban_historico")
-      .select("kanban, entrada_em, saida_em, duracao")
-      .eq("processo_id", id)
-      .order("entrada_em", { ascending: false }),
-    supabase
-      .from("processo_tag_historico")
-      .select("inicio_em, fim_em, duracao, tags(valor)")
-      .eq("processo_id", id)
-      .order("inicio_em", { ascending: false }),
     supabase
       .from("andamentos")
       .select("id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome)")
@@ -280,7 +269,7 @@ export async function carregarProcesso(id: string) {
 
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Checklist" abertoInicial={false}>
-          <Checklist processoId={p.id} grupos={gruposTarefas} />
+          <Checklist processoId={p.id} autorId={pessoaAtual?.id ?? null} grupos={gruposTarefas} />
         </CartaoColapsavel>
       </div>
 
@@ -327,34 +316,7 @@ export async function carregarProcesso(id: string) {
 
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Histórico" abertoInicial={false}>
-          <div>
-            <strong style={{ fontSize: 12.5 }}>Kanban</strong>
-            <ul style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: 13 }}>
-              {(kanbanHistorico ?? []).map((h: any, i: number) => (
-                <li key={i}>
-                  {h.kanban} — entrada {new Date(h.entrada_em).toLocaleString("pt-BR")}
-                  {h.saida_em
-                    ? `, saída ${new Date(h.saida_em).toLocaleString("pt-BR")}`
-                    : " (atual)"}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <strong style={{ fontSize: 12.5 }}>Eventos</strong>
-            <ul style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: 13 }}>
-              {(tagHistorico ?? []).length === 0 && (
-                <li style={{ color: cor.textoTerciario }}>Nenhum registro ainda.</li>
-              )}
-              {(tagHistorico ?? []).map((h: any, i: number) => (
-                <li key={i}>
-                  {h.tags?.valor} — início {new Date(h.inicio_em).toLocaleString("pt-BR")}
-                  {h.fim_em ? `, fim ${new Date(h.fim_em).toLocaleString("pt-BR")}` : " (ativo)"}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <HistoricoLazy processoId={p.id} />
         </CartaoColapsavel>
       </div>
     </div>

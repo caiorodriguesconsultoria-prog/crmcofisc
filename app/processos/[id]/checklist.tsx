@@ -13,6 +13,7 @@ type Tarefa = {
   agendamentoHorario: string | null;
 };
 type Grupo = { origemId: string; origemTipo: string; nome: string; tarefas: Tarefa[] };
+type Observacao = { id: string; texto: string; autor: string | null; criadoEm: string };
 
 function formatarAgendamento(data: string | null, horario: string | null) {
   if (!data) return null;
@@ -26,12 +27,14 @@ function ListaTarefas({
   onAlternar,
   onAgendar,
   onReordenar,
+  onObservar,
 }: {
   tarefas: Tarefa[];
   carregando: string | null;
   onAlternar: (t: Tarefa) => void;
   onAgendar: (id: string, data: string, horario: string) => void;
   onReordenar: (tarefas: Tarefa[]) => void;
+  onObservar: (id: string) => void;
 }) {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [data, setData] = useState("");
@@ -112,6 +115,26 @@ function ListaTarefas({
             >
               {t.label}
             </span>
+            <button
+              type="button"
+              onClick={() => onObservar(t.id)}
+              title="Observações"
+              aria-label="Observações"
+              style={{
+                flex: "none",
+                width: 20,
+                height: 20,
+                padding: 0,
+                fontSize: 12,
+                fontWeight: 700,
+                borderRadius: 6,
+                border: "none",
+                color: cor.textoTerciario,
+                background: "rgba(96,93,93,.10)",
+              }}
+            >
+              +
+            </button>
             {!t.concluida && (
               <button
                 type="button"
@@ -168,16 +191,55 @@ function Progresso({ concluidas, total }: { concluidas: number; total: number })
   );
 }
 
-export default function Checklist({ processoId, grupos }: { processoId: string; grupos: Grupo[] }) {
+function CabecalhoRecolhivel({ titulo, aberto, onToggle }: { titulo: string; aberto: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        border: "none",
+        background: "transparent",
+        padding: 0,
+        fontSize: 10.5,
+        fontWeight: 500,
+        textTransform: "uppercase",
+        letterSpacing: 1,
+        color: cor.textoTerciario,
+      }}
+    >
+      <span style={{ fontSize: 9 }}>{aberto ? "▾" : "▸"}</span>
+      {titulo}
+    </button>
+  );
+}
+
+export default function Checklist({
+  processoId,
+  autorId,
+  grupos,
+}: {
+  processoId: string;
+  autorId: string | null;
+  grupos: Grupo[];
+}) {
   const router = useRouter();
   const supabase = createClient();
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState<string | null>(null);
   const [abaAtiva, setAbaAtiva] = useState<string | null>(null);
-  const [novaTarefa, setNovaTarefa] = useState(false);
+  const [abertoTarefas, setAbertoTarefas] = useState(true);
+  const [abertoEventos, setAbertoEventos] = useState(true);
+  const [novaTarefaEm, setNovaTarefaEm] = useState<string | null>(null);
   const [tarefaLabel, setTarefaLabel] = useState("");
   const [tarefaData, setTarefaData] = useState("");
   const [tarefaHorario, setTarefaHorario] = useState("");
+  const [modalTarefaId, setModalTarefaId] = useState<string | null>(null);
+  const [modalObservacoes, setModalObservacoes] = useState<Observacao[] | null>(null);
+  const [novaObs, setNovaObs] = useState("");
+  const [salvandoObs, setSalvandoObs] = useState(false);
 
   const grupoKanban = grupos.find((g) => g.origemTipo === "kanban");
   const gruposEvento = grupos.filter((g) => g.origemTipo === "evento");
@@ -224,15 +286,15 @@ export default function Checklist({ processoId, grupos }: { processoId: string; 
     router.refresh();
   }
 
-  async function adicionarTarefa() {
-    if (!tarefaLabel.trim() || !grupoAtivo) return;
+  async function adicionarTarefa(grupo: Grupo) {
+    if (!tarefaLabel.trim()) return;
     setErro(null);
     setCarregando("nova-tarefa");
     const { error } = await supabase.from("processo_tarefas").insert({
       processo_id: processoId,
-      origem_tipo: "evento",
-      origem_id: grupoAtivo.origemId,
-      ordem: grupoAtivo.tarefas.length + 1,
+      origem_tipo: grupo.origemTipo,
+      origem_id: grupo.origemId,
+      ordem: grupo.tarefas.length + 1,
       label: tarefaLabel.trim(),
       agendamento_data: tarefaData || null,
       agendamento_horario: tarefaHorario || null,
@@ -242,11 +304,84 @@ export default function Checklist({ processoId, grupos }: { processoId: string; 
       setErro(error.message);
       return;
     }
-    setNovaTarefa(false);
+    setNovaTarefaEm(null);
     setTarefaLabel("");
     setTarefaData("");
     setTarefaHorario("");
     router.refresh();
+  }
+
+  async function abrirObservacoes(tarefaId: string) {
+    setModalTarefaId(tarefaId);
+    setModalObservacoes(null);
+    const { data } = await supabase
+      .from("processo_tarefa_observacoes")
+      .select("id, texto, created_at, autor:pessoas(nome)")
+      .eq("tarefa_id", tarefaId)
+      .order("created_at");
+    setModalObservacoes(
+      (data ?? []).map((o: any) => ({ id: o.id, texto: o.texto, autor: o.autor?.nome ?? null, criadoEm: o.created_at })),
+    );
+  }
+
+  async function adicionarObservacao() {
+    if (!novaObs.trim() || !modalTarefaId) return;
+    setSalvandoObs(true);
+    const { error } = await supabase.from("processo_tarefa_observacoes").insert({
+      tarefa_id: modalTarefaId,
+      texto: novaObs.trim(),
+      autor_id: autorId,
+    });
+    setSalvandoObs(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setNovaObs("");
+    abrirObservacoes(modalTarefaId);
+  }
+
+  function formularioNovaTarefa(grupo: Grupo) {
+    return novaTarefaEm === grupo.origemId ? (
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          padding: 10,
+          background: cor.fundo,
+          borderRadius: 10,
+          alignItems: "center",
+        }}
+      >
+        <input
+          placeholder="O que precisa ser feito?"
+          value={tarefaLabel}
+          onChange={(e) => setTarefaLabel(e.target.value)}
+          style={{ padding: 6, flex: 1, minWidth: 160 }}
+        />
+        <input type="date" value={tarefaData} onChange={(e) => setTarefaData(e.target.value)} style={{ padding: 6 }} />
+        <input type="time" value={tarefaHorario} onChange={(e) => setTarefaHorario(e.target.value)} style={{ padding: 6 }} />
+        <button
+          onClick={() => adicionarTarefa(grupo)}
+          disabled={carregando === "nova-tarefa" || !tarefaLabel.trim()}
+          style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}
+        >
+          Salvar
+        </button>
+        <button onClick={() => setNovaTarefaEm(null)} disabled={carregando === "nova-tarefa"} style={{ fontSize: 11 }}>
+          Cancelar
+        </button>
+      </div>
+    ) : (
+      <button
+        type="button"
+        onClick={() => setNovaTarefaEm(grupo.origemId)}
+        style={{ alignSelf: "flex-start", fontSize: 12, color: cor.textoTerciario, borderStyle: "dashed" }}
+      >
+        + Adicionar tarefa
+      </button>
+    );
   }
 
   return (
@@ -254,7 +389,7 @@ export default function Checklist({ processoId, grupos }: { processoId: string; 
       {grupoKanban && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 600 }}>Etapa: {grupoKanban.nome}</span>
+            <CabecalhoRecolhivel titulo="Tarefas" aberto={abertoTarefas} onToggle={() => setAbertoTarefas((a) => !a)} />
             <div style={{ flex: 1 }}>
               <Progresso
                 concluidas={grupoKanban.tarefas.filter((t) => t.concluida).length}
@@ -262,109 +397,150 @@ export default function Checklist({ processoId, grupos }: { processoId: string; 
               />
             </div>
           </div>
-          <ListaTarefas
-            tarefas={grupoKanban.tarefas}
-            carregando={carregando}
-            onAlternar={alternar}
-            onAgendar={agendar}
-            onReordenar={reordenar}
-          />
+          {abertoTarefas && (
+            <>
+              <ListaTarefas
+                tarefas={grupoKanban.tarefas}
+                carregando={carregando}
+                onAlternar={alternar}
+                onAgendar={agendar}
+                onReordenar={reordenar}
+                onObservar={abrirObservacoes}
+              />
+              {formularioNovaTarefa(grupoKanban)}
+            </>
+          )}
         </div>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={{ fontSize: 10.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: 1, color: cor.textoTerciario }}>
-          Eventos
-        </span>
+        <CabecalhoRecolhivel titulo="Eventos" aberto={abertoEventos} onToggle={() => setAbertoEventos((a) => !a)} />
 
-        {gruposEvento.length > 0 ? (
-          <>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              {gruposEvento.map((g) => {
-                const ativo = grupoAtivo?.origemId === g.origemId;
-                return (
-                  <button
-                    key={g.origemId}
-                    type="button"
-                    onClick={() => setAbaAtiva(g.origemId)}
-                    style={{
-                      fontSize: 11.5,
-                      padding: "6px 12px",
-                      borderRadius: 9,
-                      border: "none",
-                      background: ativo ? cor.destaque : "rgba(96,93,93,.10)",
-                      color: ativo ? "#fff" : cor.textoSecundario,
-                    }}
-                  >
-                    {g.nome} ({g.tarefas.filter((t) => t.concluida).length}/{g.tarefas.length})
-                  </button>
-                );
-              })}
-            </div>
-
-            {grupoAtivo && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <Progresso
-                  concluidas={grupoAtivo.tarefas.filter((t) => t.concluida).length}
-                  total={grupoAtivo.tarefas.length}
-                />
-                <ListaTarefas
-                  tarefas={grupoAtivo.tarefas}
-                  carregando={carregando}
-                  onAlternar={alternar}
-                  onAgendar={agendar}
-                  onReordenar={reordenar}
-                />
-
-                {novaTarefa ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 8,
-                      padding: 10,
-                      background: cor.fundo,
-                      borderRadius: 10,
-                      alignItems: "center",
-                    }}
-                  >
-                    <input
-                      placeholder="O que precisa ser feito?"
-                      value={tarefaLabel}
-                      onChange={(e) => setTarefaLabel(e.target.value)}
-                      style={{ padding: 6, flex: 1, minWidth: 160 }}
-                    />
-                    <input type="date" value={tarefaData} onChange={(e) => setTarefaData(e.target.value)} style={{ padding: 6 }} />
-                    <input type="time" value={tarefaHorario} onChange={(e) => setTarefaHorario(e.target.value)} style={{ padding: 6 }} />
+        {abertoEventos &&
+          (gruposEvento.length > 0 ? (
+            <>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {gruposEvento.map((g) => {
+                  const ativo = grupoAtivo?.origemId === g.origemId;
+                  return (
                     <button
-                      onClick={adicionarTarefa}
-                      disabled={carregando === "nova-tarefa" || !tarefaLabel.trim()}
-                      style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}
+                      key={g.origemId}
+                      type="button"
+                      onClick={() => setAbaAtiva(g.origemId)}
+                      style={{
+                        fontSize: 11.5,
+                        padding: "6px 12px",
+                        borderRadius: 9,
+                        border: "none",
+                        background: ativo ? cor.destaque : "rgba(96,93,93,.10)",
+                        color: ativo ? "#fff" : cor.textoSecundario,
+                      }}
                     >
-                      Salvar
+                      {g.nome} ({g.tarefas.filter((t) => t.concluida).length}/{g.tarefas.length})
                     </button>
-                    <button onClick={() => setNovaTarefa(false)} disabled={carregando === "nova-tarefa"} style={{ fontSize: 11 }}>
-                      Cancelar
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setNovaTarefa(true)}
-                    style={{ alignSelf: "flex-start", fontSize: 12, color: cor.textoTerciario, borderStyle: "dashed" }}
-                  >
-                    + Adicionar tarefa
-                  </button>
-                )}
+                  );
+                })}
               </div>
-            )}
-          </>
-        ) : (
-          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo.</p>
-        )}
+
+              {grupoAtivo && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <Progresso
+                    concluidas={grupoAtivo.tarefas.filter((t) => t.concluida).length}
+                    total={grupoAtivo.tarefas.length}
+                  />
+                  <ListaTarefas
+                    tarefas={grupoAtivo.tarefas}
+                    carregando={carregando}
+                    onAlternar={alternar}
+                    onAgendar={agendar}
+                    onReordenar={reordenar}
+                    onObservar={abrirObservacoes}
+                  />
+                  {formularioNovaTarefa(grupoAtivo)}
+                </div>
+              )}
+            </>
+          ) : (
+            <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo.</p>
+          ))}
       </div>
 
       {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+
+      {modalTarefaId && (
+        <div
+          onClick={() => setModalTarefaId(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 60,
+            background: "rgba(32,31,29,.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: 18,
+              width: "100%",
+              maxWidth: 420,
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <strong style={{ fontSize: 13 }}>Observações</strong>
+              <button
+                type="button"
+                onClick={() => setModalTarefaId(null)}
+                aria-label="Fechar"
+                style={{ width: 26, height: 26, borderRadius: "50%", border: "none", background: "rgba(32,31,29,.08)" }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+              {modalObservacoes === null && <p style={{ fontSize: 12.5, color: cor.textoTerciario }}>Carregando…</p>}
+              {modalObservacoes?.length === 0 && (
+                <p style={{ fontSize: 12.5, color: cor.textoTerciario }}>Nenhuma observação ainda.</p>
+              )}
+              {modalObservacoes?.map((o) => (
+                <div key={o.id} style={{ borderBottom: `1px solid ${cor.borda}`, paddingBottom: 8 }}>
+                  <p style={{ margin: 0, fontSize: 12.5 }}>{o.texto}</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 10.5, color: cor.textoTerciario }}>
+                    {o.autor ? `${o.autor} · ` : ""}
+                    {new Date(o.criadoEm).toLocaleString("pt-BR")}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                placeholder="Nova observação..."
+                value={novaObs}
+                onChange={(e) => setNovaObs(e.target.value)}
+                style={{ flex: 1, padding: 7 }}
+              />
+              <button
+                onClick={adicionarObservacao}
+                disabled={salvandoObs || !novaObs.trim()}
+                style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}
+              >
+                Adicionar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
