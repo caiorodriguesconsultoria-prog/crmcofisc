@@ -19,6 +19,7 @@ import EntregasLazy from "./entregas-lazy";
 import HistoricoLazy from "./historico-lazy";
 import Ocorrencias from "./relatorio/ocorrencias";
 import { card, cor, pill } from "@/lib/theme";
+import { corEvento } from "@/lib/cores-evento";
 import TituloDestaque from "@/app/_ui/titulo";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
@@ -407,9 +408,17 @@ export async function carregarProcesso(id: string) {
 
   const topo = (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <TituloDestaque fontSize={19}>{p.numero_contrato}</TituloDestaque>
         <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
+        {tagsAtivas.map((t) => {
+          const c = corEvento(t.id);
+          return (
+            <span key={t.id} style={{ ...pill, background: c.fundo, color: c.texto }}>
+              {t.valor}
+            </span>
+          );
+        })}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
         <span style={{ fontSize: 12, color: cor.textoTerciario }}>{p.nup_principal}</span>
