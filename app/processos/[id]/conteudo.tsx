@@ -127,7 +127,7 @@ export async function carregarProcesso(id: string) {
       .order("created_at"),
     supabase
       .from("processo_agendamentos")
-      .select("id, data, horario, observacao")
+      .select("id, data, horario, observacao, google_event_id")
       .eq("processo_id", id)
       .order("data")
       .order("horario"),
@@ -178,7 +178,7 @@ export async function carregarProcesso(id: string) {
 
   const { data: tarefasRaw } = await supabase
     .from("processo_tarefas")
-    .select("id, origem_tipo, origem_id, ordem, label, concluida, agendamento_data, agendamento_horario")
+    .select("id, origem_tipo, origem_id, ordem, label, concluida, agendamento_data, agendamento_horario, google_event_id")
     .eq("processo_id", id)
     .in("origem_id", origensAtivas.length > 0 ? origensAtivas : ["00000000-0000-0000-0000-000000000000"])
     .order("ordem");
@@ -189,6 +189,7 @@ export async function carregarProcesso(id: string) {
     concluida: boolean;
     agendamentoData: string | null;
     agendamentoHorario: string | null;
+    googleEventId: string | null;
   };
 
   const gruposTarefas = Array.from(
@@ -205,6 +206,7 @@ export async function carregarProcesso(id: string) {
         concluida: t.concluida,
         agendamentoData: t.agendamento_data,
         agendamentoHorario: t.agendamento_horario,
+        googleEventId: t.google_event_id,
       });
       acc.set(t.origem_id, grupo);
       return acc;
@@ -263,13 +265,28 @@ export async function carregarProcesso(id: string) {
           tagsDisponiveis={tagsDisponiveis ?? []}
         />
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
-          <Agendamentos processoId={p.id} agendamentos={(agendamentos ?? []) as any} />
+          <Agendamentos
+            processoId={p.id}
+            numeroContrato={p.numero_contrato}
+            agendamentos={(agendamentos ?? []).map((a: any) => ({
+              id: a.id,
+              data: a.data,
+              horario: a.horario,
+              observacao: a.observacao,
+              googleEventId: a.google_event_id,
+            }))}
+          />
         </div>
       </div>
 
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Checklist" abertoInicial={false}>
-          <Checklist processoId={p.id} autorId={pessoaAtual?.id ?? null} grupos={gruposTarefas} />
+          <Checklist
+            processoId={p.id}
+            autorId={pessoaAtual?.id ?? null}
+            numeroContrato={p.numero_contrato}
+            grupos={gruposTarefas}
+          />
         </CartaoColapsavel>
       </div>
 

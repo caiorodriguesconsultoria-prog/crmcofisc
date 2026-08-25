@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
+import { sincronizarGoogle } from "@/lib/google-sync-cliente";
 
 type Agendamento = {
   id: string;
   data: string;
   horario: string;
   observacao: string | null;
+  googleEventId: string | null;
 };
 
 function formatarData(data: string) {
@@ -22,9 +24,11 @@ function formatarHorario(horario: string) {
 
 export default function Agendamentos({
   processoId,
+  numeroContrato,
   agendamentos,
 }: {
   processoId: string;
+  numeroContrato: string;
   agendamentos: Agendamento[];
 }) {
   const router = useRouter();
@@ -44,16 +48,33 @@ export default function Agendamentos({
     if (!data || !horario) return;
     setErro(null);
     setCarregando("novo");
-    const { error } = await supabase.from("processo_agendamentos").insert({
-      processo_id: processoId,
-      data,
-      horario,
-      observacao: observacao.trim() || null,
-    });
+    const { data: criado, error } = await supabase
+      .from("processo_agendamentos")
+      .insert({
+        processo_id: processoId,
+        data,
+        horario,
+        observacao: observacao.trim() || null,
+      })
+      .select("id")
+      .single();
     setCarregando(null);
     if (error) {
       setErro(error.message);
       return;
+    }
+    if (criado) {
+      sincronizarGoogle({
+        tipo: "agendamento",
+        acao: "salvar",
+        id: criado.id,
+        googleEventId: null,
+        numeroContrato,
+        descricao: observacao.trim() || "Agendamento de entrega",
+        data,
+        horario,
+        processoId,
+      });
     }
     setNovo(false);
     setData("");
@@ -62,15 +83,24 @@ export default function Agendamentos({
     router.refresh();
   }
 
-  async function remover(id: string) {
+  async function remover(agendamento: Agendamento) {
     setErro(null);
-    setCarregando(id);
-    const { error } = await supabase.from("processo_agendamentos").delete().eq("id", id);
+    setCarregando(agendamento.id);
+    const { error } = await supabase.from("processo_agendamentos").delete().eq("id", agendamento.id);
     setCarregando(null);
     if (error) {
       setErro(error.message);
       return;
     }
+    sincronizarGoogle({
+      tipo: "agendamento",
+      acao: "remover",
+      id: agendamento.id,
+      googleEventId: agendamento.googleEventId,
+      numeroContrato,
+      descricao: agendamento.observacao ?? "Agendamento de entrega",
+      processoId,
+    });
     router.refresh();
   }
 
@@ -105,7 +135,7 @@ export default function Agendamentos({
               {a.observacao && <span style={{ color: cor.textoTerciario }}>{a.observacao}</span>}
               <button
                 type="button"
-                onClick={() => remover(a.id)}
+                onClick={() => remover(a)}
                 disabled={carregando === a.id}
                 style={{ marginLeft: "auto", fontSize: 10.5, padding: "3px 8px" }}
               >

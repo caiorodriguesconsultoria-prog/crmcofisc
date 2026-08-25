@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
+import { sincronizarGoogle } from "@/lib/google-sync-cliente";
 
 type Tarefa = {
   id: string;
@@ -11,6 +12,7 @@ type Tarefa = {
   concluida: boolean;
   agendamentoData: string | null;
   agendamentoHorario: string | null;
+  googleEventId: string | null;
 };
 type Grupo = { origemId: string; origemTipo: string; nome: string; tarefas: Tarefa[] };
 type Observacao = { id: string; texto: string; autor: string | null; criadoEm: string };
@@ -219,10 +221,12 @@ function CabecalhoRecolhivel({ titulo, aberto, onToggle }: { titulo: string; abe
 export default function Checklist({
   processoId,
   autorId,
+  numeroContrato,
   grupos,
 }: {
   processoId: string;
   autorId: string | null;
+  numeroContrato: string;
   grupos: Grupo[];
 }) {
   const router = useRouter();
@@ -248,14 +252,40 @@ export default function Checklist({
   async function alternar(tarefa: Tarefa) {
     setErro(null);
     setCarregando(tarefa.id);
+    const novaConcluida = !tarefa.concluida;
     const { error } = await supabase
       .from("processo_tarefas")
-      .update({ concluida: !tarefa.concluida })
+      .update({ concluida: novaConcluida })
       .eq("id", tarefa.id);
     setCarregando(null);
     if (error) {
       setErro(error.message);
       return;
+    }
+    if (tarefa.agendamentoData) {
+      if (novaConcluida) {
+        sincronizarGoogle({
+          tipo: "tarefa",
+          acao: "remover",
+          id: tarefa.id,
+          googleEventId: tarefa.googleEventId,
+          numeroContrato,
+          descricao: tarefa.label,
+          processoId,
+        });
+      } else {
+        sincronizarGoogle({
+          tipo: "tarefa",
+          acao: "salvar",
+          id: tarefa.id,
+          googleEventId: null,
+          numeroContrato,
+          descricao: tarefa.label,
+          data: tarefa.agendamentoData,
+          horario: tarefa.agendamentoHorario,
+          processoId,
+        });
+      }
     }
     router.refresh();
   }
@@ -269,6 +299,20 @@ export default function Checklist({
     if (error) {
       setErro(error.message);
       return;
+    }
+    const tarefa = grupos.flatMap((g) => g.tarefas).find((t) => t.id === tarefaId);
+    if (tarefa) {
+      sincronizarGoogle({
+        tipo: "tarefa",
+        acao: data && horario ? "salvar" : "remover",
+        id: tarefaId,
+        googleEventId: tarefa.googleEventId,
+        numeroContrato,
+        descricao: tarefa.label,
+        data: data || undefined,
+        horario: horario || undefined,
+        processoId,
+      });
     }
     router.refresh();
   }
@@ -290,19 +334,36 @@ export default function Checklist({
     if (!tarefaLabel.trim()) return;
     setErro(null);
     setCarregando("nova-tarefa");
-    const { error } = await supabase.from("processo_tarefas").insert({
-      processo_id: processoId,
-      origem_tipo: grupo.origemTipo,
-      origem_id: grupo.origemId,
-      ordem: grupo.tarefas.length + 1,
-      label: tarefaLabel.trim(),
-      agendamento_data: tarefaData || null,
-      agendamento_horario: tarefaHorario || null,
-    });
+    const { data: criada, error } = await supabase
+      .from("processo_tarefas")
+      .insert({
+        processo_id: processoId,
+        origem_tipo: grupo.origemTipo,
+        origem_id: grupo.origemId,
+        ordem: grupo.tarefas.length + 1,
+        label: tarefaLabel.trim(),
+        agendamento_data: tarefaData || null,
+        agendamento_horario: tarefaHorario || null,
+      })
+      .select("id")
+      .single();
     setCarregando(null);
     if (error) {
       setErro(error.message);
       return;
+    }
+    if (criada && tarefaData && tarefaHorario) {
+      sincronizarGoogle({
+        tipo: "tarefa",
+        acao: "salvar",
+        id: criada.id,
+        googleEventId: null,
+        numeroContrato,
+        descricao: tarefaLabel.trim(),
+        data: tarefaData,
+        horario: tarefaHorario,
+        processoId,
+      });
     }
     setNovaTarefaEm(null);
     setTarefaLabel("");

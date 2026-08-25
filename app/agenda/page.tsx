@@ -1,11 +1,16 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { googleConectado } from "@/lib/google-calendar";
 import Calendario from "./calendario";
-import { card, cor } from "@/lib/theme";
+import { card, cor, botaoPrimario } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
 
-export default async function AgendaPage() {
+export default async function AgendaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ google?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { session },
@@ -15,6 +20,16 @@ export default async function AgendaPage() {
   if (!user) {
     redirect("/login");
   }
+
+  const { google: googleStatus } = await searchParams;
+
+  const { data: pessoaAtual } = await supabase
+    .from("pessoas")
+    .select("is_admin")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+  const ehAdmin = !!pessoaAtual?.is_admin;
+  const conectadoGoogle = await googleConectado();
 
   const [{ data: processos, error }, { data: agendamentosRaw }, { data: tarefasAgendadasRaw }] = await Promise.all([
     supabase
@@ -76,7 +91,35 @@ export default async function AgendaPage() {
     <Painel titulo="Agenda" voltarHref="/dashboard" maxWidth={900}>
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
-      <div style={{ ...card, padding: "10px 14px" }}>
+      {googleStatus === "conectado" && (
+        <p style={{ fontSize: 12.5, color: cor.positivo, margin: "0 0 10px" }}>
+          Google Calendar conectado. Novos agendamentos e tarefas com data passam a aparecer na hora.
+        </p>
+      )}
+      {googleStatus === "erro" && (
+        <p style={{ fontSize: 12.5, color: cor.urgente, margin: "0 0 10px" }}>
+          Não deu pra conectar ao Google Calendar. Confira as variáveis de ambiente e tente de novo.
+        </p>
+      )}
+      {googleStatus === "sem-refresh-token" && (
+        <p style={{ fontSize: 12.5, color: cor.urgente, margin: "0 0 10px" }}>
+          O Google não devolveu autorização permanente. Tente de novo — se persistir, revogue o acesso do
+          app em myaccount.google.com/permissions e refaça a conexão.
+        </p>
+      )}
+
+      <div style={{ ...card, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <p style={{ fontSize: 12.5, margin: 0, color: conectadoGoogle ? cor.positivo : cor.textoTerciario }}>
+          {conectadoGoogle ? "✓ Google Calendar conectado — sincronização em tempo real ativa." : "Google Calendar não conectado — agendamentos só aparecem lá pelo feed .ics (com atraso)."}
+        </p>
+        {ehAdmin && (
+          <a href="/api/google/auth" style={{ ...botaoPrimario, fontSize: 11.5, padding: "6px 14px", textDecoration: "none" }}>
+            {conectadoGoogle ? "Reconectar" : "Conectar Google Calendar"}
+          </a>
+        )}
+      </div>
+
+      <div style={{ ...card, padding: "10px 14px", marginTop: 10 }}>
         {linkIcs ? (
           <p style={{ fontSize: 12, color: cor.textoSecundario, margin: 0 }}>
             Link pra assinar no Google Calendar (Outros calendários → Inscrever-se por URL):{" "}
