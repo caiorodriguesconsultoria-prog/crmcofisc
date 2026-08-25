@@ -106,7 +106,7 @@ export async function carregarProcesso(id: string) {
     supabase
       .from("andamentos")
       .select(
-        "id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome), agendamento_data, agendamento_horario, google_event_id, andamento_tags(tags(id, valor))",
+        "id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome), agendamento_data, agendamento_horario, google_event_id, andamento_tags(tags(id, valor)), andamento_anexos(id, nome_arquivo, caminho, tamanho_bytes)",
       )
       .eq("processo_id", id)
       .order("data", { ascending: false }),
@@ -361,6 +361,12 @@ export async function carregarProcesso(id: string) {
               agendamentoHorario: a.agendamento_horario,
               googleEventId: a.google_event_id,
               tags: (a.andamento_tags ?? []).map((at: any) => at.tags).filter(Boolean),
+              anexos: (a.andamento_anexos ?? []).map((x: any) => ({
+                id: x.id,
+                nomeArquivo: x.nome_arquivo,
+                caminho: x.caminho,
+                tamanhoBytes: x.tamanho_bytes,
+              })),
             }))}
           />
         </CartaoColapsavel>
