@@ -306,9 +306,8 @@ export async function carregarProcesso(id: string) {
         </CartaoColapsavel>
       </div>
 
-      {/* Kanban + Agendamento de entrega + Eventos ativos — fixo, sem recolher */}
-      <div style={{ ...secao, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
-        <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
+      {/* Agendamento de entrega — fixo, sem recolher */}
+      <div style={secao}>
         <Agendamentos
           processoId={p.id}
           numeroContrato={p.numero_contrato}
@@ -320,7 +319,6 @@ export async function carregarProcesso(id: string) {
             googleEventId: a.google_event_id,
           }))}
         />
-        <EventosAtivos processoId={p.id} tagsAtivas={tagsAtivas} tagsDisponiveis={tagsDisponiveis ?? []} />
       </div>
 
       <div style={{ marginTop: 16 }}>
@@ -343,6 +341,9 @@ export async function carregarProcesso(id: string) {
 
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Andamentos" abertoInicial={false}>
+          <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
+            <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
+          </div>
           <Andamentos
             processoId={p.id}
             autorId={pessoaAtual?.id ?? null}
@@ -433,8 +434,7 @@ export async function carregarProcesso(id: string) {
   const topo = (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: cor.textoTerciario }}>CT nº</span>
-        <TituloDestaque fontSize={19}>{p.numero_contrato}</TituloDestaque>
+        <TituloDestaque fontSize={19}>CT nº {p.numero_contrato}</TituloDestaque>
         <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
         {tagsAtivas.map((t) => {
           const c = corEvento(t.id);
@@ -464,7 +464,11 @@ export async function carregarProcesso(id: string) {
     </div>
   );
 
-  const corpo = <Abas processo={conteudoProcesso} relatorio={conteudoRelatorio} />;
+  const eventosAtivos = (
+    <EventosAtivos processoId={p.id} tagsAtivas={tagsAtivas} tagsDisponiveis={tagsDisponiveis ?? []} />
+  );
+
+  const corpo = <Abas processo={conteudoProcesso} relatorio={conteudoRelatorio} eventosAtivos={eventosAtivos} />;
 
   return { topo, corpo };
 }
