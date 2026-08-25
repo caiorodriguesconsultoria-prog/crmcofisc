@@ -10,6 +10,11 @@ const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 export const metadata = {
   title: "CRM-COFISC",
   description: "Gestão de processos de fiscalização de contratos — COFISC",
+  appleWebApp: { title: "COFISC" },
+};
+
+export const viewport = {
+  themeColor: "#2F5FDB",
 };
 
 export default function RootLayout({
