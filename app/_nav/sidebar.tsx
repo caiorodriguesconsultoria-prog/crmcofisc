@@ -42,6 +42,14 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
       {aberta && <div className="crm-sidebar-scrim" onClick={() => setAberta(false)} />}
       <nav
         className={`crm-sidebar${aberta ? " aberta" : ""}`}
+        onClick={(e) => {
+          // Fecha a gaveta ao clicar em qualquer link de navegação lá dentro —
+          // inclusive os atalhos de Atividades, que trocam só a query string
+          // (mesmo pathname), então o useEffect abaixo (que só olha pathname)
+          // não detectaria essa navegação e a gaveta ficaria aberta por cima
+          // da tela filtrada.
+          if ((e.target as HTMLElement).closest("a")) setAberta(false);
+        }}
         style={{
           flex: "none",
           height: "100vh",
