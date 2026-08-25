@@ -160,9 +160,6 @@ export async function carregarProcesso(id: string) {
     valor: t.tags?.valor ?? "",
   }));
 
-  const idsTagsAtivas = new Set(tagsAtivas.map((t) => t.id));
-  const tagsParaAdicionar = (tagsDisponiveis ?? []).filter((t) => !idsTagsAtivas.has(t.id));
-
   const nupRelatorioRow = (nups ?? []).find((n) => n.tipo === "relatorio");
   const nupPagamentoRow = (nups ?? []).find((n) => n.tipo === "pagamento");
   const nupRelatorio = nupRelatorioRow
@@ -283,7 +280,7 @@ export async function carregarProcesso(id: string) {
 
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Checklist" abertoInicial={false}>
-          <Checklist processoId={p.id} grupos={gruposTarefas} tagsDisponiveis={tagsParaAdicionar} />
+          <Checklist processoId={p.id} grupos={gruposTarefas} />
         </CartaoColapsavel>
       </div>
 

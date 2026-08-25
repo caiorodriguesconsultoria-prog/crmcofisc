@@ -12,6 +12,9 @@ type DocumentComTransicao = Document & {
 // Abre o painel do processo com a animação de "crescer a partir do link"
 // (View Transitions API nativa do navegador) quando disponível; navegadores
 // sem suporte caem no comportamento normal do Link, sem quebrar nada.
+// Não espera a navegação terminar pra resolver a transição (isso deixava o
+// clique parecendo travado enquanto os dados do processo carregavam) — só
+// dispara a navegação e deixa o React atualizar a tela no tempo normal dele.
 function abrirComTransicao(
   e: React.MouseEvent,
   router: ReturnType<typeof useRouter>,
@@ -21,10 +24,7 @@ function abrirComTransicao(
   if (!doc.startViewTransition) return;
   e.preventDefault();
   doc.startViewTransition(() => {
-    return new Promise<void>((resolve) => {
-      router.push(href);
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-    });
+    router.push(href);
   });
 }
 

@@ -13,7 +13,6 @@ type Tarefa = {
   agendamentoHorario: string | null;
 };
 type Grupo = { origemId: string; origemTipo: string; nome: string; tarefas: Tarefa[] };
-type TagOpcao = { id: string; valor: string };
 
 function formatarAgendamento(data: string | null, horario: string | null) {
   if (!data) return null;
@@ -25,69 +24,129 @@ function ListaTarefas({
   tarefas,
   carregando,
   onAlternar,
+  onAgendar,
+  onReordenar,
 }: {
   tarefas: Tarefa[];
   carregando: string | null;
   onAlternar: (t: Tarefa) => void;
+  onAgendar: (id: string, data: string, horario: string) => void;
+  onReordenar: (tarefas: Tarefa[]) => void;
 }) {
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [data, setData] = useState("");
+  const [horario, setHorario] = useState("");
+  const [arrastandoId, setArrastandoId] = useState<string | null>(null);
+
+  function abrirEdicao(t: Tarefa) {
+    setEditandoId(t.id);
+    setData(t.agendamentoData ?? "");
+    setHorario(t.agendamentoHorario?.slice(0, 5) ?? "");
+  }
+
+  function salvarAgendamento(id: string) {
+    onAgendar(id, data, horario);
+    setEditandoId(null);
+  }
+
+  function soltar(alvoId: string) {
+    if (!arrastandoId || arrastandoId === alvoId) return;
+    const lista = [...tarefas];
+    const origemIdx = lista.findIndex((t) => t.id === arrastandoId);
+    const destinoIdx = lista.findIndex((t) => t.id === alvoId);
+    if (origemIdx === -1 || destinoIdx === -1) return;
+    const [movida] = lista.splice(origemIdx, 1);
+    lista.splice(destinoIdx, 0, movida);
+    setArrastandoId(null);
+    onReordenar(lista);
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {tarefas.map((t) => (
-        <div
-          key={t.id}
-          onClick={() => (carregando ? null : onAlternar(t))}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            borderRadius: 10,
-            padding: "7px 8px",
-            cursor: carregando === t.id ? "default" : "pointer",
-            opacity: carregando === t.id ? 0.6 : 1,
-            background: t.concluida ? "rgba(126,155,126,.08)" : "transparent",
-          }}
-        >
-          <span
+        <div key={t.id}>
+          <div
+            draggable
+            onDragStart={() => setArrastandoId(t.id)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => soltar(t.id)}
             style={{
-              flex: "none",
-              width: 18,
-              height: 18,
-              borderRadius: 6,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              fontSize: 11,
-              fontWeight: 600,
-              color: "#fff",
-              background: t.concluida ? cor.positivo : "rgba(32,31,29,.18)",
+              gap: 8,
+              borderRadius: 10,
+              padding: "7px 8px",
+              opacity: arrastandoId === t.id ? 0.4 : carregando === t.id ? 0.6 : 1,
+              background: t.concluida ? "rgba(126,155,126,.08)" : "transparent",
             }}
           >
-            {t.concluida ? "✓" : ""}
-          </span>
-          <span
-            style={{
-              flex: 1,
-              fontSize: 12.5,
-              textDecoration: t.concluida ? "line-through" : "none",
-              color: t.concluida ? cor.textoTerciario : cor.texto,
-            }}
-          >
-            {t.label}
-          </span>
-          {!t.concluida && formatarAgendamento(t.agendamentoData, t.agendamentoHorario) && (
+            <span style={{ flex: "none", cursor: "grab", color: cor.textoTerciario, fontSize: 12 }}>⠿</span>
             <span
+              onClick={() => (carregando ? null : onAlternar(t))}
               style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: cor.destaque,
-                background: cor.destaqueFundo,
-                borderRadius: 7,
-                padding: "2px 7px",
                 flex: "none",
+                width: 18,
+                height: 18,
+                borderRadius: 6,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#fff",
+                cursor: carregando ? "default" : "pointer",
+                background: t.concluida ? cor.positivo : "rgba(32,31,29,.18)",
               }}
             >
-              {formatarAgendamento(t.agendamentoData, t.agendamentoHorario)}
+              {t.concluida ? "✓" : ""}
             </span>
+            <span
+              onClick={() => (carregando ? null : onAlternar(t))}
+              style={{
+                flex: 1,
+                fontSize: 12.5,
+                cursor: carregando ? "default" : "pointer",
+                textDecoration: t.concluida ? "line-through" : "none",
+                color: t.concluida ? cor.textoTerciario : cor.texto,
+              }}
+            >
+              {t.label}
+            </span>
+            {!t.concluida && (
+              <button
+                type="button"
+                onClick={() => (editandoId === t.id ? setEditandoId(null) : abrirEdicao(t))}
+                style={{
+                  flex: "none",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  padding: "2px 7px",
+                  border: "none",
+                  borderRadius: 7,
+                  color: formatarAgendamento(t.agendamentoData, t.agendamentoHorario) ? cor.destaque : cor.textoTerciario,
+                  background: formatarAgendamento(t.agendamentoData, t.agendamentoHorario) ? cor.destaqueFundo : "rgba(96,93,93,.10)",
+                }}
+              >
+                {formatarAgendamento(t.agendamentoData, t.agendamentoHorario) ?? "+ agendar"}
+              </button>
+            )}
+          </div>
+          {editandoId === t.id && (
+            <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "0 8px 8px 34px", flexWrap: "wrap" }}>
+              <input type="date" value={data} onChange={(e) => setData(e.target.value)} style={{ padding: 5, fontSize: 12 }} />
+              <input type="time" value={horario} onChange={(e) => setHorario(e.target.value)} style={{ padding: 5, fontSize: 12 }} />
+              <button onClick={() => salvarAgendamento(t.id)} style={{ fontSize: 10.5, padding: "4px 10px" }}>
+                Salvar
+              </button>
+              {t.agendamentoData && (
+                <button onClick={() => { onAgendar(t.id, "", ""); setEditandoId(null); }} style={{ fontSize: 10.5, padding: "4px 10px" }}>
+                  Remover
+                </button>
+              )}
+              <button onClick={() => setEditandoId(null)} style={{ fontSize: 10.5, padding: "4px 10px" }}>
+                Cancelar
+              </button>
+            </div>
           )}
         </div>
       ))}
@@ -109,15 +168,7 @@ function Progresso({ concluidas, total }: { concluidas: number; total: number })
   );
 }
 
-export default function Checklist({
-  processoId,
-  grupos,
-  tagsDisponiveis,
-}: {
-  processoId: string;
-  grupos: Grupo[];
-  tagsDisponiveis: TagOpcao[];
-}) {
+export default function Checklist({ processoId, grupos }: { processoId: string; grupos: Grupo[] }) {
   const router = useRouter();
   const supabase = createClient();
   const [erro, setErro] = useState<string | null>(null);
@@ -127,8 +178,6 @@ export default function Checklist({
   const [tarefaLabel, setTarefaLabel] = useState("");
   const [tarefaData, setTarefaData] = useState("");
   const [tarefaHorario, setTarefaHorario] = useState("");
-  const [novoEvento, setNovoEvento] = useState(false);
-  const [novoEventoTagId, setNovoEventoTagId] = useState("");
 
   const grupoKanban = grupos.find((g) => g.origemTipo === "kanban");
   const gruposEvento = grupos.filter((g) => g.origemTipo === "evento");
@@ -144,6 +193,32 @@ export default function Checklist({
     setCarregando(null);
     if (error) {
       setErro(error.message);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function agendar(tarefaId: string, data: string, horario: string) {
+    setErro(null);
+    const { error } = await supabase
+      .from("processo_tarefas")
+      .update({ agendamento_data: data || null, agendamento_horario: horario || null })
+      .eq("id", tarefaId);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function reordenar(tarefas: Tarefa[]) {
+    setErro(null);
+    const resultados = await Promise.all(
+      tarefas.map((t, i) => supabase.from("processo_tarefas").update({ ordem: i + 1 }).eq("id", t.id)),
+    );
+    const falhou = resultados.find((r) => r.error);
+    if (falhou?.error) {
+      setErro(falhou.error.message);
       return;
     }
     router.refresh();
@@ -174,23 +249,6 @@ export default function Checklist({
     router.refresh();
   }
 
-  async function adicionarEvento() {
-    if (!novoEventoTagId) return;
-    setErro(null);
-    setCarregando("novo-evento");
-    const { error } = await supabase
-      .from("processo_tags")
-      .insert({ processo_id: processoId, tag_id: novoEventoTagId });
-    setCarregando(null);
-    if (error) {
-      setErro(error.message);
-      return;
-    }
-    setNovoEvento(false);
-    setNovoEventoTagId("");
-    router.refresh();
-  }
-
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {grupoKanban && (
@@ -204,7 +262,13 @@ export default function Checklist({
               />
             </div>
           </div>
-          <ListaTarefas tarefas={grupoKanban.tarefas} carregando={carregando} onAlternar={alternar} />
+          <ListaTarefas
+            tarefas={grupoKanban.tarefas}
+            carregando={carregando}
+            onAlternar={alternar}
+            onAgendar={agendar}
+            onReordenar={reordenar}
+          />
         </div>
       )}
 
@@ -213,7 +277,7 @@ export default function Checklist({
           Eventos
         </span>
 
-        {gruposEvento.length > 0 && (
+        {gruposEvento.length > 0 ? (
           <>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
               {gruposEvento.map((g) => {
@@ -244,7 +308,13 @@ export default function Checklist({
                   concluidas={grupoAtivo.tarefas.filter((t) => t.concluida).length}
                   total={grupoAtivo.tarefas.length}
                 />
-                <ListaTarefas tarefas={grupoAtivo.tarefas} carregando={carregando} onAlternar={alternar} />
+                <ListaTarefas
+                  tarefas={grupoAtivo.tarefas}
+                  carregando={carregando}
+                  onAlternar={alternar}
+                  onAgendar={agendar}
+                  onReordenar={reordenar}
+                />
 
                 {novaTarefa ? (
                   <div
@@ -289,41 +359,8 @@ export default function Checklist({
               </div>
             )}
           </>
-        )}
-
-        {gruposEvento.length === 0 && (
-          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo.</p>
-        )}
-
-        {novoEvento ? (
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <select value={novoEventoTagId} onChange={(e) => setNovoEventoTagId(e.target.value)} style={{ padding: 6, flex: 1 }}>
-              <option value="">Selecione um evento</option>
-              {tagsDisponiveis.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.valor}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={adicionarEvento}
-              disabled={carregando === "novo-evento" || !novoEventoTagId}
-              style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}
-            >
-              Adicionar
-            </button>
-            <button onClick={() => setNovoEvento(false)} disabled={carregando === "novo-evento"} style={{ fontSize: 11 }}>
-              Cancelar
-            </button>
-          </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setNovoEvento(true)}
-            style={{ alignSelf: "flex-start", fontSize: 12, color: cor.textoTerciario, borderStyle: "dashed" }}
-          >
-            + Adicionar evento
-          </button>
+          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo.</p>
         )}
       </div>
 

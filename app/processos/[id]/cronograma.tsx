@@ -31,6 +31,21 @@ function calcularAtraso(dataPrevista: string | null, dataEntrega: string | null)
   return Math.max(0, diffDias);
 }
 
+function formatarData(data: string | null) {
+  return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "—";
+}
+
+function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+      <span style={{ fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
+        {label}
+      </span>
+      <div style={{ fontSize: 13 }}>{children}</div>
+    </div>
+  );
+}
+
 export default function Cronograma({
   processoId,
   execucoes,
@@ -140,137 +155,127 @@ export default function Cronograma({
     <section>
       {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
 
-      <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse", minWidth: 720 }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 6 }}>Execução</th>
-            <th style={{ padding: 6 }}>Quantidade</th>
-            <th style={{ padding: 6 }}>Unidade</th>
-            <th style={{ padding: 6 }}>Data prevista</th>
-            <th style={{ padding: 6 }}>Data entregue</th>
-            <th style={{ padding: 6 }}>Atraso (dias)</th>
-            <th style={{ padding: 6 }}>Situação</th>
-            <th style={{ padding: 6 }}></th>
-          </tr>
-        </thead>
-        <tbody>
-          {execucoes.map((e) => {
-            const editando = editandoId === e.id;
-            const atraso = calcularAtraso(e.data_prevista, e.data_entrega);
-            return (
-              <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: 6 }}>{e.numero}</td>
+      {execucoes.length === 0 && !novo && (
+        <p style={{ color: cor.textoTerciario, fontSize: 13 }}>Nenhuma entrega cadastrada.</p>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {execucoes.map((e) => {
+          const editando = editandoId === e.id;
+          const atraso = calcularAtraso(e.data_prevista, e.data_entrega);
+          return (
+            <div key={e.id} style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 12 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
+                  gap: 12,
+                }}
+              >
+                <Campo label="Execução">{e.numero}</Campo>
                 {editando && edicao ? (
                   <>
-                    <td style={{ padding: 6 }}>
+                    <Campo label="Quantidade">
                       <input
                         type="number"
                         step="0.001"
                         value={edicao.quantidade}
                         onChange={(ev) => setEdicao({ ...edicao, quantidade: ev.target.value })}
-                        style={{ width: 80, padding: 4 }}
+                        style={{ width: "100%", padding: 5, textAlign: "center" }}
                       />
-                    </td>
-                    <td style={{ padding: 6 }}>
+                    </Campo>
+                    <Campo label="Unidade">
                       <input
                         value={edicao.unidade}
                         onChange={(ev) => setEdicao({ ...edicao, unidade: ev.target.value })}
-                        style={{ width: 80, padding: 4 }}
+                        style={{ width: "100%", padding: 5, textAlign: "center" }}
                       />
-                    </td>
-                    <td style={{ padding: 6 }}>
+                    </Campo>
+                    <Campo label="Data prevista">
                       <input
                         type="date"
                         value={edicao.data_prevista}
                         onChange={(ev) => setEdicao({ ...edicao, data_prevista: ev.target.value })}
-                        style={{ padding: 4 }}
+                        style={{ padding: 5 }}
                       />
-                    </td>
-                    <td style={{ padding: 6 }}>
+                    </Campo>
+                    <Campo label="Data entregue">
                       <input
                         type="date"
                         value={edicao.data_entrega}
                         onChange={(ev) => setEdicao({ ...edicao, data_entrega: ev.target.value })}
-                        style={{ padding: 4 }}
+                        style={{ padding: 5 }}
                       />
-                    </td>
-                    <td style={{ padding: 6 }}>{atraso ?? "—"}</td>
-                    <td style={{ padding: 6 }}>{e.situacao}</td>
-                    <td style={{ padding: 6, display: "flex", gap: 4 }}>
-                      <button onClick={() => salvarEdicao(e.id)} disabled={carregando === e.id}>
-                        Salvar
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditandoId(null);
-                          setEdicao(null);
-                        }}
-                        disabled={carregando === e.id}
-                      >
-                        Cancelar
-                      </button>
-                    </td>
+                    </Campo>
                   </>
                 ) : (
                   <>
-                    <td style={{ padding: 6 }}>{e.quantidade}</td>
-                    <td style={{ padding: 6 }}>{e.unidade ?? "—"}</td>
-                    <td style={{ padding: 6 }}>
-                      {e.data_prevista ? new Date(`${e.data_prevista}T00:00:00`).toLocaleDateString("pt-BR") : "—"}
-                    </td>
-                    <td style={{ padding: 6 }}>
-                      {e.data_entrega ? new Date(`${e.data_entrega}T00:00:00`).toLocaleDateString("pt-BR") : "—"}
-                    </td>
-                    <td style={{ padding: 6 }}>{atraso ?? "—"}</td>
-                    <td style={{ padding: 6 }}>
-                      <select
-                        value={e.situacao}
-                        onChange={(ev) => atualizarSituacao(e.id, ev.target.value)}
-                        disabled={carregando === e.id}
-                        style={{
-                          padding: "4px 8px",
-                          borderRadius: 20,
-                          border: "none",
-                          fontWeight: 600,
-                          fontSize: 11,
-                          color: SITUACAO_COR[e.situacao]?.fg,
-                          background: SITUACAO_COR[e.situacao]?.bg,
-                        }}
-                      >
-                        {SITUACOES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td style={{ padding: 6, display: "flex", gap: 4 }}>
-                      <button onClick={() => abrirEdicao(e)} disabled={carregando === e.id}>
-                        editar
-                      </button>
-                      <button onClick={() => remover(e.id)} disabled={carregando === e.id}>
-                        remover
-                      </button>
-                    </td>
+                    <Campo label="Quantidade">{e.quantidade}</Campo>
+                    <Campo label="Unidade">{e.unidade ?? "—"}</Campo>
+                    <Campo label="Data prevista">{formatarData(e.data_prevista)}</Campo>
+                    <Campo label="Data entregue">{formatarData(e.data_entrega)}</Campo>
                   </>
                 )}
-              </tr>
-            );
-          })}
-          {execucoes.length === 0 && !novo && (
-            <tr>
-              <td colSpan={8} style={{ padding: 6, color: cor.textoTerciario }}>
-                Nenhuma entrega cadastrada.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                <Campo label="Atraso (dias)">{atraso ?? "—"}</Campo>
+                <Campo label="Situação">
+                  <select
+                    value={e.situacao}
+                    onChange={(ev) => atualizarSituacao(e.id, ev.target.value)}
+                    disabled={carregando === e.id}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: 20,
+                      border: "none",
+                      fontWeight: 600,
+                      fontSize: 11,
+                      color: SITUACAO_COR[e.situacao]?.fg,
+                      background: SITUACAO_COR[e.situacao]?.bg,
+                    }}
+                  >
+                    {SITUACOES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </Campo>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 12 }}>
+                {editando ? (
+                  <>
+                    <button onClick={() => salvarEdicao(e.id)} disabled={carregando === e.id} style={{ fontSize: 11.5 }}>
+                      Salvar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditandoId(null);
+                        setEdicao(null);
+                      }}
+                      disabled={carregando === e.id}
+                      style={{ fontSize: 11.5 }}
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => abrirEdicao(e)} disabled={carregando === e.id} style={{ fontSize: 11.5 }}>
+                      editar
+                    </button>
+                    <button onClick={() => remover(e.id)} disabled={carregando === e.id} style={{ fontSize: 11.5 }}>
+                      remover
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {novo ? (
-        <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
           <span style={{ fontSize: 12, color: cor.textoTerciario }}>Execução {proximoNumero}</span>
           <input
             type="number"
@@ -303,7 +308,7 @@ export default function Cronograma({
         <button
           onClick={() => setNovo(true)}
           style={{
-            marginTop: 8,
+            marginTop: 10,
             width: "100%",
             border: `1.5px dashed ${cor.borda}`,
             background: "transparent",
