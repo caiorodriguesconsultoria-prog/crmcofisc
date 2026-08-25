@@ -240,12 +240,14 @@ th {
     padding: 0;
   }
   .crm-modal-painel {
-    height: 100vh;
+    height: 100dvh;
     max-height: none;
     border-radius: 0;
   }
   .crm-modal-topo {
-    /* padding-top extra pra não ficar embaixo do botão ☰ flutuante */
-    padding-top: 60px;
+    /* padding-top extra pra não ficar embaixo do botão ☰ flutuante nem da
+       barra de endereço do navegador (Safari/Chrome mobile cobrem o topo
+       da tela antes de rolar, mesmo com a barra "fixa" partindo do topo). */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
   }
 }

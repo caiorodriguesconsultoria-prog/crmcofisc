@@ -433,6 +433,7 @@ export async function carregarProcesso(id: string) {
   const topo = (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: cor.textoTerciario }}>CT nº</span>
         <TituloDestaque fontSize={19}>{p.numero_contrato}</TituloDestaque>
         <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
         {tagsAtivas.map((t) => {
