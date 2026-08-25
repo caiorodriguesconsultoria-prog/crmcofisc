@@ -60,7 +60,7 @@ export default function GestaoFiscalizacao({
 
   if (!editando) {
     return (
-      <CartaoColapsavel titulo="Gestão e Fiscalização">
+      <CartaoColapsavel titulo="Gestão e Fiscalização" abertoInicial={false}>
         <LinhaChave label="Gestor" valor={gestor?.nome ?? "não informado"} />
         <LinhaChave label="Gestor substituto" valor={gestorSubstituto?.nome ?? "não informado"} />
         <LinhaChave label="Fiscal" valor={fiscal?.nome ?? "não informado"} />

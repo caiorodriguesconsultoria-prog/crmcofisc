@@ -8,7 +8,6 @@ import Checklist from "./checklist";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import DadosPrincipais from "./dados-principais";
 import DadosProcesso from "./dados-processo";
-import Prazo from "./prazo";
 import Agendamentos from "./agendamentos";
 import Cronograma from "./cronograma";
 import Conclusao from "./conclusao";
@@ -18,10 +17,10 @@ import CronogramaRelatorio from "./relatorio/cronograma-relatorio";
 import PautaDistribuicao from "./relatorio/pauta-distribuicao";
 import EntregasLazy from "./entregas-lazy";
 import Ocorrencias from "./relatorio/ocorrencias";
-import ConclusaoRelatorio from "./relatorio/conclusao-relatorio";
 import { card, cor, pill } from "@/lib/theme";
 import TituloDestaque from "@/app/_ui/titulo";
 import { BotaoCopiar } from "@/app/_ui/campo";
+import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
 import { getPessoasAtivas, getPapeisGestorFiscal, getTagsEvento } from "@/lib/dados-referencia";
 
 function diasRestantes(prazoData: string | null) {
@@ -250,7 +249,28 @@ export async function carregarProcesso(id: string) {
           naturezaDespesa={p.natureza_despesa}
           valorGlobal={p.valor_global}
         />
+      </div>
 
+      {/* Kanban + Eventos ativos + Agendamentos de entrega — fixo, sem recolher */}
+      <div style={secao}>
+        <PainelProcesso
+          processoId={p.id}
+          etapaAtual={p.etapa_atual}
+          tagsAtivas={tagsAtivas}
+          tagsDisponiveis={tagsDisponiveis ?? []}
+        />
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+          <Agendamentos processoId={p.id} agendamentos={(agendamentos ?? []) as any} />
+        </div>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <CartaoColapsavel titulo="Checklist" abertoInicial={false}>
+          <Checklist grupos={gruposTarefas} />
+        </CartaoColapsavel>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
         <GestaoFiscalizacao
           processoId={p.id}
           gestor={p.gestor}
@@ -262,90 +282,66 @@ export async function carregarProcesso(id: string) {
         />
       </div>
 
-      <div style={secao}>
-        <Cobertura
-          processoId={p.id}
-          titular={p.titular}
-          responsavelAtual={p.responsavel}
-          motivoBackup={p.motivo_backup}
-          pessoas={pessoas ?? []}
-        />
+      <div style={{ marginTop: 16 }}>
+        <CartaoColapsavel titulo="Cronograma de entregas" abertoInicial={false}>
+          <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} />
+        </CartaoColapsavel>
       </div>
 
-      <div style={secao}>
-        <PainelProcesso
-          processoId={p.id}
-          etapaAtual={p.etapa_atual}
-          tagsAtivas={tagsAtivas}
-          tagsDisponiveis={tagsDisponiveis ?? []}
-        />
+      <div style={{ marginTop: 16 }}>
+        <CartaoColapsavel titulo="Andamentos" abertoInicial={false}>
+          <Andamentos
+            processoId={p.id}
+            autorId={pessoaAtual?.id ?? null}
+            numeroContrato={p.numero_contrato}
+            andamentos={(andamentosRaw ?? []) as any}
+          />
+        </CartaoColapsavel>
       </div>
 
-      <div style={secao}>
-        <Prazo processoId={p.id} prazoData={p.prazo_data} />
+      <div style={{ marginTop: 16 }}>
+        <CartaoColapsavel titulo="Responsável" abertoInicial={false}>
+          <Cobertura
+            processoId={p.id}
+            titular={p.titular}
+            responsavelAtual={p.responsavel}
+            motivoBackup={p.motivo_backup}
+            pessoas={pessoas ?? []}
+          />
+        </CartaoColapsavel>
       </div>
 
-      <div style={secao}>
-        <Agendamentos processoId={p.id} agendamentos={(agendamentos ?? []) as any} />
-      </div>
+      <div style={{ marginTop: 16 }}>
+        <CartaoColapsavel titulo="Histórico" abertoInicial={false}>
+          <div>
+            <strong style={{ fontSize: 12.5 }}>Kanban</strong>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: 13 }}>
+              {(kanbanHistorico ?? []).map((h: any, i: number) => (
+                <li key={i}>
+                  {h.kanban} — entrada {new Date(h.entrada_em).toLocaleString("pt-BR")}
+                  {h.saida_em
+                    ? `, saída ${new Date(h.saida_em).toLocaleString("pt-BR")}`
+                    : " (atual)"}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-      <div style={secao}>
-        <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} />
-      </div>
-
-      <div style={secao}>
-        <Checklist grupos={gruposTarefas} />
-      </div>
-
-      <div style={secao}>
-        <Andamentos
-          processoId={p.id}
-          autorId={pessoaAtual?.id ?? null}
-          numeroContrato={p.numero_contrato}
-          andamentos={(andamentosRaw ?? []) as any}
-        />
-      </div>
-
-      <div style={secao}>
-        <Conclusao
-          processoId={p.id}
-          numeroContrato={p.numero_contrato}
-          conclusao={{
-            tipo: p.conclusao_tipo,
-            checks: p.conclusao_checks,
-            texto: p.conclusao_texto,
-            penalidade: p.conclusao_penalidade,
-          }}
-        />
-      </div>
-
-      <div style={secao}>
-        <h2 style={{ fontSize: 15, marginTop: 0 }}>Histórico de kanban</h2>
-        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
-          {(kanbanHistorico ?? []).map((h: any, i: number) => (
-            <li key={i}>
-              {h.kanban} — entrada {new Date(h.entrada_em).toLocaleString("pt-BR")}
-              {h.saida_em
-                ? `, saída ${new Date(h.saida_em).toLocaleString("pt-BR")}`
-                : " (atual)"}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div style={secao}>
-        <h2 style={{ fontSize: 15, marginTop: 0 }}>Histórico de eventos</h2>
-        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
-          {(tagHistorico ?? []).length === 0 && (
-            <li style={{ color: cor.textoTerciario }}>Nenhum registro ainda.</li>
-          )}
-          {(tagHistorico ?? []).map((h: any, i: number) => (
-            <li key={i}>
-              {h.tags?.valor} — início {new Date(h.inicio_em).toLocaleString("pt-BR")}
-              {h.fim_em ? `, fim ${new Date(h.fim_em).toLocaleString("pt-BR")}` : " (ativo)"}
-            </li>
-          ))}
-        </ul>
+          <div style={{ marginTop: 14 }}>
+            <strong style={{ fontSize: 12.5 }}>Eventos</strong>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: 13 }}>
+              {(tagHistorico ?? []).length === 0 && (
+                <li style={{ color: cor.textoTerciario }}>Nenhum registro ainda.</li>
+              )}
+              {(tagHistorico ?? []).map((h: any, i: number) => (
+                <li key={i}>
+                  {h.tags?.valor} — início {new Date(h.inicio_em).toLocaleString("pt-BR")}
+                  {h.fim_em ? `, fim ${new Date(h.fim_em).toLocaleString("pt-BR")}` : " (ativo)"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </CartaoColapsavel>
       </div>
     </div>
   );
@@ -380,7 +376,9 @@ export async function carregarProcesso(id: string) {
 
         <div style={card}>
           <span style={rotuloSecao}>8. Conclusões</span>
-          <ConclusaoRelatorio
+          <Conclusao
+            processoId={p.id}
+            numeroContrato={p.numero_contrato}
             conclusao={{
               tipo: p.conclusao_tipo,
               checks: p.conclusao_checks,

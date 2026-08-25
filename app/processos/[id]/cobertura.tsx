@@ -67,7 +67,6 @@ export default function Cobertura({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <strong>Responsável</strong>
       <CampoLinha label="Titular" valor={titular.nome} />
       {emBackup && (
         <CampoLinha

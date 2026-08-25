@@ -29,11 +29,10 @@ export default function Checklist({ grupos }: { grupos: Grupo[] }) {
     router.refresh();
   }
 
-  if (grupos.length === 0) return null;
+  if (grupos.length === 0) return <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum checklist ativo.</p>;
 
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <strong>Checklist</strong>
       {grupos.map((g) => {
         const concluidas = g.tarefas.filter((t) => t.concluida).length;
         const percentual = g.tarefas.length ? Math.round((concluidas / g.tarefas.length) * 100) : 0;

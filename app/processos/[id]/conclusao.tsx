@@ -100,7 +100,6 @@ export default function Conclusao({
     return (
       <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <strong>Conclusões</strong>
           <span
             style={{
               fontSize: 11,
@@ -150,8 +149,6 @@ export default function Conclusao({
 
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <strong>Conclusões</strong>
-
       <div style={{ display: "flex", gap: 8 }}>
         <button
           type="button"

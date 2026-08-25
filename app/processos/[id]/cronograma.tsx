@@ -138,8 +138,6 @@ export default function Cronograma({
 
   return (
     <section>
-      <strong>Cronograma de entregas</strong>
-
       {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
 
       <div style={{ overflowX: "auto" }}>

@@ -105,7 +105,6 @@ export default function Andamentos({
 
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <strong>Andamentos</strong>
       <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
         "Incluir no relatório" define o que entra na seção 5 (Ocorrências) do Relatório.
       </p>
