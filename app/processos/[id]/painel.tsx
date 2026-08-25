@@ -16,26 +16,20 @@ const KANBANS = [
 
 type Tag = { id: string; valor: string };
 
-export default function PainelProcesso({
-  processoId,
-  etapaAtual,
-  tagsAtivas,
-  tagsDisponiveis,
-}: {
-  processoId: string;
-  etapaAtual: string;
-  tagsAtivas: Tag[];
-  tagsDisponiveis: Tag[];
-}) {
+const rotuloSecao: React.CSSProperties = {
+  fontSize: 10.5,
+  fontWeight: 500,
+  textTransform: "uppercase",
+  letterSpacing: 1,
+  color: cor.textoTerciario,
+};
+
+export function KanbanAtual({ processoId, etapaAtual }: { processoId: string; etapaAtual: string }) {
   const router = useRouter();
   const supabase = createClient();
   const [kanban, setKanban] = useState(etapaAtual);
-  const [novaTagId, setNovaTagId] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
-
-  const idsAtivas = new Set(tagsAtivas.map((t) => t.id));
-  const opcoesParaAdicionar = tagsDisponiveis.filter((t) => !idsAtivas.has(t.id));
 
   async function salvarKanban() {
     setErro(null);
@@ -51,6 +45,44 @@ export default function PainelProcesso({
     }
     router.refresh();
   }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <span style={rotuloSecao}>Kanban atual</span>
+      <div style={{ display: "flex", gap: 8 }}>
+        <select value={kanban} onChange={(e) => setKanban(e.target.value)} style={{ padding: 8, flex: 1, minWidth: 0 }}>
+          {KANBANS.map((k) => (
+            <option key={k} value={k}>
+              {k}
+            </option>
+          ))}
+        </select>
+        <button onClick={salvarKanban} disabled={carregando || kanban === etapaAtual} style={botaoPrimario}>
+          Salvar
+        </button>
+      </div>
+      {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+    </div>
+  );
+}
+
+export function EventosAtivos({
+  processoId,
+  tagsAtivas,
+  tagsDisponiveis,
+}: {
+  processoId: string;
+  tagsAtivas: Tag[];
+  tagsDisponiveis: Tag[];
+}) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [novaTagId, setNovaTagId] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(false);
+
+  const idsAtivas = new Set(tagsAtivas.map((t) => t.id));
+  const opcoesParaAdicionar = tagsDisponiveis.filter((t) => !idsAtivas.has(t.id));
 
   async function adicionarEvento() {
     if (!novaTagId) return;
@@ -85,103 +117,65 @@ export default function PainelProcesso({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span
-          style={{
-            fontSize: 10.5,
-            fontWeight: 500,
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            color: cor.textoTerciario,
-          }}
-        >
-          Kanban atual
-        </span>
-        <div style={{ display: "flex", gap: 8 }}>
-          <select value={kanban} onChange={(e) => setKanban(e.target.value)} style={{ padding: 8, flex: 1 }}>
-            {KANBANS.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
-          <button onClick={salvarKanban} disabled={carregando || kanban === etapaAtual} style={botaoPrimario}>
-            Salvar
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span
-          style={{
-            fontSize: 10.5,
-            fontWeight: 500,
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            color: cor.textoTerciario,
-          }}
-        >
-          Eventos ativos
-        </span>
-        {tagsAtivas.length === 0 ? (
-          <span style={{ fontSize: 12.5, color: cor.textoTerciario }}>Nenhum</span>
-        ) : (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {tagsAtivas.map((t) => {
-              const c = corEvento(t.id);
-              return (
-                <span
-                  key={t.id}
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      <span style={rotuloSecao}>Eventos ativos</span>
+      {tagsAtivas.length === 0 ? (
+        <span style={{ fontSize: 12.5, color: cor.textoTerciario }}>Nenhum</span>
+      ) : (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {tagsAtivas.map((t) => {
+            const c = corEvento(t.id);
+            return (
+              <span
+                key={t.id}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  color: c.texto,
+                  background: c.fundo,
+                  borderRadius: 20,
+                  padding: "5px 8px 5px 11px",
+                }}
+              >
+                {t.valor}
+                <button
+                  onClick={() => removerEvento(t.id)}
+                  disabled={carregando}
+                  aria-label={`Remover ${t.valor}`}
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 11.5,
-                    fontWeight: 600,
+                    fontSize: 10,
+                    padding: "1px 6px",
+                    border: "none",
+                    background: "rgba(0,0,0,.08)",
                     color: c.texto,
-                    background: c.fundo,
-                    borderRadius: 20,
-                    padding: "5px 8px 5px 11px",
                   }}
                 >
-                  {t.valor}
-                  <button
-                    onClick={() => removerEvento(t.id)}
-                    disabled={carregando}
-                    aria-label={`Remover ${t.valor}`}
-                    style={{
-                      fontSize: 10,
-                      padding: "1px 6px",
-                      border: "none",
-                      background: "rgba(0,0,0,.08)",
-                      color: c.texto,
-                    }}
-                  >
-                    ×
-                  </button>
-                </span>
-              );
-            })}
-          </div>
-        )}
-        <div style={{ display: "flex", gap: 8 }}>
-          <select
-            value={novaTagId}
-            onChange={(e) => setNovaTagId(e.target.value)}
-            style={{ padding: 8, flex: 1 }}
-          >
-            <option value="">Selecione um evento</option>
-            {opcoesParaAdicionar.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.valor}
-              </option>
-            ))}
-          </select>
-          <button onClick={adicionarEvento} disabled={carregando || !novaTagId}>
-            Adicionar
-          </button>
+                  ×
+                </button>
+              </span>
+            );
+          })}
         </div>
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <select
+          value={novaTagId}
+          onChange={(e) => setNovaTagId(e.target.value)}
+          style={{ padding: 8, flex: 1, minWidth: 0 }}
+        >
+          <option value="">Selecione um evento</option>
+          {opcoesParaAdicionar.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.valor}
+            </option>
+          ))}
+        </select>
+        <button onClick={adicionarEvento} disabled={carregando || !novaTagId}>
+          Adicionar
+        </button>
       </div>
 
       {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}

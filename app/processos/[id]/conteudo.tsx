@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import PainelProcesso from "./painel";
+import { KanbanAtual, EventosAtivos } from "./painel";
 import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
 import Checklist from "./checklist";
@@ -195,26 +195,38 @@ export async function carregarProcesso(id: string) {
     googleEventId: string | null;
   };
 
-  const gruposTarefas = Array.from(
-    (tarefasRaw ?? []).reduce((acc, t) => {
-      const grupo = acc.get(t.origem_id) ?? {
-        origemId: t.origem_id,
-        origemTipo: t.origem_tipo,
-        nome: nomeOrigem.get(t.origem_id) ?? t.origem_tipo,
-        tarefas: [] as TarefaGrupo[],
-      };
-      grupo.tarefas.push({
-        id: t.id,
-        label: t.label,
-        concluida: t.concluida,
-        agendamentoData: t.agendamento_data,
-        agendamentoHorario: t.agendamento_horario,
-        googleEventId: t.google_event_id,
-      });
-      acc.set(t.origem_id, grupo);
-      return acc;
-    }, new Map<string, { origemId: string; origemTipo: string; nome: string; tarefas: TarefaGrupo[] }>()).values(),
-  );
+  const mapaGruposTarefas = (tarefasRaw ?? []).reduce((acc, t) => {
+    const grupo = acc.get(t.origem_id) ?? {
+      origemId: t.origem_id,
+      origemTipo: t.origem_tipo,
+      nome: nomeOrigem.get(t.origem_id) ?? t.origem_tipo,
+      tarefas: [] as TarefaGrupo[],
+    };
+    grupo.tarefas.push({
+      id: t.id,
+      label: t.label,
+      concluida: t.concluida,
+      agendamentoData: t.agendamento_data,
+      agendamentoHorario: t.agendamento_horario,
+      googleEventId: t.google_event_id,
+    });
+    acc.set(t.origem_id, grupo);
+    return acc;
+  }, new Map<string, { origemId: string; origemTipo: string; nome: string; tarefas: TarefaGrupo[] }>());
+
+  // Etapa do Kanban sem nenhuma tarefa cadastrada ainda (ex.: etapa sem lista
+  // padrão definida) não deve ficar sem seção — mantém "Tarefas" visível e
+  // com "+ Adicionar tarefa" disponível mesmo vazia.
+  if (kanbanAtivo && !mapaGruposTarefas.has(kanbanAtivo.id)) {
+    mapaGruposTarefas.set(kanbanAtivo.id, {
+      origemId: kanbanAtivo.id,
+      origemTipo: "kanban",
+      nome: p.etapa_atual,
+      tarefas: [],
+    });
+  }
+
+  const gruposTarefas = Array.from(mapaGruposTarefas.values());
 
   const secao: React.CSSProperties = { ...card, marginTop: 16 };
 
@@ -283,31 +295,8 @@ export async function carregarProcesso(id: string) {
         />
       </div>
 
-      {/* Kanban + Eventos ativos + Agendamentos de entrega — fixo, sem recolher */}
-      <div style={secao}>
-        <PainelProcesso
-          processoId={p.id}
-          etapaAtual={p.etapa_atual}
-          tagsAtivas={tagsAtivas}
-          tagsDisponiveis={tagsDisponiveis ?? []}
-        />
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
-          <Agendamentos
-            processoId={p.id}
-            numeroContrato={p.numero_contrato}
-            agendamentos={(agendamentos ?? []).map((a: any) => ({
-              id: a.id,
-              data: a.data,
-              horario: a.horario,
-              observacao: a.observacao,
-              googleEventId: a.google_event_id,
-            }))}
-          />
-        </div>
-      </div>
-
       <div style={{ marginTop: 16 }}>
-        <CartaoColapsavel titulo="Checklist" abertoInicial={false}>
+        <CartaoColapsavel titulo="Andamento" abertoInicial={false}>
           <Checklist
             processoId={p.id}
             autorId={pessoaAtual?.id ?? null}
@@ -315,6 +304,23 @@ export async function carregarProcesso(id: string) {
             grupos={gruposTarefas}
           />
         </CartaoColapsavel>
+      </div>
+
+      {/* Kanban + Agendamento de entrega + Eventos ativos — fixo, sem recolher */}
+      <div style={{ ...secao, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+        <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
+        <Agendamentos
+          processoId={p.id}
+          numeroContrato={p.numero_contrato}
+          agendamentos={(agendamentos ?? []).map((a: any) => ({
+            id: a.id,
+            data: a.data,
+            horario: a.horario,
+            observacao: a.observacao,
+            googleEventId: a.google_event_id,
+          }))}
+        />
+        <EventosAtivos processoId={p.id} tagsAtivas={tagsAtivas} tagsDisponiveis={tagsDisponiveis ?? []} />
       </div>
 
       <div style={{ marginTop: 16 }}>
