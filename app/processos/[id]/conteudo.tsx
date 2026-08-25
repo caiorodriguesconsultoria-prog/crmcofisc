@@ -217,7 +217,28 @@ export async function carregarProcesso(id: string) {
 
   const grupoKanban = gruposTarefas.find((g) => g.origemTipo === "kanban");
   const aguardando = grupoKanban?.tarefas.find((t) => !t.concluida)?.label ?? null;
-  const dias = diasRestantes(p.prazo_data);
+
+  // Data mostrada no topo: a mais próxima que ainda vai acontecer, entre o
+  // prazo do contrato, os agendamentos de entrega, as tarefas de evento com
+  // data marcada (não concluídas) e as execuções ainda não entregues — não
+  // só o prazo_data isolado, que pode já estar vencido enquanto existe algo
+  // real se aproximando.
+  const candidatosData: (string | null)[] = [
+    p.prazo_data,
+    ...(agendamentos ?? []).map((a: any) => a.data as string),
+    ...(tarefasRaw ?? [])
+      .filter((t: any) => t.agendamento_data && !t.concluida)
+      .map((t: any) => t.agendamento_data as string),
+    ...(execucoes ?? [])
+      .filter((e: any) => e.data_prevista && !e.data_entrega)
+      .map((e: any) => e.data_prevista as string),
+  ];
+  const proximasData = candidatosData
+    .map((data) => ({ data, dias: diasRestantes(data) }))
+    .filter((c): c is { data: string; dias: number } => c.data !== null && c.dias !== null && c.dias >= 0)
+    .sort((a, b) => a.dias - b.dias);
+  const dataExibida = proximasData[0]?.data ?? p.prazo_data;
+  const dias = diasRestantes(dataExibida);
   const dot = corPrazo(dias);
   const emCobertura = !!p.titular && p.responsavel?.id !== p.titular?.id;
   const formaEntrega = pauta && pauta.length > 1 ? "Descentralizada" : pauta && pauta.length === 1 ? "Centralizada" : "não definida";
@@ -402,7 +423,7 @@ export async function carregarProcesso(id: string) {
       {dias !== null && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11.5, fontWeight: 600, color: dot ?? undefined }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: dot ?? undefined, flex: "none" }} />
-          {formatarData(p.prazo_data)} · {textoPrazo(dias)}
+          {formatarData(dataExibida)} · {textoPrazo(dias)}
           {aguardando && <span style={{ color: cor.textoSecundario, fontWeight: 400 }}>· Aguarda: {aguardando}</span>}
         </div>
       )}
