@@ -81,7 +81,7 @@ export default async function ProcessosPage({
       voltarHref="/dashboard"
       maxWidth={1300}
       acao={
-        <Link href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
+        <Link href="/processos/novo" prefetch={false} style={{ ...botaoPrimario, textDecoration: "none" }}>
           + Novo processo
         </Link>
       }
