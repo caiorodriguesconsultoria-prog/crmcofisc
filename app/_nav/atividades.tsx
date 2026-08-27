@@ -24,11 +24,13 @@ export default async function Atividades() {
 
   if (!user) return null;
 
-  const [{ data: processos }, tagsEvento, { data: processoTags }] = await Promise.all([
+  const [{ data: processos }, tagsEvento, { data: processoTags }, { data: pessoa }] = await Promise.all([
     supabase.from("processos").select("etapa_atual"),
     getTagsEvento(),
     supabase.from("processo_tags").select("tag_id"),
+    supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
   ]);
+  const ehAdmin = !!pessoa?.is_admin;
 
   const porEtapa = new Map<string, number>();
   for (const p of processos ?? []) {
@@ -47,14 +49,18 @@ export default async function Atividades() {
     dot: KANBAN_DOT,
   }));
 
-  const atividadesEvento: Atividade[] = (tagsEvento ?? []).map((t) => ({
-    label: t.valor,
-    count: porTag.get(t.id) ?? 0,
-    href: `/processos?evento=${t.id}`,
-    dot: corEvento(t.id).texto,
-  }));
+  const atividadesEvento: Atividade[] = (tagsEvento ?? [])
+    .slice()
+    .sort((a, b) => a.valor.localeCompare(b.valor, "pt-BR"))
+    .map((t) => ({
+      id: t.id,
+      label: t.valor,
+      count: porTag.get(t.id) ?? 0,
+      href: `/processos?evento=${t.id}`,
+      dot: corEvento(t.id).texto,
+    }));
 
   if (atividadesKanban.length === 0 && atividadesEvento.length === 0) return null;
 
-  return <GruposAtividades atividades={atividadesKanban} eventos={atividadesEvento} />;
+  return <GruposAtividades atividades={atividadesKanban} eventos={atividadesEvento} ehAdmin={ehAdmin} />;
 }

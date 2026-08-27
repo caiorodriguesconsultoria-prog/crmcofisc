@@ -110,6 +110,9 @@ export async function carregarProcesso(id: string) {
         "id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome), agendamento_data, agendamento_horario, google_event_id, andamento_tags(tags(id, valor)), andamento_anexos(id, nome_arquivo, caminho, tamanho_bytes)",
       )
       .eq("processo_id", id)
+      // "Tarefa concluída" é gerado automaticamente ao concluir uma tarefa do
+      // Kanban — não é um andamento de verdade, fica só no Histórico.
+      .neq("tipo", "Tarefa concluída")
       .order("data", { ascending: false }),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
     getPessoasAtivas(),

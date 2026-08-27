@@ -16,7 +16,7 @@ const LINKS = [
   { href: "/fornecedores", label: "Fornecedores" },
 ];
 
-export type Atividade = { label: string; count: number; href: string; dot: string };
+export type Atividade = { label: string; count: number; href: string; dot: string; id?: string };
 
 export default function Sidebar({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
