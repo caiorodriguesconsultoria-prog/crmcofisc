@@ -306,7 +306,7 @@ export async function carregarProcesso(id: string) {
           <Andamentos
             processoId={p.id}
             autorId={pessoaAtual?.id ?? null}
-            tagsAtivas={tagsAtivas}
+            tagsDisponiveis={tagsDisponiveis ?? []}
             andamentos={andamentosMapeados}
           />
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>

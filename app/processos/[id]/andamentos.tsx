@@ -38,16 +38,6 @@ function formatarTamanho(bytes: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const TIPOS = [
-  "Ofício Atenção",
-  "Notificação Atraso",
-  "Autorização Transcurso",
-  "Carta Defesa Prévia",
-  "Avaria",
-  "Conclusão Regular",
-  "Outro",
-];
-
 function formatarAgendamento(data: string | null, horario: string | null) {
   if (!data) return null;
   const dataFmt = new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
@@ -58,20 +48,22 @@ export default function Andamentos({
   processoId,
   autorId,
   andamentos,
-  tagsAtivas,
+  tagsDisponiveis,
 }: {
   processoId: string;
   autorId: string | null;
   andamentos: Andamento[];
-  tagsAtivas: Tag[];
+  tagsDisponiveis: Tag[];
 }) {
   const router = useRouter();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [tipos, setTipos] = useState<string[]>([]);
   const [texto, setTexto] = useState("");
   const [incluirRelatorio, setIncluirRelatorio] = useState(false);
   const [tagIds, setTagIds] = useState<string[]>([]);
+  const [tagsCriadas, setTagsCriadas] = useState<Tag[]>([]);
+  const [criandoEvento, setCriandoEvento] = useState(false);
+  const [nomeNovoEvento, setNomeNovoEvento] = useState("");
   const [arquivosNovos, setArquivosNovos] = useState<FileList | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -80,16 +72,31 @@ export default function Andamentos({
   const [enviandoAnexo, setEnviandoAnexo] = useState(false);
   const [erroAnexo, setErroAnexo] = useState<string | null>(null);
 
-  function alternarTipo(t: string) {
-    setTipos((atual) => (atual.includes(t) ? atual.filter((x) => x !== t) : [...atual, t]));
-  }
+  const todasAsTags = [...tagsDisponiveis, ...tagsCriadas.filter((t) => !tagsDisponiveis.some((d) => d.id === t.id))];
 
   function alternarTag(tagId: string) {
     setTagIds((atual) => (atual.includes(tagId) ? atual.filter((id) => id !== tagId) : [...atual, tagId]));
   }
 
+  async function criarEvento() {
+    if (!nomeNovoEvento.trim()) return;
+    setErro(null);
+    const { data: novaTag, error } = await supabase
+      .from("tags")
+      .insert({ categoria: "evento", valor: nomeNovoEvento.trim(), ativo: true })
+      .select("id, valor")
+      .single();
+    if (error || !novaTag) {
+      setErro(error?.message ?? "Erro ao criar evento");
+      return;
+    }
+    setTagsCriadas((atual) => [...atual, novaTag]);
+    setTagIds((atual) => [...atual, novaTag.id]);
+    setNomeNovoEvento("");
+    setCriandoEvento(false);
+  }
+
   function limparFormulario() {
-    setTipos([]);
     setTexto("");
     setIncluirRelatorio(false);
     setTagIds([]);
@@ -106,7 +113,7 @@ export default function Andamentos({
       .from("andamentos")
       .insert({
         processo_id: processoId,
-        tipo: tipos.join(", "),
+        tipo: "Andamento",
         texto,
         autor_id: autorId,
         incluir_relatorio: incluirRelatorio,
@@ -241,26 +248,48 @@ export default function Andamentos({
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) alternarTag(e.target.value);
-            }}
-            style={{ padding: 8 }}
-          >
-            <option value="">Selecione um evento ligado ao andamento...</option>
-            {tagsAtivas
-              .filter((t) => !tagIds.includes(t.id))
-              .map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.valor}
-                </option>
-              ))}
-          </select>
+          {criandoEvento ? (
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                value={nomeNovoEvento}
+                onChange={(e) => setNomeNovoEvento(e.target.value)}
+                placeholder="Nome do novo evento"
+                style={{ padding: 8, flex: 1 }}
+              />
+              <button type="button" onClick={criarEvento} disabled={!nomeNovoEvento.trim()}>
+                Criar
+              </button>
+              <button type="button" onClick={() => { setCriandoEvento(false); setNomeNovoEvento(""); }}>
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 6 }}>
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) alternarTag(e.target.value);
+                }}
+                style={{ padding: 8, flex: 1 }}
+              >
+                <option value="">Tipo de evento...</option>
+                {todasAsTags
+                  .filter((t) => !tagIds.includes(t.id))
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.valor}
+                    </option>
+                  ))}
+              </select>
+              <button type="button" onClick={() => setCriandoEvento(true)} style={{ whiteSpace: "nowrap" }}>
+                + Novo
+              </button>
+            </div>
+          )}
           {tagIds.length > 0 && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {tagIds.map((id) => {
-                const t = tagsAtivas.find((x) => x.id === id);
+                const t = todasAsTags.find((x) => x.id === id);
                 if (!t) return null;
                 const c = corEvento(t.id);
                 return (
@@ -284,43 +313,6 @@ export default function Andamentos({
           )}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) alternarTipo(e.target.value);
-            }}
-            style={{ padding: 8 }}
-          >
-            <option value="">Tipo de ocorrência...</option>
-            {TIPOS.filter((t) => !tipos.includes(t)).map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          {tipos.length > 0 && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {tipos.map((t) => (
-                <span
-                  key={t}
-                  style={{ ...pill, display: "inline-flex", alignItems: "center", gap: 4, background: cor.destaqueFundo, color: cor.destaque }}
-                >
-                  {t}
-                  <button
-                    type="button"
-                    onClick={() => alternarTipo(t)}
-                    aria-label={`Remover ${t}`}
-                    style={{ border: "none", background: "transparent", color: cor.destaque, fontSize: 10, cursor: "pointer", padding: 0 }}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
           <button
             type="button"
@@ -335,7 +327,7 @@ export default function Andamentos({
           >
             {incluirRelatorio ? "✓ " : ""}Ocorrência
           </button>
-          <button type="submit" disabled={salvando || tipos.length === 0 || !texto.trim()} style={botaoPrimario}>
+          <button type="submit" disabled={salvando || !texto.trim()} style={botaoPrimario}>
             {salvando ? "Salvando..." : "Criar andamento"}
           </button>
         </div>
