@@ -38,23 +38,15 @@ function formatarTamanho(bytes: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const MODELOS: Record<string, string> = {
-  "Ofício Atenção":
-    "Encaminhado à Contratada o Ofício nº [Nº]/2026/DAF/COFISC/DAF/SECTICS/MS ([SEI]), em [data] ([SEI]), solicitando especial atenção ao fiel cumprimento das cláusulas contratuais e do cronograma de entrega estabelecido em contrato.",
-  "Notificação Atraso":
-    "A Contratada foi Notificada, através do Ofício nº [Nº]/2026/DAF/COFISC/DAF/SECTICS/MS ([SEI]), em [data] ([SEI]), em razão do atraso no adimplemento contratual, que já somava [N] dias.",
-  "Autorização Transcurso":
-    "Após análise da Área Técnica da Coordenação-Geral [X], considerando a necessidade de garantir o atendimento e evitar o risco de desabastecimento na rede SUS, em caráter excepcional, foi autorizada a entrega com transcurso de validade, conforme Ofício nº [Nº]/2026/DAF/COFISC/DAF/SECTICS/MS ([SEI]).",
-  "Carta Defesa Prévia":
-    "A Contratada encaminhou Carta ([SEI]), em [data], apresentando defesa prévia quanto ao [motivo], a qual foi encaminhada à área técnica para manifestação.",
-  Avaria:
-    "No ato do recebimento da carga foi constatada avaria em [N] unidades, as quais foram devolvidas imediatamente ao fornecedor, o que foi comunicado por meio do Ofício nº [Nº]/2026/DAF/COFISC/DAF/SECTICS/MS ([SEI]), em [data].",
-  "Conclusão Regular":
-    "Conclui-se pela REGULAR EXECUÇÃO DO CONTRATO Nº [X], não sugerindo aplicação de penalidade à Contratada, por não restar configurado inadimplemento contratual passível de sanção.",
-  Outro: "",
-};
-
-const TIPOS = Object.keys(MODELOS);
+const TIPOS = [
+  "Ofício Atenção",
+  "Notificação Atraso",
+  "Autorização Transcurso",
+  "Carta Defesa Prévia",
+  "Avaria",
+  "Conclusão Regular",
+  "Outro",
+];
 
 function formatarAgendamento(data: string | null, horario: string | null) {
   if (!data) return null;
@@ -65,21 +57,18 @@ function formatarAgendamento(data: string | null, horario: string | null) {
 export default function Andamentos({
   processoId,
   autorId,
-  numeroContrato,
   andamentos,
   tagsAtivas,
 }: {
   processoId: string;
   autorId: string | null;
-  numeroContrato: string;
   andamentos: Andamento[];
   tagsAtivas: Tag[];
 }) {
   const router = useRouter();
   const supabase = createClient();
-  const [tipo, setTipo] = useState("");
+  const [tipos, setTipos] = useState<string[]>([]);
   const [texto, setTexto] = useState("");
-  const [seiNumero, setSeiNumero] = useState("");
   const [incluirRelatorio, setIncluirRelatorio] = useState(false);
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [arquivosNovos, setArquivosNovos] = useState<FileList | null>(null);
@@ -90,9 +79,8 @@ export default function Andamentos({
   const [enviandoAnexo, setEnviandoAnexo] = useState(false);
   const [erroAnexo, setErroAnexo] = useState<string | null>(null);
 
-  function gerarComIA() {
-    const modelo = MODELOS[tipo] ?? "";
-    setTexto(modelo.replaceAll("[X]", numeroContrato));
+  function alternarTipo(t: string) {
+    setTipos((atual) => (atual.includes(t) ? atual.filter((x) => x !== t) : [...atual, t]));
   }
 
   function alternarTag(tagId: string) {
@@ -100,9 +88,8 @@ export default function Andamentos({
   }
 
   function limparFormulario() {
-    setTipo("");
+    setTipos([]);
     setTexto("");
-    setSeiNumero("");
     setIncluirRelatorio(false);
     setTagIds([]);
     setArquivosNovos(null);
@@ -118,9 +105,8 @@ export default function Andamentos({
       .from("andamentos")
       .insert({
         processo_id: processoId,
-        tipo,
+        tipo: tipos.join(", "),
         texto,
-        sei_numero: seiNumero || null,
         autor_id: autorId,
         incluir_relatorio: incluirRelatorio,
       })
@@ -245,12 +231,12 @@ export default function Andamentos({
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {TIPOS.map((t) => {
-            const ativo = tipo === t;
+            const ativo = tipos.includes(t);
             return (
               <button
                 key={t}
                 type="button"
-                onClick={() => setTipo((atual) => (atual === t ? "" : t))}
+                onClick={() => alternarTipo(t)}
                 style={{
                   ...pill,
                   border: "none",
@@ -263,23 +249,6 @@ export default function Andamentos({
               </button>
             );
           })}
-        </div>
-
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={gerarComIA}
-            disabled={!tipo}
-            style={{ color: cor.destaque, background: cor.destaqueFundo, fontSize: 11.5, whiteSpace: "nowrap" }}
-          >
-            ✦ Gerar com IA
-          </button>
-          <input
-            value={seiNumero}
-            onChange={(e) => setSeiNumero(e.target.value)}
-            placeholder="Nº SEI (opcional)"
-            style={{ padding: 8, flex: "1 1 140px" }}
-          />
         </div>
 
         <input
@@ -303,7 +272,7 @@ export default function Andamentos({
           >
             {incluirRelatorio ? "✓ " : ""}Ocorrência
           </button>
-          <button type="submit" disabled={salvando || !tipo || !texto.trim()} style={botaoPrimario}>
+          <button type="submit" disabled={salvando || tipos.length === 0 || !texto.trim()} style={botaoPrimario}>
             {salvando ? "Salvando..." : "Criar andamento"}
           </button>
         </div>

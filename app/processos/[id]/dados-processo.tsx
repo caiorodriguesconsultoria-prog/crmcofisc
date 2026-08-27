@@ -69,7 +69,7 @@ export default function DadosProcesso({
   }
 
   return (
-    <CartaoColapsavel titulo="Dados do Processo">
+    <CartaoColapsavel titulo="Dados do Processo" abertoInicial={false}>
       <div
         style={{
           display: "flex",

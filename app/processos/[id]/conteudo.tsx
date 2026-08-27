@@ -296,14 +296,13 @@ export async function carregarProcesso(id: string) {
       />
 
       <div style={{ marginTop: 16 }}>
-        <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={false}>
+        <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={true}>
           <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
             <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
           </div>
           <Andamentos
             processoId={p.id}
             autorId={pessoaAtual?.id ?? null}
-            numeroContrato={p.numero_contrato}
             tagsAtivas={tagsAtivas}
             andamentos={andamentosMapeados}
           />
