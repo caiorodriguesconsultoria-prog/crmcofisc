@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListaProcessos from "./lista";
@@ -80,10 +79,15 @@ export default async function ProcessosPage({
       subtitulo={titulo !== "Processos" ? "Processos" : undefined}
       voltarHref="/dashboard"
       maxWidth={1300}
+      // <a> normal (não o <Link> do Next) de propósito — /processos/novo tem o
+      // mesmo formato de URL que a rota interceptada do modal /processos/[id],
+      // e navegação client-side acaba caindo no modal tratando "novo" como id.
+      // Um <a> força navegação completa (recarrega a página), que resolve
+      // certo pelo lado do servidor.
       acao={
-        <Link href="/processos/novo" prefetch={false} style={{ ...botaoPrimario, textDecoration: "none" }}>
+        <a href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
           + Novo processo
-        </Link>
+        </a>
       }
     >
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
