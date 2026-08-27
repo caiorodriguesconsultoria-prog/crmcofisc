@@ -13,15 +13,12 @@ export async function GET() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#2F5FDB",
-          color: "#fff",
-          fontSize: 96,
-          fontWeight: 800,
-          fontFamily: "sans-serif",
-          letterSpacing: -4,
+          background: "linear-gradient(90deg, #22C1DC 0%, #8FD79A 50%, #F4E266 100%)",
         }}
       >
-        CC
+        <span style={{ fontSize: 36, fontWeight: 800, color: "#000", fontFamily: "sans-serif", letterSpacing: -1 }}>
+          COFISC
+        </span>
       </div>
     ),
     { width: 192, height: 192 },

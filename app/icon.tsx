@@ -13,16 +13,13 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#2F5FDB",
+          background: "linear-gradient(90deg, #22C1DC 0%, #8FD79A 50%, #F4E266 100%)",
           borderRadius: 7,
-          color: "#fff",
-          fontSize: 18,
-          fontWeight: 800,
-          fontFamily: "sans-serif",
-          letterSpacing: -1,
         }}
       >
-        CC
+        <span style={{ fontSize: 9.5, fontWeight: 800, color: "#000", fontFamily: "sans-serif", letterSpacing: -0.5 }}>
+          COFISC
+        </span>
       </div>
     ),
     { ...size },
