@@ -78,7 +78,6 @@ export default function Andamentos({
 }) {
   const router = useRouter();
   const supabase = createClient();
-  const [modalAberto, setModalAberto] = useState(false);
   const [tipo, setTipo] = useState("");
   const [texto, setTexto] = useState("");
   const [seiNumero, setSeiNumero] = useState("");
@@ -103,8 +102,7 @@ export default function Andamentos({
     setTagIds((atual) => (atual.includes(tagId) ? atual.filter((id) => id !== tagId) : [...atual, tagId]));
   }
 
-  function fecharModal() {
-    setModalAberto(false);
+  function limparFormulario() {
     setTipo("");
     setTexto("");
     setSeiNumero("");
@@ -172,7 +170,7 @@ export default function Andamentos({
     }
 
     setSalvando(false);
-    fecharModal();
+    limparFormulario();
     router.refresh();
   }
 
@@ -222,20 +220,116 @@ export default function Andamentos({
 
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
-          "Incluir no relatório" define o que entra na seção 5 (Ocorrências) do Relatório.
-        </p>
-        <button
-          type="button"
-          onClick={() => setModalAberto(true)}
-          style={{ ...botaoPrimario, fontSize: 11.5, padding: "6px 14px", whiteSpace: "nowrap" }}
-        >
-          + Criar andamento
-        </button>
-      </div>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          padding: 12,
+          background: cor.fundo,
+          borderRadius: 12,
+        }}
+      >
+        <textarea
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder="Escreva livremente o que aconteceu..."
+          required
+          style={{ padding: 8, minHeight: 60 }}
+        />
 
-      {erro && !modalAberto && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+        {tagsAtivas.length > 0 && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {tagsAtivas.map((t) => {
+              const c = corEvento(t.id);
+              const ativa = tagIds.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => alternarTag(t.id)}
+                  style={{
+                    ...pill,
+                    border: "none",
+                    cursor: "pointer",
+                    background: ativa ? c.fundo : "rgba(96,93,93,.10)",
+                    color: ativa ? c.texto : cor.textoSecundario,
+                  }}
+                >
+                  {t.valor}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <select value={tipo} onChange={(e) => setTipo(e.target.value)} required style={{ padding: 8, flex: "1 1 160px" }}>
+            <option value="">Tipo de ocorrência</option>
+            {TIPOS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={gerarComIA}
+            disabled={!tipo}
+            style={{ color: cor.destaque, background: cor.destaqueFundo, fontSize: 11.5, whiteSpace: "nowrap" }}
+          >
+            ✦ Gerar com IA
+          </button>
+          <input
+            value={seiNumero}
+            onChange={(e) => setSeiNumero(e.target.value)}
+            placeholder="Nº SEI (opcional)"
+            style={{ padding: 8, flex: "1 1 140px" }}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <input
+            type="date"
+            value={agendamentoData}
+            onChange={(e) => setAgendamentoData(e.target.value)}
+            style={{ padding: 8, flex: "1 1 140px" }}
+          />
+          <input
+            type="time"
+            value={agendamentoHorario}
+            onChange={(e) => setAgendamentoHorario(e.target.value)}
+            style={{ padding: 8, flex: "1 1 100px" }}
+          />
+          <input
+            type="file"
+            multiple
+            onChange={(e) => setArquivosNovos(e.target.files)}
+            style={{ fontSize: 12, flex: "1 1 160px" }}
+          />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+            <input
+              type="checkbox"
+              checked={incluirRelatorio}
+              onChange={(e) => setIncluirRelatorio(e.target.checked)}
+            />
+            Incluir no relatório
+          </label>
+          <button type="submit" disabled={salvando} style={botaoPrimario}>
+            {salvando ? "Salvando..." : "Criar andamento"}
+          </button>
+        </div>
+
+        {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+      </form>
+
+      <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
+        "Incluir no relatório" define o que entra na seção 5 (Ocorrências) do Relatório.
+      </p>
 
       <div style={{ display: "flex", flexDirection: "column" }}>
         {andamentos.length === 0 && (
@@ -310,186 +404,6 @@ export default function Andamentos({
           </div>
         ))}
       </div>
-
-      {modalAberto && (
-        <div
-          onClick={fecharModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 60,
-            background: "rgba(32,31,29,.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 20,
-          }}
-        >
-          <form
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={handleSubmit}
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: 18,
-              width: "100%",
-              maxWidth: 460,
-              maxHeight: "85vh",
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <strong style={{ fontSize: 13 }}>Criar andamento</strong>
-              <button
-                type="button"
-                onClick={fecharModal}
-                aria-label="Fechar"
-                style={{ width: 26, height: 26, borderRadius: "50%", border: "none", background: "rgba(32,31,29,.08)" }}
-              >
-                ×
-              </button>
-            </div>
-
-            <select value={tipo} onChange={(e) => setTipo(e.target.value)} required style={{ padding: 8 }}>
-              <option value="">Selecione o tipo</option>
-              {TIPOS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-              <textarea
-                value={texto}
-                onChange={(e) => setTexto(e.target.value)}
-                placeholder="Texto do andamento — as lacunas [ ] são editáveis."
-                required
-                style={{ padding: 8, flex: 1 }}
-              />
-              <button
-                type="button"
-                onClick={gerarComIA}
-                disabled={!tipo}
-                style={{ color: cor.destaque, background: cor.destaqueFundo, fontSize: 11.5, whiteSpace: "nowrap" }}
-              >
-                ✦ Gerar com IA
-              </button>
-            </div>
-
-            <input
-              value={seiNumero}
-              onChange={(e) => setSeiNumero(e.target.value)}
-              placeholder="Nº SEI (opcional)"
-              style={{ padding: 8 }}
-            />
-
-            {tagsAtivas.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <span
-                  style={{
-                    fontSize: 10.5,
-                    fontWeight: 500,
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                    color: cor.textoTerciario,
-                  }}
-                >
-                  Tags de eventos relacionadas
-                </span>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {tagsAtivas.map((t) => {
-                    const c = corEvento(t.id);
-                    const ativa = tagIds.includes(t.id);
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => alternarTag(t.id)}
-                        style={{
-                          ...pill,
-                          border: "none",
-                          cursor: "pointer",
-                          background: ativa ? c.fundo : "rgba(96,93,93,.10)",
-                          color: ativa ? c.texto : cor.textoSecundario,
-                        }}
-                      >
-                        {t.valor}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  color: cor.textoTerciario,
-                }}
-              >
-                Agendamento (opcional)
-              </span>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  type="date"
-                  value={agendamentoData}
-                  onChange={(e) => setAgendamentoData(e.target.value)}
-                  style={{ padding: 8, flex: 1 }}
-                />
-                <input
-                  type="time"
-                  value={agendamentoHorario}
-                  onChange={(e) => setAgendamentoHorario(e.target.value)}
-                  style={{ padding: 8, flex: 1 }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  color: cor.textoTerciario,
-                }}
-              >
-                Anexos (opcional)
-              </span>
-              <input
-                type="file"
-                multiple
-                onChange={(e) => setArquivosNovos(e.target.files)}
-                style={{ fontSize: 12 }}
-              />
-            </div>
-
-            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={incluirRelatorio}
-                onChange={(e) => setIncluirRelatorio(e.target.checked)}
-              />
-              Incluir no relatório
-            </label>
-
-            {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
-
-            <button type="submit" disabled={salvando} style={botaoPrimario}>
-              {salvando ? "Salvando..." : "Criar"}
-            </button>
-          </form>
-        </div>
-      )}
 
       {modalAnexoId && (
         <div

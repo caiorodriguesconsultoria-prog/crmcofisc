@@ -302,13 +302,43 @@ export async function carregarProcesso(id: string) {
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <CartaoColapsavel titulo="Andamento" abertoInicial={false}>
-          <Checklist
+        <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={false}>
+          <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
+            <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
+          </div>
+          <Andamentos
             processoId={p.id}
             autorId={pessoaAtual?.id ?? null}
             numeroContrato={p.numero_contrato}
-            grupos={gruposTarefas}
+            tagsAtivas={tagsAtivas}
+            andamentos={(andamentosRaw ?? []).map((a: any) => ({
+              id: a.id,
+              tipo: a.tipo,
+              texto: a.texto,
+              data: a.data,
+              sei_numero: a.sei_numero,
+              incluir_relatorio: a.incluir_relatorio,
+              autor: a.autor,
+              agendamentoData: a.agendamento_data,
+              agendamentoHorario: a.agendamento_horario,
+              googleEventId: a.google_event_id,
+              tags: (a.andamento_tags ?? []).map((at: any) => at.tags).filter(Boolean),
+              anexos: (a.andamento_anexos ?? []).map((x: any) => ({
+                id: x.id,
+                nomeArquivo: x.nome_arquivo,
+                caminho: x.caminho,
+                tamanhoBytes: x.tamanho_bytes,
+              })),
+            }))}
           />
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+            <Checklist
+              processoId={p.id}
+              autorId={pessoaAtual?.id ?? null}
+              numeroContrato={p.numero_contrato}
+              grupos={gruposTarefas}
+            />
+          </div>
         </CartaoColapsavel>
       </div>
 
@@ -342,39 +372,6 @@ export async function carregarProcesso(id: string) {
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Cronograma de entregas" abertoInicial={false}>
           <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} />
-        </CartaoColapsavel>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <CartaoColapsavel titulo="Andamentos" abertoInicial={false}>
-          <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
-            <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
-          </div>
-          <Andamentos
-            processoId={p.id}
-            autorId={pessoaAtual?.id ?? null}
-            numeroContrato={p.numero_contrato}
-            tagsAtivas={tagsAtivas}
-            andamentos={(andamentosRaw ?? []).map((a: any) => ({
-              id: a.id,
-              tipo: a.tipo,
-              texto: a.texto,
-              data: a.data,
-              sei_numero: a.sei_numero,
-              incluir_relatorio: a.incluir_relatorio,
-              autor: a.autor,
-              agendamentoData: a.agendamento_data,
-              agendamentoHorario: a.agendamento_horario,
-              googleEventId: a.google_event_id,
-              tags: (a.andamento_tags ?? []).map((at: any) => at.tags).filter(Boolean),
-              anexos: (a.andamento_anexos ?? []).map((x: any) => ({
-                id: x.id,
-                nomeArquivo: x.nome_arquivo,
-                caminho: x.caminho,
-                tamanhoBytes: x.tamanho_bytes,
-              })),
-            }))}
-          />
         </CartaoColapsavel>
       </div>
 

@@ -86,13 +86,13 @@ export function EventosAtivos({
   const idsAtivas = new Set(tagsAtivas.map((t) => t.id));
   const opcoesParaAdicionar = tagsDisponiveis.filter((t) => !idsAtivas.has(t.id));
 
-  async function adicionarEvento() {
-    if (!novaTagId) return;
+  async function adicionarEvento(tagId: string) {
+    if (!tagId) return;
     setErro(null);
     setCarregando(true);
     const { error } = await supabase
       .from("processo_tags")
-      .insert({ processo_id: processoId, tag_id: novaTagId });
+      .insert({ processo_id: processoId, tag_id: tagId });
     setCarregando(false);
     if (error) {
       setErro(error.message);
@@ -208,7 +208,11 @@ export function EventosAtivos({
         <div style={{ display: "flex", gap: 8 }}>
           <select
             value={novaTagId}
-            onChange={(e) => setNovaTagId(e.target.value)}
+            disabled={carregando}
+            onChange={(e) => {
+              setNovaTagId(e.target.value);
+              adicionarEvento(e.target.value);
+            }}
             style={{ padding: 8, flex: 1, minWidth: 0 }}
           >
             <option value="">Selecione um evento</option>
@@ -218,9 +222,6 @@ export function EventosAtivos({
               </option>
             ))}
           </select>
-          <button onClick={adicionarEvento} disabled={carregando || !novaTagId}>
-            Adicionar
-          </button>
           <button type="button" onClick={() => setCriandoNovo(true)} disabled={carregando} style={{ whiteSpace: "nowrap" }}>
             + Novo
           </button>
