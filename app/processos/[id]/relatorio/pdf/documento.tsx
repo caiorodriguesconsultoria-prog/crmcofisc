@@ -95,15 +95,15 @@ function BotaoCopiar({ texto }: { texto: string }) {
       style={{
         marginLeft: "auto",
         cursor: "pointer",
-        fontSize: 10,
-        fontWeight: 600,
-        color: "#7D5411",
-        background: "rgba(182,130,53,.07)",
+        fontSize: 10.5,
+        fontWeight: 700,
+        color: "#2F5FDB",
+        background: "rgba(47,95,219,.10)",
         borderRadius: 7,
         padding: "4px 9px",
       }}
     >
-      copiar
+      📋 copiar seção
     </span>
   );
 }
@@ -220,6 +220,65 @@ export default function Documento({
 
   const nomeFiscal = (p.fiscal?.nome ?? "").toUpperCase();
 
+  const introTexto = `O presente relatório refere-se ao Contrato nº ${cn}, celebrado entre o Ministério da Saúde - MS e a empresa ${p.fornecedores?.nome ?? "não informada"}, para aquisição do medicamento ${p.objeto}, decorrente da Ata de Registro de Preços nº ${p.ata_registro_precos_numero ?? "[Nº]"} do Pregão Eletrônico nº ${p.pregao_eletronico_numero ?? "[Nº]"}, em observância às disposições da Lei nº 14.133, de 1º de abril de 2021, e demais legislação aplicável. Informa-se o que se segue quanto à execução do referido instrumento legal:`;
+
+  const cabecalhoTexto = [
+    "Ministério da Saúde",
+    "Secretaria de Ciência, Tecnologia e Inovação em Saúde",
+    "Departamento de Assistência Farmacêutica e Insumos Estratégicos",
+    "Coordenação de Fiscalização de Contratos e Instrumentos Congêneres da Assistência Farmacêutica",
+    "",
+    `RELATÓRIO ${relTipo === "Final" ? "FINAL DE EXECUÇÃO" : "PARCIAL"} DO CONTRATO ADMINISTRATIVO Nº ${cn}`,
+  ].join("\n");
+
+  const conclusaoBlocoTexto = p.conclusao_tipo
+    ? "Diante do exposto, considerando:\n" +
+      (p.conclusao_checks ?? []).map((c) => `- ${c};`).join("\n") +
+      (p.conclusao_texto ? `\n\n${p.conclusao_texto}` : "") +
+      `\n\nÉ importante ressaltar que a responsabilidade da empresa fornecedora extrapola a simples execução do objeto contratado. Mesmo depois de encerrado o prazo de vigência e cumpridas as obrigações estipuladas em Contrato, a Contratada responde por qualquer desconformidade na qualidade dos produtos fornecidos e pelos compromissos assumidos ao longo do Contrato.` +
+      (p.conclusao_penalidade ? `\n\nSugestão de penalidade: ${p.conclusao_penalidade}` : "")
+    : "Conclusões ainda não definidas.";
+
+  const rodapeTexto = [
+    textoReferencia,
+    "Coordenação de Fiscalização de Contratos e Instrumentos Congêneres da Assistência Farmacêutica - COFISC",
+    "Esplanada dos Ministérios, Bloco G - Bairro Zona Cívico-Administrativa, Brasília/DF, CEP 70058-900",
+    "Site - saude.gov.br",
+  ].join("\n");
+
+  const documentoCompletoTexto = [
+    cabecalhoTexto,
+    "",
+    introTexto,
+    "",
+    "1. QUADRO RESUMITIVO",
+    quadroTexto,
+    "",
+    "2. LOCAL DE ENTREGA",
+    textoLocal,
+    "",
+    "3. CRONOGRAMA DE ENTREGA",
+    cronTexto,
+    "",
+    "4. EXECUÇÃO DO CONTRATO",
+    execTexto,
+    "",
+    "5. OCORRÊNCIAS",
+    andamentos.length > 0 ? ocorrTexto : "Nenhum andamento marcado para inclusão.",
+    "",
+    "6. PAGAMENTOS ENCAMINHADOS",
+    "[Espaço reservado — módulo de pagamentos ainda não construído.]",
+    ...(inc7 ? ["", "7. CONSIDERAÇÕES SOBRE A FISCALIZAÇÃO DE CONTRATOS", SEC7.join("\n\n")] : []),
+    "",
+    "8. CONCLUSÕES",
+    conclusaoBlocoTexto,
+    "",
+    `${nomeFiscal || "(fiscal não definido)"}`,
+    "Fiscal Contratual",
+    "",
+    rodapeTexto,
+  ].join("\n");
+
   return (
     <div>
       <style>{`
@@ -262,7 +321,15 @@ export default function Documento({
           <input type="checkbox" checked={inc7} onChange={(e) => setInc7(e.target.checked)} />
           Seção 7 (texto padrão)
         </label>
-        <button type="button" onClick={() => window.print()} style={{ marginLeft: "auto" }}>
+        <button
+          type="button"
+          onClick={() => copiar(documentoCompletoTexto)}
+          style={{ marginLeft: "auto" }}
+          title="Copia o relatório inteiro como texto — cole no SEI e só ajuste a formatação"
+        >
+          Copiar documento inteiro
+        </button>
+        <button type="button" onClick={() => window.print()}>
           Exportar PDF
         </button>
       </div>
