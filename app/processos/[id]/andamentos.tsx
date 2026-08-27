@@ -243,15 +243,29 @@ export default function Andamentos({
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <select value={tipo} onChange={(e) => setTipo(e.target.value)} required style={{ padding: 8, flex: "1 1 160px" }}>
-            <option value="">Tipo de ocorrência</option>
-            {TIPOS.map((t) => (
-              <option key={t} value={t}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {TIPOS.map((t) => {
+            const ativo = tipo === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTipo((atual) => (atual === t ? "" : t))}
+                style={{
+                  ...pill,
+                  border: "none",
+                  cursor: "pointer",
+                  background: ativo ? cor.destaqueFundo : "rgba(96,93,93,.10)",
+                  color: ativo ? cor.destaque : cor.textoSecundario,
+                }}
+              >
                 {t}
-              </option>
-            ))}
-          </select>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={gerarComIA}
@@ -289,7 +303,7 @@ export default function Andamentos({
           >
             {incluirRelatorio ? "✓ " : ""}Ocorrência
           </button>
-          <button type="submit" disabled={salvando} style={botaoPrimario}>
+          <button type="submit" disabled={salvando || !tipo || !texto.trim()} style={botaoPrimario}>
             {salvando ? "Salvando..." : "Criar andamento"}
           </button>
         </div>
