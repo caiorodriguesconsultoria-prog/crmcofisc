@@ -29,6 +29,7 @@ export default function Ocorrencias({
   const router = useRouter();
   const supabase = createClient();
   const [modalAberto, setModalAberto] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -42,19 +43,12 @@ export default function Ocorrencias({
 
   function fecharModal() {
     setModalAberto(false);
+    setConfirmando(false);
     setSelecionados([]);
     setErro(null);
   }
 
-  async function criarOcorrencia() {
-    const escolhidos = ordenados.filter((a) => selecionados.includes(a.id));
-    if (escolhidos.length === 0) return;
-    setErro(null);
-    setSalvando(true);
-
-    const texto = escolhidos.map((a) => a.texto).join("\n\n");
-    const tagIds = Array.from(new Set(escolhidos.flatMap((a) => a.tags.map((t) => t.id))));
-
+  async function criarUmAndamento(texto: string, tagIds: string[]) {
     const { data: criado, error } = await supabase
       .from("andamentos")
       .insert({
@@ -67,19 +61,51 @@ export default function Ocorrencias({
       .select("id")
       .single();
 
-    if (error || !criado) {
-      setSalvando(false);
-      setErro(error?.message ?? "Erro ao criar ocorrência");
-      return;
-    }
+    if (error || !criado) return error?.message ?? "Erro ao criar ocorrência";
 
     if (tagIds.length > 0) {
       const { error: erroTags } = await supabase
         .from("andamento_tags")
         .insert(tagIds.map((tagId) => ({ andamento_id: criado.id, tag_id: tagId })));
-      if (erroTags) {
+      if (erroTags) return erroTags.message;
+    }
+
+    return null;
+  }
+
+  async function criarOcorrenciaCombinada() {
+    const escolhidos = ordenados.filter((a) => selecionados.includes(a.id));
+    if (escolhidos.length === 0) return;
+    setErro(null);
+    setSalvando(true);
+
+    const texto = escolhidos.map((a) => a.texto).join("\n\n");
+    const tagIds = Array.from(new Set(escolhidos.flatMap((a) => a.tags.map((t) => t.id))));
+    const erroCriar = await criarUmAndamento(texto, tagIds);
+
+    setSalvando(false);
+    if (erroCriar) {
+      setErro(erroCriar);
+      return;
+    }
+    fecharModal();
+    router.refresh();
+  }
+
+  async function criarOcorrenciasSeparadas() {
+    const escolhidos = ordenados.filter((a) => selecionados.includes(a.id));
+    if (escolhidos.length === 0) return;
+    setErro(null);
+    setSalvando(true);
+
+    for (const a of escolhidos) {
+      const erroCriar = await criarUmAndamento(
+        a.texto,
+        a.tags.map((t) => t.id),
+      );
+      if (erroCriar) {
         setSalvando(false);
-        setErro(erroTags.message);
+        setErro(erroCriar);
         return;
       }
     }
@@ -111,7 +137,7 @@ export default function Ocorrencias({
           onClick={() => setModalAberto(true)}
           style={{ ...botaoPrimario, fontSize: 11, padding: "5px 12px", whiteSpace: "nowrap" }}
         >
-          + Criar ocorrência
+          Analisar andamentos
         </button>
       </div>
 
@@ -156,8 +182,8 @@ export default function Ocorrencias({
               </button>
             </div>
             <p style={{ fontSize: 12, color: cor.textoTerciario, margin: 0 }}>
-              Selecione os andamentos que vão compor a ocorrência — o texto de cada um é combinado, em ordem
-              cronológica, num andamento novo já marcado como ocorrência.
+              Selecione os andamentos relevantes — depois você escolhe se eles viram uma ocorrência só ou uma
+              ocorrência separada para cada um.
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -213,12 +239,57 @@ export default function Ocorrencias({
 
             <button
               type="button"
-              onClick={criarOcorrencia}
+              onClick={() => setConfirmando(true)}
               disabled={salvando || selecionados.length === 0}
               style={botaoPrimario}
             >
-              {salvando ? "Criando..." : `Criar ocorrência (${selecionados.length})`}
+              Criar ocorrência ({selecionados.length})
             </button>
+          </div>
+        </div>
+      )}
+
+      {confirmando && (
+        <div
+          onClick={() => !salvando && setConfirmando(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 70,
+            background: "rgba(32,31,29,.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: 18,
+              width: "100%",
+              maxWidth: 360,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <strong style={{ fontSize: 13 }}>Criar uma ocorrência com os andamentos selecionados?</strong>
+            <p style={{ fontSize: 12, color: cor.textoTerciario, margin: 0 }}>
+              Sim: os textos dos {selecionados.length} andamentos são combinados numa ocorrência só. Não: cada
+              andamento selecionado vira a sua própria ocorrência, separada.
+            </p>
+            {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" onClick={criarOcorrenciaCombinada} disabled={salvando} style={{ ...botaoPrimario, flex: 1 }}>
+                {salvando ? "Criando..." : "Sim, uma ocorrência"}
+              </button>
+              <button type="button" onClick={criarOcorrenciasSeparadas} disabled={salvando} style={{ flex: 1 }}>
+                {salvando ? "Criando..." : "Não, uma pra cada"}
+              </button>
+            </div>
           </div>
         </div>
       )}

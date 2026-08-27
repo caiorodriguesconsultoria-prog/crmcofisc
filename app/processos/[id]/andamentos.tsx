@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor, pill } from "@/lib/theme";
@@ -67,6 +67,7 @@ export default function Andamentos({
 }) {
   const router = useRouter();
   const supabase = createClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [tipos, setTipos] = useState<string[]>([]);
   const [texto, setTexto] = useState("");
   const [incluirRelatorio, setIncluirRelatorio] = useState(false);
@@ -196,67 +197,129 @@ export default function Andamentos({
           borderRadius: 12,
         }}
       >
-        <textarea
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          placeholder="Escreva livremente o que aconteceu..."
-          required
-          style={{ padding: 8, minHeight: 60 }}
-        />
-
-        {tagsAtivas.length > 0 && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {tagsAtivas.map((t) => {
-              const c = corEvento(t.id);
-              const ativa = tagIds.includes(t.id);
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => alternarTag(t.id)}
-                  style={{
-                    ...pill,
-                    border: "none",
-                    cursor: "pointer",
-                    background: ativa ? c.fundo : "rgba(96,93,93,.10)",
-                    color: ativa ? c.texto : cor.textoSecundario,
-                  }}
-                >
-                  {t.valor}
-                </button>
-              );
-            })}
-          </div>
+        <div style={{ position: "relative" }}>
+          <textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="Escreva livremente o que aconteceu..."
+            required
+            style={{ padding: 8, paddingRight: 38, minHeight: 60, width: "100%" }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Anexar arquivo"
+            aria-label="Anexar arquivo"
+            style={{
+              position: "absolute",
+              right: 8,
+              bottom: 8,
+              width: 26,
+              height: 26,
+              padding: 0,
+              border: "none",
+              borderRadius: 8,
+              background: arquivosNovos && arquivosNovos.length > 0 ? cor.destaqueFundo : "rgba(96,93,93,.10)",
+              color: arquivosNovos && arquivosNovos.length > 0 ? cor.destaque : cor.textoSecundario,
+              fontSize: 13,
+            }}
+          >
+            📎
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={(e) => setArquivosNovos(e.target.files)}
+            style={{ display: "none" }}
+          />
+        </div>
+        {arquivosNovos && arquivosNovos.length > 0 && (
+          <p style={{ fontSize: 11, color: cor.textoTerciario, margin: 0 }}>
+            {Array.from(arquivosNovos).map((f) => f.name).join(", ")}
+          </p>
         )}
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {TIPOS.map((t) => {
-            const ativo = tipos.includes(t);
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => alternarTipo(t)}
-                style={{
-                  ...pill,
-                  border: "none",
-                  cursor: "pointer",
-                  background: ativo ? cor.destaqueFundo : "rgba(96,93,93,.10)",
-                  color: ativo ? cor.destaque : cor.textoSecundario,
-                }}
-              >
-                {t}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) alternarTag(e.target.value);
+            }}
+            style={{ padding: 8 }}
+          >
+            <option value="">Selecione um evento ligado ao andamento...</option>
+            {tagsAtivas
+              .filter((t) => !tagIds.includes(t.id))
+              .map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.valor}
+                </option>
+              ))}
+          </select>
+          {tagIds.length > 0 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {tagIds.map((id) => {
+                const t = tagsAtivas.find((x) => x.id === id);
+                if (!t) return null;
+                const c = corEvento(t.id);
+                return (
+                  <span
+                    key={id}
+                    style={{ ...pill, display: "inline-flex", alignItems: "center", gap: 4, background: c.fundo, color: c.texto }}
+                  >
+                    {t.valor}
+                    <button
+                      type="button"
+                      onClick={() => alternarTag(id)}
+                      aria-label={`Remover ${t.valor}`}
+                      style={{ border: "none", background: "transparent", color: c.texto, fontSize: 10, cursor: "pointer", padding: 0 }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        <input
-          type="file"
-          multiple
-          onChange={(e) => setArquivosNovos(e.target.files)}
-          style={{ fontSize: 12 }}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) alternarTipo(e.target.value);
+            }}
+            style={{ padding: 8 }}
+          >
+            <option value="">Tipo de ocorrência...</option>
+            {TIPOS.filter((t) => !tipos.includes(t)).map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          {tipos.length > 0 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {tipos.map((t) => (
+                <span
+                  key={t}
+                  style={{ ...pill, display: "inline-flex", alignItems: "center", gap: 4, background: cor.destaqueFundo, color: cor.destaque }}
+                >
+                  {t}
+                  <button
+                    type="button"
+                    onClick={() => alternarTipo(t)}
+                    aria-label={`Remover ${t}`}
+                    style={{ border: "none", background: "transparent", color: cor.destaque, fontSize: 10, cursor: "pointer", padding: 0 }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
           <button
