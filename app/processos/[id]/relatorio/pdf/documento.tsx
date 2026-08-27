@@ -87,11 +87,57 @@ async function copiar(texto: string) {
   }
 }
 
-function BotaoCopiar({ texto }: { texto: string }) {
+// Copia texto (fallback) + HTML (com <table> de verdade quando houver) —
+// colar num editor rico (SEI, Word, Google Docs) aproveita o HTML e forma
+// tabela de verdade; colar em campo de texto puro cai no texto normal.
+async function copiarRico(textoPlano: string, html: string) {
+  try {
+    if (typeof ClipboardItem !== "undefined") {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/plain": new Blob([textoPlano], { type: "text/plain" }),
+          "text/html": new Blob([html], { type: "text/html" }),
+        }),
+      ]);
+      return;
+    }
+  } catch {
+    // cai pro texto puro abaixo
+  }
+  await copiar(textoPlano);
+}
+
+function escapeHtml(s: string) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Monta uma <table> HTML com bordas inline (funciona colada em qualquer
+// editor rico, sem depender de CSS externo).
+function tabelaHtml(cabecalho: string[], linhas: (string | number)[][]) {
+  const th = (t: string) =>
+    `<th style="border:1px solid #000;padding:5px 7px;text-align:left;font-weight:600;">${escapeHtml(t)}</th>`;
+  const td = (t: string | number) =>
+    `<td style="border:1px solid #000;padding:5px 7px;">${escapeHtml(String(t))}</td>`;
+  return (
+    `<table style="border-collapse:collapse;width:100%;font-size:13px;">` +
+    `<thead><tr>${cabecalho.map(th).join("")}</tr></thead>` +
+    `<tbody>${linhas.map((l) => `<tr>${l.map(td).join("")}</tr>`).join("")}</tbody>` +
+    `</table>`
+  );
+}
+
+function paragrafosHtml(texto: string) {
+  return texto
+    .split("\n\n")
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+function BotaoCopiar({ texto, html, tabela }: { texto: string; html?: string; tabela?: boolean }) {
   return (
     <span
       className="no-print"
-      onClick={() => copiar(texto)}
+      onClick={() => (html ? copiarRico(texto, html) : copiar(texto))}
       style={{
         marginLeft: "auto",
         cursor: "pointer",
@@ -103,7 +149,7 @@ function BotaoCopiar({ texto }: { texto: string }) {
         padding: "4px 9px",
       }}
     >
-      📋 copiar seção
+      {tabela ? "📋 copiar tabela" : "📋 copiar seção"}
     </span>
   );
 }
@@ -220,6 +266,56 @@ export default function Documento({
 
   const nomeFiscal = (p.fiscal?.nome ?? "").toUpperCase();
 
+  const quadroHtml = tabelaHtml(
+    ["Campo", "Valor"],
+    quadro.map((q) => [q.k, q.v]),
+  );
+  const cronHtml = tabelaHtml(
+    ["Parcela", "Quantitativo", "Prazo máximo de entrega (até)"],
+    [
+      ...execucoes.map((e) => [e.numero, `${e.quantidade} ${e.unidade ?? ""}`, formatarData(e.data_prevista)]),
+      ["TOTAL", cronTotal, "------------"],
+    ],
+  );
+  const pautaHtml =
+    pauta.length > 0
+      ? tabelaHtml(
+          ["UF", "Quantidade"],
+          [...pauta.map((i) => [i.uf, i.quantidade]), ["Total", pautaTotal]],
+        )
+      : "";
+  const entregasHtml = tabelaHtml(
+    ["Local", "Qtd.", "Valor NF", "DANFE venda", "DANFE remessa", "Lote", "Fabricação", "Validade", "Entrega", "Responsável", "Atraso (d.)", "% transc."],
+    [
+      ...entregas.map((e) => [
+        e.local_entrega ?? "—",
+        e.quantidade ?? "—",
+        formatarMoeda(e.valor_total_nf) ?? "—",
+        e.danfe_venda ?? "—",
+        e.danfe_remessa ?? "—",
+        e.lote ?? "—",
+        formatarData(e.data_fabricacao),
+        formatarData(e.data_validade),
+        formatarData(e.data_entrega),
+        e.responsavel ?? "—",
+        e.atraso_dias ?? "—",
+        e.percentual_transcurso ?? "—",
+      ]),
+      ["TOTAL", entTotalQ, formatarMoeda(entTotalV) ?? "—", "", "", "", "", "", "", "", "", ""],
+    ],
+  );
+  const execHtml =
+    (pauta.length > 0 ? `<p>${escapeHtml(textoPauta)}</p>${pautaHtml}` : "") +
+    `<p style="font-weight:600;">Dados da entrega</p>${entregasHtml}`;
+  const ocorrHtml =
+    andamentos.length > 0
+      ? andamentos.map((a) => `<p>${escapeHtml(a.texto)}</p>`).join("")
+      : "<p>Nenhum andamento marcado para inclusão.</p>";
+  const conclHtml =
+    `<ul>${(p.conclusao_checks ?? []).map((c) => `<li>${escapeHtml(c)}</li>`).join("")}</ul>` +
+    (p.conclusao_texto ? `<p>${escapeHtml(p.conclusao_texto)}</p>` : "") +
+    (p.conclusao_penalidade ? `<p><strong>Sugestão de penalidade:</strong> ${escapeHtml(p.conclusao_penalidade)}</p>` : "");
+
   const introTexto = `O presente relatório refere-se ao Contrato nº ${cn}, celebrado entre o Ministério da Saúde - MS e a empresa ${p.fornecedores?.nome ?? "não informada"}, para aquisição do medicamento ${p.objeto}, decorrente da Ata de Registro de Preços nº ${p.ata_registro_precos_numero ?? "[Nº]"} do Pregão Eletrônico nº ${p.pregao_eletronico_numero ?? "[Nº]"}, em observância às disposições da Lei nº 14.133, de 1º de abril de 2021, e demais legislação aplicável. Informa-se o que se segue quanto à execução do referido instrumento legal:`;
 
   const cabecalhoTexto = [
@@ -279,6 +375,36 @@ export default function Documento({
     rodapeTexto,
   ].join("\n");
 
+  const secaoHtml = (titulo: string, corpo: string) =>
+    `<p style="font-weight:600;">${escapeHtml(titulo)}</p>${corpo}`;
+  const documentoCompletoHtml =
+    cabecalhoTexto
+      .split("\n")
+      .map((l) => `<p>${escapeHtml(l)}</p>`)
+      .join("") +
+    `<p>${escapeHtml(introTexto)}</p>` +
+    secaoHtml("1. QUADRO RESUMITIVO", quadroHtml) +
+    secaoHtml("2. LOCAL DE ENTREGA", `<p>${escapeHtml(textoLocal)}</p>`) +
+    secaoHtml("3. CRONOGRAMA DE ENTREGA", cronHtml) +
+    secaoHtml("4. EXECUÇÃO DO CONTRATO", execHtml) +
+    secaoHtml("5. OCORRÊNCIAS", ocorrHtml) +
+    secaoHtml(
+      "6. PAGAMENTOS ENCAMINHADOS",
+      "<p>[Espaço reservado — módulo de pagamentos ainda não construído.]</p>",
+    ) +
+    (inc7
+      ? secaoHtml(
+          "7. CONSIDERAÇÕES SOBRE A FISCALIZAÇÃO DE CONTRATOS",
+          SEC7.map((t) => `<p>${escapeHtml(t)}</p>`).join(""),
+        )
+      : "") +
+    secaoHtml("8. CONCLUSÕES", conclHtml) +
+    `<p><strong>${escapeHtml(nomeFiscal || "(fiscal não definido)")}</strong><br>Fiscal Contratual</p>` +
+    rodapeTexto
+      .split("\n")
+      .map((l) => `<p>${escapeHtml(l)}</p>`)
+      .join("");
+
   return (
     <div>
       <style>{`
@@ -323,7 +449,7 @@ export default function Documento({
         </label>
         <button
           type="button"
-          onClick={() => copiar(documentoCompletoTexto)}
+          onClick={() => copiarRico(documentoCompletoTexto, documentoCompletoHtml)}
           style={{ marginLeft: "auto" }}
           title="Copia o relatório inteiro como texto — cole no SEI e só ajuste a formatação"
         >
@@ -384,7 +510,7 @@ export default function Documento({
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, margin: "0 0 10px" }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>1. QUADRO RESUMITIVO</span>
-          <BotaoCopiar texto={quadroTexto} />
+          <BotaoCopiar texto={quadroTexto} html={quadroHtml} tabela />
         </div>
         <div style={{ borderTop: "1px solid #000", marginBottom: 20 }}>
           {quadro.map((q) => (
@@ -425,7 +551,7 @@ export default function Documento({
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>3. CRONOGRAMA DE ENTREGA</span>
-          <BotaoCopiar texto={cronTexto} />
+          <BotaoCopiar texto={cronTexto} html={cronHtml} tabela />
         </div>
         <div style={{ border: "1px solid #000", marginBottom: 20, fontSize: 12 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", fontWeight: 600, borderBottom: "1px solid #000" }}>
@@ -451,7 +577,7 @@ export default function Documento({
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>4. EXECUÇÃO DO CONTRATO</span>
-          <BotaoCopiar texto={execTexto} />
+          <BotaoCopiar texto={execTexto} html={execHtml} tabela />
         </div>
         {pauta.length > 0 && (
           <>
@@ -531,7 +657,7 @@ export default function Documento({
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>5. OCORRÊNCIAS</span>
-          <BotaoCopiar texto={ocorrTexto} />
+          <BotaoCopiar texto={ocorrTexto || "Nenhum andamento marcado para inclusão."} html={ocorrHtml} />
         </div>
         {andamentos.length > 0 ? (
           andamentos.map((a) => (
@@ -565,7 +691,7 @@ export default function Documento({
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, margin: "20px 0 8px" }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>8. CONCLUSÕES</span>
-          <BotaoCopiar texto={conclTexto} />
+          <BotaoCopiar texto={conclTexto} html={conclHtml} />
         </div>
         {p.conclusao_tipo ? (
           <>
