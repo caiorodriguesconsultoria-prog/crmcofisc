@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor, pill } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { BotaoCopiar } from "@/app/_ui/campo";
-import { sincronizarGoogle } from "@/lib/google-sync-cliente";
 
 type Tag = { id: string; valor: string };
 
@@ -83,8 +82,6 @@ export default function Andamentos({
   const [seiNumero, setSeiNumero] = useState("");
   const [incluirRelatorio, setIncluirRelatorio] = useState(false);
   const [tagIds, setTagIds] = useState<string[]>([]);
-  const [agendamentoData, setAgendamentoData] = useState("");
-  const [agendamentoHorario, setAgendamentoHorario] = useState("");
   const [arquivosNovos, setArquivosNovos] = useState<FileList | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -108,8 +105,6 @@ export default function Andamentos({
     setSeiNumero("");
     setIncluirRelatorio(false);
     setTagIds([]);
-    setAgendamentoData("");
-    setAgendamentoHorario("");
     setArquivosNovos(null);
     setErro(null);
   }
@@ -128,8 +123,6 @@ export default function Andamentos({
         sei_numero: seiNumero || null,
         autor_id: autorId,
         incluir_relatorio: incluirRelatorio,
-        agendamento_data: agendamentoData || null,
-        agendamento_horario: agendamentoHorario || null,
       })
       .select("id")
       .single();
@@ -149,20 +142,6 @@ export default function Andamentos({
         setErro(erroTags.message);
         return;
       }
-    }
-
-    if (agendamentoData && agendamentoHorario) {
-      sincronizarGoogle({
-        tipo: "andamento",
-        acao: "salvar",
-        id: criado.id,
-        googleEventId: null,
-        numeroContrato,
-        descricao: texto.trim() || tipo,
-        data: agendamentoData,
-        horario: agendamentoHorario,
-        processoId,
-      });
     }
 
     if (arquivosNovos && arquivosNovos.length > 0) {
@@ -289,36 +268,27 @@ export default function Andamentos({
           />
         </div>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input
-            type="date"
-            value={agendamentoData}
-            onChange={(e) => setAgendamentoData(e.target.value)}
-            style={{ padding: 8, flex: "1 1 140px" }}
-          />
-          <input
-            type="time"
-            value={agendamentoHorario}
-            onChange={(e) => setAgendamentoHorario(e.target.value)}
-            style={{ padding: 8, flex: "1 1 100px" }}
-          />
-          <input
-            type="file"
-            multiple
-            onChange={(e) => setArquivosNovos(e.target.files)}
-            style={{ fontSize: 12, flex: "1 1 160px" }}
-          />
-        </div>
+        <input
+          type="file"
+          multiple
+          onChange={(e) => setArquivosNovos(e.target.files)}
+          style={{ fontSize: 12 }}
+        />
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
-            <input
-              type="checkbox"
-              checked={incluirRelatorio}
-              onChange={(e) => setIncluirRelatorio(e.target.checked)}
-            />
-            Incluir no relatório
-          </label>
+          <button
+            type="button"
+            onClick={() => setIncluirRelatorio((v) => !v)}
+            style={{
+              ...pill,
+              border: "none",
+              cursor: "pointer",
+              background: incluirRelatorio ? cor.urgenteFundo : "rgba(96,93,93,.10)",
+              color: incluirRelatorio ? cor.urgente : cor.textoSecundario,
+            }}
+          >
+            {incluirRelatorio ? "✓ " : ""}Ocorrência
+          </button>
           <button type="submit" disabled={salvando} style={botaoPrimario}>
             {salvando ? "Salvando..." : "Criar andamento"}
           </button>
@@ -328,7 +298,7 @@ export default function Andamentos({
       </form>
 
       <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
-        "Incluir no relatório" define o que entra na seção 5 (Ocorrências) do Relatório.
+        Marcado como "Ocorrência" entra na seção 5 (Ocorrências) do Relatório.
       </p>
 
       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -343,8 +313,11 @@ export default function Andamentos({
               {a.sei_numero ? ` · SEI ${a.sei_numero}` : ""}
             </div>
             <div style={{ fontSize: 13, marginTop: 3 }}>{a.texto}</div>
-            {(a.tags.length > 0 || a.agendamentoData) && (
+            {(a.tags.length > 0 || a.incluir_relatorio || a.agendamentoData) && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                {a.incluir_relatorio && (
+                  <span style={{ ...pill, background: cor.urgenteFundo, color: cor.urgente }}>Ocorrência</span>
+                )}
                 {a.tags.map((t) => {
                   const c = corEvento(t.id);
                   return (
@@ -383,15 +356,21 @@ export default function Andamentos({
               </div>
             )}
             <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
-              <label style={{ fontSize: 11.5, display: "flex", alignItems: "center", gap: 4 }}>
-                <input
-                  type="checkbox"
-                  checked={a.incluir_relatorio}
-                  disabled={carregandoId === a.id}
-                  onChange={() => alternarInclusao(a)}
-                />
-                Incluir no relatório
-              </label>
+              <button
+                type="button"
+                disabled={carregandoId === a.id}
+                onClick={() => alternarInclusao(a)}
+                style={{
+                  fontSize: 10.5,
+                  padding: "3px 9px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: a.incluir_relatorio ? cor.urgenteFundo : "rgba(96,93,93,.10)",
+                  color: a.incluir_relatorio ? cor.urgente : cor.textoSecundario,
+                }}
+              >
+                {a.incluir_relatorio ? "✓ Ocorrência" : "Marcar como ocorrência"}
+              </button>
               <BotaoCopiar texto={a.texto} />
               <button
                 type="button"

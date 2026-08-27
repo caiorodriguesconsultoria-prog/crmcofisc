@@ -263,7 +263,25 @@ export async function carregarProcesso(id: string) {
   const emCobertura = !!p.titular && p.responsavel?.id !== p.titular?.id;
   const formaEntrega = pauta && pauta.length > 1 ? "Descentralizada" : pauta && pauta.length === 1 ? "Centralizada" : "não definida";
 
-  const andamentosIncluidos = (andamentosRaw ?? []).filter((a: any) => a.incluir_relatorio);
+  const andamentosMapeados = (andamentosRaw ?? []).map((a: any) => ({
+    id: a.id,
+    tipo: a.tipo,
+    texto: a.texto,
+    data: a.data,
+    sei_numero: a.sei_numero,
+    incluir_relatorio: a.incluir_relatorio,
+    autor: a.autor,
+    agendamentoData: a.agendamento_data,
+    agendamentoHorario: a.agendamento_horario,
+    googleEventId: a.google_event_id,
+    tags: (a.andamento_tags ?? []).map((at: any) => at.tags).filter(Boolean),
+    anexos: (a.andamento_anexos ?? []).map((x: any) => ({
+      id: x.id,
+      nomeArquivo: x.nome_arquivo,
+      caminho: x.caminho,
+      tamanhoBytes: x.tamanho_bytes,
+    })),
+  }));
 
   const conteudoProcesso = (
     <div>
@@ -276,6 +294,29 @@ export async function carregarProcesso(id: string) {
         cnpj={p.fornecedores?.cnpj ?? ""}
         objeto={p.objeto}
       />
+
+      <div style={{ marginTop: 16 }}>
+        <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={false}>
+          <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
+            <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
+          </div>
+          <Andamentos
+            processoId={p.id}
+            autorId={pessoaAtual?.id ?? null}
+            numeroContrato={p.numero_contrato}
+            tagsAtivas={tagsAtivas}
+            andamentos={andamentosMapeados}
+          />
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+            <Checklist
+              processoId={p.id}
+              autorId={pessoaAtual?.id ?? null}
+              numeroContrato={p.numero_contrato}
+              grupos={gruposTarefas}
+            />
+          </div>
+        </CartaoColapsavel>
+      </div>
 
       <div
         style={{
@@ -299,47 +340,6 @@ export async function carregarProcesso(id: string) {
           naturezaDespesa={p.natureza_despesa}
           valorGlobal={p.valor_global}
         />
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={false}>
-          <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
-            <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
-          </div>
-          <Andamentos
-            processoId={p.id}
-            autorId={pessoaAtual?.id ?? null}
-            numeroContrato={p.numero_contrato}
-            tagsAtivas={tagsAtivas}
-            andamentos={(andamentosRaw ?? []).map((a: any) => ({
-              id: a.id,
-              tipo: a.tipo,
-              texto: a.texto,
-              data: a.data,
-              sei_numero: a.sei_numero,
-              incluir_relatorio: a.incluir_relatorio,
-              autor: a.autor,
-              agendamentoData: a.agendamento_data,
-              agendamentoHorario: a.agendamento_horario,
-              googleEventId: a.google_event_id,
-              tags: (a.andamento_tags ?? []).map((at: any) => at.tags).filter(Boolean),
-              anexos: (a.andamento_anexos ?? []).map((x: any) => ({
-                id: x.id,
-                nomeArquivo: x.nome_arquivo,
-                caminho: x.caminho,
-                tamanhoBytes: x.tamanho_bytes,
-              })),
-            }))}
-          />
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
-            <Checklist
-              processoId={p.id}
-              autorId={pessoaAtual?.id ?? null}
-              numeroContrato={p.numero_contrato}
-              grupos={gruposTarefas}
-            />
-          </div>
-        </CartaoColapsavel>
       </div>
 
       {/* Agendamento de entrega — fixo, sem recolher */}
@@ -420,7 +420,18 @@ export async function carregarProcesso(id: string) {
 
         <div style={card}>
           <span style={rotuloSecao}>5. Ocorrências</span>
-          <Ocorrencias andamentos={andamentosIncluidos as any} />
+          <Ocorrencias
+            processoId={p.id}
+            autorId={pessoaAtual?.id ?? null}
+            andamentos={andamentosMapeados.map((a) => ({
+              id: a.id,
+              tipo: a.tipo,
+              texto: a.texto,
+              data: a.data,
+              incluirRelatorio: a.incluir_relatorio,
+              tags: a.tags,
+            }))}
+          />
         </div>
 
         <div style={card}>
