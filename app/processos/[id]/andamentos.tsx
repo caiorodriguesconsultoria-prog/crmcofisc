@@ -86,6 +86,7 @@ export default function Andamentos({
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [agendamentoData, setAgendamentoData] = useState("");
   const [agendamentoHorario, setAgendamentoHorario] = useState("");
+  const [arquivosNovos, setArquivosNovos] = useState<FileList | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [carregandoId, setCarregandoId] = useState<string | null>(null);
@@ -111,6 +112,7 @@ export default function Andamentos({
     setTagIds([]);
     setAgendamentoData("");
     setAgendamentoHorario("");
+    setArquivosNovos(null);
     setErro(null);
   }
 
@@ -163,6 +165,10 @@ export default function Andamentos({
         horario: agendamentoHorario,
         processoId,
       });
+    }
+
+    if (arquivosNovos && arquivosNovos.length > 0) {
+      await enviarAnexos(criado.id, arquivosNovos);
     }
 
     setSalvando(false);
@@ -445,6 +451,26 @@ export default function Andamentos({
                   style={{ padding: 8, flex: 1 }}
                 />
               </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  color: cor.textoTerciario,
+                }}
+              >
+                Anexos (opcional)
+              </span>
+              <input
+                type="file"
+                multiple
+                onChange={(e) => setArquivosNovos(e.target.files)}
+                style={{ fontSize: 12 }}
+              />
             </div>
 
             <label style={{ display: "flex", alignItems: "center", gap: 8 }}>

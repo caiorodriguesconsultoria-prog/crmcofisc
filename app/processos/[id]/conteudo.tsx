@@ -100,6 +100,7 @@ export async function carregarProcesso(id: string) {
     { data: agendamentos },
     { data: kanbanAtivo },
     { data: tagHistoricoAtivo },
+    { data: coordenacoesLista },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     getTagsEvento(),
@@ -145,6 +146,7 @@ export async function carregarProcesso(id: string) {
       .select("id, tags(valor)")
       .eq("processo_id", id)
       .is("fim_em", null),
+    supabase.from("coordenacoes").select("id, sigla").order("sigla"),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
@@ -284,6 +286,10 @@ export async function carregarProcesso(id: string) {
         }}
       >
         <DadosProcesso
+          processoId={p.id}
+          coordenacaoId={p.coordenacao_id}
+          coordenacaoSigla={p.coordenacoes?.sigla ?? ""}
+          coordenacoes={coordenacoesLista ?? []}
           quantidadeContratada={p.quantidade_contratada}
           numeroExecucoes={(execucoes ?? []).length}
           dataAssinatura={p.data_assinatura}

@@ -78,6 +78,8 @@ export function EventosAtivos({
   const router = useRouter();
   const supabase = createClient();
   const [novaTagId, setNovaTagId] = useState("");
+  const [criandoNovo, setCriandoNovo] = useState(false);
+  const [nomeNovoEvento, setNomeNovoEvento] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
 
@@ -97,6 +99,33 @@ export function EventosAtivos({
       return;
     }
     setNovaTagId("");
+    router.refresh();
+  }
+
+  async function criarNovoEvento() {
+    if (!nomeNovoEvento.trim()) return;
+    setErro(null);
+    setCarregando(true);
+    const { data: novaTag, error: erroTag } = await supabase
+      .from("tags")
+      .insert({ categoria: "evento", valor: nomeNovoEvento.trim(), ativo: true })
+      .select("id")
+      .single();
+    if (erroTag || !novaTag) {
+      setCarregando(false);
+      setErro(erroTag?.message ?? "Erro ao criar evento");
+      return;
+    }
+    const { error: erroVinculo } = await supabase
+      .from("processo_tags")
+      .insert({ processo_id: processoId, tag_id: novaTag.id });
+    setCarregando(false);
+    if (erroVinculo) {
+      setErro(erroVinculo.message);
+      return;
+    }
+    setNomeNovoEvento("");
+    setCriandoNovo(false);
     router.refresh();
   }
 
@@ -160,23 +189,43 @@ export function EventosAtivos({
           })}
         </div>
       )}
-      <div style={{ display: "flex", gap: 8 }}>
-        <select
-          value={novaTagId}
-          onChange={(e) => setNovaTagId(e.target.value)}
-          style={{ padding: 8, flex: 1, minWidth: 0 }}
-        >
-          <option value="">Selecione um evento</option>
-          {opcoesParaAdicionar.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.valor}
-            </option>
-          ))}
-        </select>
-        <button onClick={adicionarEvento} disabled={carregando || !novaTagId}>
-          Adicionar
-        </button>
-      </div>
+      {criandoNovo ? (
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={nomeNovoEvento}
+            onChange={(e) => setNomeNovoEvento(e.target.value)}
+            placeholder="Nome do novo evento"
+            style={{ padding: 8, flex: 1, minWidth: 0 }}
+          />
+          <button onClick={criarNovoEvento} disabled={carregando || !nomeNovoEvento.trim()}>
+            Criar
+          </button>
+          <button onClick={() => { setCriandoNovo(false); setNomeNovoEvento(""); }} disabled={carregando}>
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: 8 }}>
+          <select
+            value={novaTagId}
+            onChange={(e) => setNovaTagId(e.target.value)}
+            style={{ padding: 8, flex: 1, minWidth: 0 }}
+          >
+            <option value="">Selecione um evento</option>
+            {opcoesParaAdicionar.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.valor}
+              </option>
+            ))}
+          </select>
+          <button onClick={adicionarEvento} disabled={carregando || !novaTagId}>
+            Adicionar
+          </button>
+          <button type="button" onClick={() => setCriandoNovo(true)} disabled={carregando} style={{ whiteSpace: "nowrap" }}>
+            + Novo
+          </button>
+        </div>
+      )}
 
       {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
     </div>
