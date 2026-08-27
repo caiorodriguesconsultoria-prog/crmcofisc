@@ -30,6 +30,8 @@ export default function Ocorrencias({
   const supabase = createClient();
   const [modalAberto, setModalAberto] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
+  const [modalLivreAberto, setModalLivreAberto] = useState(false);
+  const [textoLivre, setTextoLivre] = useState("");
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -115,6 +117,22 @@ export default function Ocorrencias({
     router.refresh();
   }
 
+  async function criarOcorrenciaLivre() {
+    if (!textoLivre.trim()) return;
+    setErro(null);
+    setSalvando(true);
+    const erroCriar = await criarUmAndamento(textoLivre.trim(), []);
+    setSalvando(false);
+    if (erroCriar) {
+      setErro(erroCriar);
+      return;
+    }
+    setModalLivreAberto(false);
+    setTextoLivre("");
+    setErro(null);
+    router.refresh();
+  }
+
   return (
     <div style={{ marginTop: 8 }}>
       {marcados.length === 0 ? (
@@ -128,17 +146,26 @@ export default function Ocorrencias({
           ))}
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
         <p style={{ fontSize: 11, color: cor.textoTerciario, margin: 0 }}>
           Marcado como "Ocorrência" no painel do processo, seção "Andamento e Tarefas".
         </p>
-        <button
-          type="button"
-          onClick={() => setModalAberto(true)}
-          style={{ ...botaoPrimario, fontSize: 11, padding: "5px 12px", whiteSpace: "nowrap" }}
-        >
-          Analisar andamentos
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setModalLivreAberto(true)}
+            style={{ fontSize: 11, padding: "5px 12px", whiteSpace: "nowrap" }}
+          >
+            + Ocorrência livre
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalAberto(true)}
+            style={{ ...botaoPrimario, fontSize: 11, padding: "5px 12px", whiteSpace: "nowrap" }}
+          >
+            Analisar andamentos
+          </button>
+        </div>
       </div>
 
       {modalAberto && (
@@ -290,6 +317,61 @@ export default function Ocorrencias({
                 {salvando ? "Criando..." : "Não, uma pra cada"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {modalLivreAberto && (
+        <div
+          onClick={() => !salvando && setModalLivreAberto(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 60,
+            background: "rgba(32,31,29,.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: 18,
+              width: "100%",
+              maxWidth: 420,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <strong style={{ fontSize: 13 }}>Ocorrência livre</strong>
+              <button
+                type="button"
+                onClick={() => setModalLivreAberto(false)}
+                aria-label="Fechar"
+                style={{ width: 26, height: 26, borderRadius: "50%", border: "none", background: "rgba(32,31,29,.08)" }}
+              >
+                ×
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: cor.textoTerciario, margin: 0 }}>
+              Escreva a ocorrência diretamente, sem partir de nenhum andamento existente.
+            </p>
+            <textarea
+              value={textoLivre}
+              onChange={(e) => setTextoLivre(e.target.value)}
+              placeholder="Texto da ocorrência..."
+              style={{ padding: 8, minHeight: 100 }}
+            />
+            {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
+            <button type="button" onClick={criarOcorrenciaLivre} disabled={salvando || !textoLivre.trim()} style={botaoPrimario}>
+              {salvando ? "Criando..." : "Criar ocorrência"}
+            </button>
           </div>
         </div>
       )}

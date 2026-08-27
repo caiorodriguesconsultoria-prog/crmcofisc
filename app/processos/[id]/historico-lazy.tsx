@@ -7,12 +7,14 @@ import { cor } from "@/lib/theme";
 type HistoricoKanban = { kanban: string; entrada_em: string; saida_em: string | null };
 type HistoricoEvento = { inicio_em: string; fim_em: string | null; tags: { valor: string } | null };
 type TarefaConcluida = { id: string; texto: string; data: string };
+type AndamentoHistorico = { id: string; texto: string; data: string; incluir_relatorio: boolean };
 
 export default function HistoricoLazy({ processoId }: { processoId: string }) {
   const [dados, setDados] = useState<{
     kanban: HistoricoKanban[];
     eventos: HistoricoEvento[];
     tarefasConcluidas: TarefaConcluida[];
+    andamentos: AndamentoHistorico[];
   } | null>(null);
 
   useEffect(() => {
@@ -35,12 +37,19 @@ export default function HistoricoLazy({ processoId }: { processoId: string }) {
         .eq("processo_id", processoId)
         .eq("tipo", "Tarefa concluída")
         .order("data", { ascending: false }),
-    ]).then(([{ data: kanban }, { data: eventos }, { data: tarefasConcluidas }]) => {
+      supabase
+        .from("andamentos")
+        .select("id, texto, data, incluir_relatorio")
+        .eq("processo_id", processoId)
+        .neq("tipo", "Tarefa concluída")
+        .order("data", { ascending: false }),
+    ]).then(([{ data: kanban }, { data: eventos }, { data: tarefasConcluidas }, { data: andamentos }]) => {
       if (ativo)
         setDados({
           kanban: (kanban ?? []) as any,
           eventos: (eventos ?? []) as any,
           tarefasConcluidas: (tarefasConcluidas ?? []) as any,
+          andamentos: (andamentos ?? []) as any,
         });
     });
     return () => {
@@ -74,6 +83,21 @@ export default function HistoricoLazy({ processoId }: { processoId: string }) {
             <li key={i}>
               {h.tags?.valor} — início {new Date(h.inicio_em).toLocaleString("pt-BR")}
               {h.fim_em ? `, fim ${new Date(h.fim_em).toLocaleString("pt-BR")}` : " (ativo)"}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <strong style={{ fontSize: 12.5 }}>Andamentos</strong>
+        <ul style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: 13 }}>
+          {dados.andamentos.length === 0 && (
+            <li style={{ color: cor.textoTerciario }}>Nenhum andamento registrado ainda.</li>
+          )}
+          {dados.andamentos.map((a) => (
+            <li key={a.id}>
+              {a.texto} — {new Date(a.data).toLocaleString("pt-BR")}
+              {a.incluir_relatorio ? " (Ocorrência)" : ""}
             </li>
           ))}
         </ul>
