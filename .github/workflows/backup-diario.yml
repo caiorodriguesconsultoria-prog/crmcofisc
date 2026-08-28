@@ -6,6 +6,12 @@ on:
     - cron: "0 6 * * *"
   workflow_dispatch: {}
 
+# Esse workflow só lê o repositório (pro checkout) e não chama a API do
+# GitHub — sem isso, o GITHUB_TOKEN herda permissão de escrita por padrão,
+# mais acesso do que o necessário.
+permissions:
+  contents: read
+
 jobs:
   backup:
     runs-on: ubuntu-latest

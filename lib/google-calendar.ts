@@ -3,6 +3,13 @@ import { createServiceClient } from "@/lib/supabase/service";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 
+// google_event_id vem do cliente (via /api/google/sync) e é concatenado na
+// URL da chamada pro Google — id de evento de verdade nunca tem esses
+// caracteres, então isso barra qualquer tentativa de manipular a URL.
+function idDeEventoValido(id: string): boolean {
+  return /^[A-Za-z0-9_-]{1,1024}$/.test(id);
+}
+
 async function obterAccessToken(): Promise<string | null> {
   const supabase = createServiceClient();
   const { data: registro } = await supabase
@@ -69,6 +76,7 @@ export async function criarOuAtualizarEventoGoogle(params: {
     end: { dateTime: fim.toISOString() },
   };
 
+  if (params.googleEventId && !idDeEventoValido(params.googleEventId)) return null;
   const metodo = params.googleEventId ? "PATCH" : "POST";
   const endpoint = params.googleEventId ? `${EVENTS_URL}/${params.googleEventId}` : EVENTS_URL;
 
@@ -83,6 +91,7 @@ export async function criarOuAtualizarEventoGoogle(params: {
 }
 
 export async function removerEventoGoogle(googleEventId: string): Promise<void> {
+  if (!idDeEventoValido(googleEventId)) return;
   const accessToken = await obterAccessToken();
   if (!accessToken) return;
   await fetch(`${EVENTS_URL}/${googleEventId}`, {
