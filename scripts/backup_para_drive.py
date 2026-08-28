@@ -2,17 +2,22 @@
 
 Uso: python scripts/backup_para_drive.py <caminho-do-arquivo>
 
+Autentica via OAuth como o próprio usuário (contas Gmail pessoais não têm
+cota de armazenamento para contas de serviço) usando um refresh_token obtido
+uma única vez em /api/google/drive-auth.
+
 Variáveis de ambiente esperadas:
-  GOOGLE_SERVICE_ACCOUNT_KEY - conteúdo JSON da chave da conta de serviço
-  GOOGLE_DRIVE_FOLDER_ID     - ID da pasta no Drive compartilhada com a conta de serviço
+  GOOGLE_CLIENT_ID           - mesmo client OAuth usado pelo Google Calendar
+  GOOGLE_CLIENT_SECRET
+  GOOGLE_DRIVE_REFRESH_TOKEN - obtido em /api/google/drive-auth
+  GOOGLE_DRIVE_FOLDER_ID     - ID da pasta no seu Drive
 """
 
-import json
 import os
 import sys
 from datetime import datetime, timedelta, timezone
 
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -21,8 +26,14 @@ RETENCAO_DIAS = 90
 
 
 def cliente_drive():
-    chave = json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT_KEY"])
-    credenciais = service_account.Credentials.from_service_account_info(chave, scopes=SCOPES)
+    credenciais = Credentials(
+        None,
+        refresh_token=os.environ["GOOGLE_DRIVE_REFRESH_TOKEN"],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.environ["GOOGLE_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+        scopes=SCOPES,
+    )
     return build("drive", "v3", credentials=credenciais)
 
 
