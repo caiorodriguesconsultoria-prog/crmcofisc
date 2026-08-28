@@ -1,19 +1,11 @@
 import { cor } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { createClient } from "@/lib/supabase/server";
-import { getTagsEvento } from "@/lib/dados-referencia";
+import { getTagsEvento, getEtapasKanban } from "@/lib/dados-referencia";
 import GruposAtividades from "./grupos-atividades";
 import type { Atividade } from "./sidebar";
 
 const KANBAN_DOT = cor.positivo;
-
-const KANBANS = [
-  "Ofício de apresentação",
-  "Aguardando entrega",
-  "Aguardando assinatura",
-  "Aguardando pagamento",
-  "Aguardando Área Técnica",
-];
 
 export default async function Atividades() {
   const supabase = await createClient();
@@ -24,9 +16,10 @@ export default async function Atividades() {
 
   if (!user) return null;
 
-  const [{ data: processos }, tagsEvento, { data: processoTags }, { data: pessoa }] = await Promise.all([
+  const [{ data: processos }, tagsEvento, etapas, { data: processoTags }, { data: pessoa }] = await Promise.all([
     supabase.from("processos").select("etapa_atual"),
     getTagsEvento(),
+    getEtapasKanban(),
     supabase.from("processo_tags").select("tag_id"),
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
   ]);
@@ -42,10 +35,10 @@ export default async function Atividades() {
     porTag.set(t.tag_id, (porTag.get(t.tag_id) ?? 0) + 1);
   }
 
-  const atividadesKanban: Atividade[] = KANBANS.map((nome) => ({
-    label: nome,
-    count: porEtapa.get(nome) ?? 0,
-    href: `/processos?etapa=${encodeURIComponent(nome)}`,
+  const atividadesKanban: Atividade[] = (etapas ?? []).map((e) => ({
+    label: e.nome,
+    count: porEtapa.get(e.nome) ?? 0,
+    href: `/processos?etapa=${encodeURIComponent(e.nome)}`,
     dot: KANBAN_DOT,
   }));
 

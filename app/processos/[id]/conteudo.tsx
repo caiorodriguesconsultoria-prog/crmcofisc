@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { KanbanAtual, EventosAtivos } from "./painel";
+import { EtapaAtual, EventosAtivos } from "./painel";
 import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
 import Checklist from "./checklist";
@@ -22,7 +22,7 @@ import { corEvento } from "@/lib/cores-evento";
 import TituloDestaque from "@/app/_ui/titulo";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
-import { getPessoasAtivas, getPapeisGestorFiscal, getTagsEvento } from "@/lib/dados-referencia";
+import { getPessoasAtivas, getPapeisGestorFiscal, getTagsEvento, getEtapasKanban } from "@/lib/dados-referencia";
 
 function diasRestantes(prazoData: string | null) {
   if (!prazoData) return null;
@@ -89,6 +89,7 @@ export async function carregarProcesso(id: string) {
   const [
     { data: tagsAtivasRaw },
     tagsDisponiveis,
+    etapasDisponiveis,
     { data: andamentosRaw },
     { data: pessoaAtual },
     pessoas,
@@ -103,6 +104,7 @@ export async function carregarProcesso(id: string) {
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
     getTagsEvento(),
+    getEtapasKanban(),
     supabase
       .from("andamentos")
       .select(
@@ -300,7 +302,7 @@ export async function carregarProcesso(id: string) {
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={true}>
           <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
-            <KanbanAtual processoId={p.id} etapaAtual={p.etapa_atual} />
+            <EtapaAtual processoId={p.id} etapaAtual={p.etapa_atual} etapasDisponiveis={etapasDisponiveis ?? []} />
           </div>
           <Andamentos
             processoId={p.id}

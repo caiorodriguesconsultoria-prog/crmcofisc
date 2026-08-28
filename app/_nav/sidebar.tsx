@@ -8,7 +8,7 @@ import { cor } from "@/lib/theme";
 const LINKS = [
   { href: "/dashboard", label: "Painel" },
   { href: "/processos", label: "Processos" },
-  { href: "/kanban", label: "Kanban" },
+  { href: "/dados", label: "Dados" },
   { href: "/agenda", label: "Agenda" },
   { href: "/coordenacoes", label: "Coordenações" },
   { href: "/gestores", label: "Gestores" },

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { card, cor } from "@/lib/theme";
+import { corEvento } from "@/lib/cores-evento";
 
 type DocumentComTransicao = Document & {
   startViewTransition?: (callback: () => void | Promise<void>) => void;
@@ -27,14 +28,6 @@ function abrirComTransicao(
     router.push(href);
   });
 }
-
-const ETAPAS = [
-  "Ofício de apresentação",
-  "Aguardando entrega",
-  "Aguardando assinatura",
-  "Aguardando pagamento",
-  "Aguardando Área Técnica",
-];
 
 type Processo = {
   id: string;
@@ -65,12 +58,14 @@ export default function ListaProcessos({
   formasEntrega,
   eventos,
   responsaveis,
+  etapas,
 }: {
   processos: Processo[];
   coordenacoes: Opcao[];
   formasEntrega: Opcao[];
   eventos: Opcao[];
   responsaveis: Opcao[];
+  etapas: Opcao[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -131,9 +126,9 @@ export default function ListaProcessos({
       >
         <select value={etapa} onChange={(e) => setEtapa(e.target.value)}>
           <option value="">Etapa (todas)</option>
-          {ETAPAS.map((e) => (
-            <option key={e} value={e}>
-              {e}
+          {etapas.map((e) => (
+            <option key={e.id} value={e.nome}>
+              {e.nome}
             </option>
           ))}
         </select>
@@ -185,6 +180,7 @@ export default function ListaProcessos({
               <th style={{ padding: "10px 12px" }}>Coord.</th>
               <th style={{ padding: "10px 12px" }}>Fornecedor</th>
               <th style={{ padding: "10px 12px" }}>Etapa</th>
+              <th style={{ padding: "10px 12px" }}>Eventos</th>
             </tr>
           </thead>
           <tbody>
@@ -230,11 +226,36 @@ export default function ListaProcessos({
                     )}
                   </div>
                 </td>
+                <td style={{ padding: "10px 12px" }}>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {p.processo_tags
+                      .map((pt) => pt.tags)
+                      .filter((t): t is { id: string; valor: string } => !!t)
+                      .map((t) => {
+                        const c = corEvento(t.id);
+                        return (
+                          <span
+                            key={t.id}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              color: c.texto,
+                              background: c.fundo,
+                              borderRadius: 7,
+                              padding: "2px 7px",
+                            }}
+                          >
+                            {t.valor}
+                          </span>
+                        );
+                      })}
+                  </div>
+                </td>
               </tr>
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
+                <td colSpan={7} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
                   Nenhum processo encontrado com esses filtros.
                 </td>
               </tr>

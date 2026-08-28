@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import PainelDashboard from "./painel-dashboard";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import { getTagsEvento } from "@/lib/dados-referencia";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -15,22 +16,44 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const hoje = new Date().toISOString().slice(0, 10);
+
   const [
     { data: processos, error: erroProcessos },
     { data: kanbanAtivo, error: erroKanban },
+    { data: tagHistoricoAtivo },
+    { data: tagHistoricoTodo },
+    { data: agendamentosHoje },
+    { data: andamentosHoje },
+    { data: tarefasHoje },
+    eventos,
   ] = await Promise.all([
-    supabase.from("processos").select("id, numero_contrato, etapa_atual, prazo_data, conclusao_tipo"),
     supabase
-      .from("processo_kanban_historico")
-      .select("processo_id, entrada_em")
-      .is("saida_em", null),
+      .from("processos")
+      .select(
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, processo_tags(tags(id, valor))",
+      ),
+    supabase.from("processo_kanban_historico").select("id, processo_id, entrada_em").is("saida_em", null),
+    supabase.from("processo_tag_historico").select("id, processo_id").is("fim_em", null),
+    supabase.from("processo_tag_historico").select("processo_id, tag_id"),
+    supabase.from("processo_agendamentos").select("processo_id, horario").eq("data", hoje),
+    supabase
+      .from("andamentos")
+      .select("processo_id, texto, agendamento_horario")
+      .eq("agendamento_data", hoje),
+    supabase
+      .from("processo_tarefas")
+      .select("origem_tipo, origem_id, label, agendamento_horario")
+      .eq("concluida", false)
+      .eq("agendamento_data", hoje),
+    getTagsEvento(),
   ]);
 
   const erro = erroProcessos || erroKanban;
 
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const hojeTime = hoje.getTime();
+  const hojeMeiaNoite = new Date();
+  hojeMeiaNoite.setHours(0, 0, 0, 0);
+  const hojeTime = hojeMeiaNoite.getTime();
 
   const ativos = (processos ?? []).filter((p) => !p.conclusao_tipo).length;
   const concluidos = (processos ?? []).filter((p) => p.conclusao_tipo).length;
@@ -38,9 +61,7 @@ export default async function DashboardPage() {
     (p) => p.prazo_data && new Date(`${p.prazo_data}T00:00:00`).getTime() === hojeTime,
   ).length;
 
-  const entradaPorProcesso = new Map(
-    (kanbanAtivo ?? []).map((k) => [k.processo_id, k.entrada_em]),
-  );
+  const entradaPorProcesso = new Map((kanbanAtivo ?? []).map((k) => [k.processo_id, k.entrada_em]));
 
   const processosComTempo = (processos ?? []).map((p) => {
     const entrada = entradaPorProcesso.get(p.id);
@@ -60,16 +81,76 @@ export default async function DashboardPage() {
     contagemPorEtapa[p.etapaAtual] = (contagemPorEtapa[p.etapaAtual] ?? 0) + 1;
   }
 
+  // Quantos processos já tiveram cada evento alguma vez (mesmo que hoje o
+  // processo tenha várias tags ou tenha saído dele) — não é a contagem de
+  // tags ativas, é histórico via processo_tag_historico.
+  const processosPorTag = new Map<string, Set<string>>();
+  for (const h of tagHistoricoTodo ?? []) {
+    const set = processosPorTag.get(h.tag_id) ?? new Set<string>();
+    set.add(h.processo_id);
+    processosPorTag.set(h.tag_id, set);
+  }
+  const contagemPorEvento: Record<string, number> = {};
+  for (const [tagId, set] of processosPorTag) {
+    contagemPorEvento[tagId] = set.size;
+  }
+
+  // Atividade de hoje: processo_id de origem_id resolvido via kanban/tag
+  // ativos (mesmo mecanismo do Kanban), unificado com agendamentos e
+  // andamentos com data marcada pra hoje.
+  const processoIdPorOrigemKanban = new Map((kanbanAtivo ?? []).map((k) => [k.id, k.processo_id]));
+  const processoIdPorOrigemTag = new Map((tagHistoricoAtivo ?? []).map((t) => [t.id, t.processo_id]));
+
+  type ItemAtividade = { rotulo: string; horario: string | null };
+  const atividadePorProcesso = new Map<string, ItemAtividade[]>();
+  function adicionar(processoId: string | undefined, item: ItemAtividade) {
+    if (!processoId) return;
+    const lista = atividadePorProcesso.get(processoId) ?? [];
+    lista.push(item);
+    atividadePorProcesso.set(processoId, lista);
+  }
+
+  for (const a of agendamentosHoje ?? []) {
+    adicionar(a.processo_id, { rotulo: "Agendamento de entrega", horario: a.horario });
+  }
+  for (const a of andamentosHoje ?? []) {
+    adicionar(a.processo_id, { rotulo: a.texto, horario: a.agendamento_horario });
+  }
+  for (const t of tarefasHoje ?? []) {
+    const processoId =
+      t.origem_tipo === "kanban"
+        ? processoIdPorOrigemKanban.get(t.origem_id)
+        : processoIdPorOrigemTag.get(t.origem_id);
+    adicionar(processoId, { rotulo: t.label, horario: t.agendamento_horario });
+  }
+
+  const processosAtividadeHoje = (processos ?? [])
+    .filter((p) => atividadePorProcesso.has(p.id))
+    .map((p) => ({
+      id: p.id,
+      numeroContrato: p.numero_contrato,
+      nup: p.nup_principal,
+      objeto: p.objeto,
+      etapaAtual: p.etapa_atual,
+      tags: (p.processo_tags ?? [])
+        .map((pt: any) => pt.tags)
+        .filter((t: any): t is { id: string; valor: string } => !!t),
+      itens: (atividadePorProcesso.get(p.id) ?? []).sort((a, b) => (a.horario ?? "").localeCompare(b.horario ?? "")),
+    }));
+
   return (
-    <Painel titulo="Painel" subtitulo={`Logado como ${user.email}`} maxWidth={900}>
+    <Painel titulo="Painel" subtitulo={`Logado como ${user.email}`} maxWidth={1100}>
       {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro.message}</p>}
 
       <PainelDashboard
         processos={processosComTempo}
         contagemPorEtapa={contagemPorEtapa}
+        contagemPorEvento={contagemPorEvento}
         ativos={ativos}
         concluidos={concluidos}
         vencendoHoje={vencendoHoje}
+        processosAtividadeHoje={processosAtividadeHoje}
+        eventos={eventos ?? []}
       />
     </Painel>
   );

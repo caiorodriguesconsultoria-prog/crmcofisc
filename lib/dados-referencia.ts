@@ -48,3 +48,13 @@ export const getTagsEvento = unstable_cache(
   ["ref-tags-evento"],
   { revalidate: 60 },
 );
+
+export const getEtapasKanban = unstable_cache(
+  async () => {
+    const supabase = createServiceClient();
+    const { data } = await supabase.from("kanban_colunas").select("id, nome").order("ordem");
+    return data ?? [];
+  },
+  ["ref-etapas-kanban"],
+  { revalidate: 60 },
+);

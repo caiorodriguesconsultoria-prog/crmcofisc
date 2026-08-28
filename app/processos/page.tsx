@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import ListaProcessos from "./lista";
 import { botaoPrimario, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
-import { getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
+import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
 
 export default async function ProcessosPage({
   searchParams,
@@ -29,6 +29,7 @@ export default async function ProcessosPage({
     { data: formasEntrega },
     eventos,
     responsaveis,
+    etapas,
     { data: agendamentosRaw },
     { data: tarefasAgendadasRaw },
   ] = await Promise.all([
@@ -42,6 +43,7 @@ export default async function ProcessosPage({
     supabase.from("tags").select("id, valor").eq("categoria", "forma_entrega").eq("ativo", true).order("valor"),
     getTagsEvento(),
     getPessoasAtivas(),
+    getEtapasKanban(),
     supabase.from("processo_agendamentos").select("processo_id, data, horario").gte("data", hoje),
     supabase
       .from("processo_tarefas")
@@ -98,6 +100,7 @@ export default async function ProcessosPage({
         formasEntrega={formasEntrega ?? []}
         eventos={eventos ?? []}
         responsaveis={responsaveis ?? []}
+        etapas={etapas ?? []}
       />
     </Painel>
   );

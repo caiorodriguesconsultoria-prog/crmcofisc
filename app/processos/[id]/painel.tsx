@@ -6,14 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 
-const KANBANS = [
-  "Ofício de apresentação",
-  "Aguardando entrega",
-  "Aguardando assinatura",
-  "Aguardando pagamento",
-  "Aguardando Área Técnica",
-];
-
 type Tag = { id: string; valor: string };
 
 const rotuloSecao: React.CSSProperties = {
@@ -24,19 +16,29 @@ const rotuloSecao: React.CSSProperties = {
   color: cor.textoTerciario,
 };
 
-export function KanbanAtual({ processoId, etapaAtual }: { processoId: string; etapaAtual: string }) {
+export function EtapaAtual({
+  processoId,
+  etapaAtual,
+  etapasDisponiveis,
+}: {
+  processoId: string;
+  etapaAtual: string;
+  etapasDisponiveis: { id: string; nome: string }[];
+}) {
   const router = useRouter();
   const supabase = createClient();
-  const [kanban, setKanban] = useState(etapaAtual);
+  const [etapa, setEtapa] = useState(etapaAtual);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [criandoNova, setCriandoNova] = useState(false);
+  const [nomeNovaEtapa, setNomeNovaEtapa] = useState("");
 
-  async function salvarKanban() {
+  async function salvarEtapa() {
     setErro(null);
     setCarregando(true);
     const { error } = await supabase
       .from("processos")
-      .update({ etapa_atual: kanban })
+      .update({ etapa_atual: etapa })
       .eq("id", processoId);
     setCarregando(false);
     if (error) {
@@ -46,21 +48,66 @@ export function KanbanAtual({ processoId, etapaAtual }: { processoId: string; et
     router.refresh();
   }
 
+  async function criarNovaEtapa() {
+    if (!nomeNovaEtapa.trim()) return;
+    setErro(null);
+    setCarregando(true);
+    const { error } = await supabase
+      .from("kanban_colunas")
+      .insert({ nome: nomeNovaEtapa.trim(), ordem: etapasDisponiveis.length });
+    setCarregando(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setEtapa(nomeNovaEtapa.trim());
+    setNomeNovaEtapa("");
+    setCriandoNova(false);
+    router.refresh();
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <span style={rotuloSecao}>Kanban atual</span>
-      <div style={{ display: "flex", gap: 8 }}>
-        <select value={kanban} onChange={(e) => setKanban(e.target.value)} style={{ padding: 8, flex: 1, minWidth: 0 }}>
-          {KANBANS.map((k) => (
-            <option key={k} value={k}>
-              {k}
-            </option>
-          ))}
-        </select>
-        <button onClick={salvarKanban} disabled={carregando || kanban === etapaAtual} style={botaoPrimario}>
-          Salvar
-        </button>
-      </div>
+      <span style={rotuloSecao}>Etapa atual</span>
+      {criandoNova ? (
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            autoFocus
+            value={nomeNovaEtapa}
+            onChange={(e) => setNomeNovaEtapa(e.target.value)}
+            placeholder="Nome da nova etapa"
+            style={{ padding: 8, flex: 1, minWidth: 0 }}
+          />
+          <button onClick={criarNovaEtapa} disabled={carregando || !nomeNovaEtapa.trim()} style={botaoPrimario}>
+            Criar
+          </button>
+          <button
+            onClick={() => {
+              setCriandoNova(false);
+              setNomeNovaEtapa("");
+            }}
+            disabled={carregando}
+          >
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: 8 }}>
+          <select value={etapa} onChange={(e) => setEtapa(e.target.value)} style={{ padding: 8, flex: 1, minWidth: 0 }}>
+            {etapasDisponiveis.map((e) => (
+              <option key={e.id} value={e.nome}>
+                {e.nome}
+              </option>
+            ))}
+          </select>
+          <button onClick={salvarEtapa} disabled={carregando || etapa === etapaAtual} style={botaoPrimario}>
+            Salvar
+          </button>
+          <button onClick={() => setCriandoNova(true)} disabled={carregando}>
+            + Nova
+          </button>
+        </div>
+      )}
       {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
     </div>
   );

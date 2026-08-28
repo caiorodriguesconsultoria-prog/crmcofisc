@@ -108,7 +108,7 @@ export default function Agendamentos({
     <div>
       <strong style={{ fontSize: 13 }}>Agendamentos de entrega</strong>
       <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 8px" }}>
-        Data e horário aparecem no card do Kanban, na lista de Processos e na Agenda.
+        Data e horário aparecem na lista de Processos e na Agenda.
       </p>
 
       {erro && <p style={{ color: cor.urgente, margin: "0 0 8px" }}>{erro}</p>}

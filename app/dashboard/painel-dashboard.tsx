@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { card, cor } from "@/lib/theme";
+import { corEvento } from "@/lib/cores-evento";
 
 type Processo = {
   id: string;
@@ -11,18 +12,38 @@ type Processo = {
   diasParado: number | null;
 };
 
+type ItemAtividade = { rotulo: string; horario: string | null };
+
+type ProcessoAtividadeHoje = {
+  id: string;
+  numeroContrato: string;
+  nup: string;
+  objeto: string;
+  etapaAtual: string;
+  tags: { id: string; valor: string }[];
+  itens: ItemAtividade[];
+};
+
+type Evento = { id: string; valor: string };
+
 export default function PainelDashboard({
   processos,
   contagemPorEtapa,
+  contagemPorEvento,
   ativos,
   concluidos,
   vencendoHoje,
+  processosAtividadeHoje,
+  eventos,
 }: {
   processos: Processo[];
   contagemPorEtapa: Record<string, number>;
+  contagemPorEvento: Record<string, number>;
   ativos: number;
   concluidos: number;
   vencendoHoje: number;
+  processosAtividadeHoje: ProcessoAtividadeHoje[];
+  eventos: Evento[];
 }) {
   const [limiteDias, setLimiteDias] = useState(15);
 
@@ -31,6 +52,7 @@ export default function PainelDashboard({
     .sort((a, b) => (b.diasParado ?? 0) - (a.diasParado ?? 0));
 
   const maiorEtapa = Math.max(1, ...Object.values(contagemPorEtapa));
+  const maiorEvento = Math.max(1, ...Object.values(contagemPorEvento), 1);
 
   return (
     <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -47,12 +69,19 @@ export default function PainelDashboard({
           </span>
           <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0" }}>{ativos}</p>
         </div>
-        <div style={{ ...card, flex: "1 1 160px" }}>
+        {/* <a> normal de propósito — /processos/concluidos tem o mesmo formato de
+        URL que a rota interceptada do modal /processos/[id], e navegação
+        client-side (<Link>) acaba caindo no modal tratando "concluidos" como
+        id. Um <a> força navegação completa, que resolve certo pelo servidor. */}
+        <a
+          href="/processos/concluidos"
+          style={{ ...card, flex: "1 1 160px", textDecoration: "none", color: "inherit", display: "block" }}
+        >
           <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
             Concluídos
           </span>
           <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0", color: cor.positivo }}>{concluidos}</p>
-        </div>
+        </a>
         <div style={{ ...card, flex: "1 1 160px" }}>
           <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
             Vencendo hoje
@@ -61,6 +90,90 @@ export default function PainelDashboard({
             {vencendoHoje}
           </p>
         </div>
+      </div>
+
+      <div style={card}>
+        <strong style={{ fontSize: 13 }}>Atividade de hoje</strong>
+        <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
+          Processos com tarefa ou agendamento marcado pra hoje.
+        </p>
+        {processosAtividadeHoje.length === 0 ? (
+          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Contrato</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>NUP</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Objeto</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Etapa</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Eventos</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Hoje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {processosAtividadeHoje.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
+                    <td style={{ padding: "9px 10px" }}>
+                      <Link href={`/processos/${p.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
+                        {p.numeroContrato}
+                      </Link>
+                    </td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5 }}>{p.nup}</td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5 }}>{p.objeto}</td>
+                    <td style={{ padding: "9px 10px" }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "3px 9px",
+                          borderRadius: 20,
+                          background: cor.destaqueFundo,
+                          color: cor.destaque,
+                        }}
+                      >
+                        {p.etapaAtual}
+                      </span>
+                    </td>
+                    <td style={{ padding: "9px 10px" }}>
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {p.tags.map((t) => {
+                          const c = corEvento(t.id);
+                          return (
+                            <span
+                              key={t.id}
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 600,
+                                color: c.texto,
+                                background: c.fundo,
+                                borderRadius: 7,
+                                padding: "2px 7px",
+                              }}
+                            >
+                              {t.valor}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </td>
+                    <td style={{ padding: "9px 10px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {p.itens.map((item, i) => (
+                          <span key={i} style={{ fontSize: 12 }}>
+                            {item.horario ? `${item.horario.slice(0, 5)} · ` : ""}
+                            {item.rotulo}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div style={card}>
@@ -84,6 +197,37 @@ export default function PainelDashboard({
               </span>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div style={card}>
+        <strong style={{ fontSize: 13 }}>Processos por evento</strong>
+        <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
+          Quantos processos já tiveram cada evento alguma vez (histórico, não só as tags ativas hoje).
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {eventos.map((ev) => {
+            const n = contagemPorEvento[ev.id] ?? 0;
+            const c = corEvento(ev.id);
+            return (
+              <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 12.5, flex: "0 0 220px" }}>{ev.valor}</span>
+                <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(32,31,29,.08)", overflow: "hidden" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      borderRadius: 4,
+                      background: c.texto,
+                      width: `${(n / maiorEvento) * 100}%`,
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 600, color: cor.textoTerciario, width: 24, textAlign: "right" }}>
+                  {n}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

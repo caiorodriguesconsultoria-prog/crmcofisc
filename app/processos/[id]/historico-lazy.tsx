@@ -64,7 +64,7 @@ export default function HistoricoLazy({ processoId }: { processoId: string }) {
   return (
     <>
       <div>
-        <strong style={{ fontSize: 12.5 }}>Kanban</strong>
+        <strong style={{ fontSize: 12.5 }}>Etapas</strong>
         <ul style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: 13 }}>
           {dados.kanban.map((h, i) => (
             <li key={i}>

@@ -1,0 +1,149 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { cor, card } from "@/lib/theme";
+import { corEvento } from "@/lib/cores-evento";
+import Painel from "@/app/_ui/painel";
+import { getTagsEvento } from "@/lib/dados-referencia";
+
+const MS_POR_DIA = 1000 * 60 * 60 * 24;
+
+function media(valores: number[]) {
+  if (valores.length === 0) return null;
+  return valores.reduce((soma, v) => soma + v, 0) / valores.length;
+}
+
+function formatarDias(dias: number | null) {
+  if (dias === null) return "sem dados";
+  return `${dias.toFixed(1)} dias`;
+}
+
+export default async function DadosPage() {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const [
+    { data: processos },
+    { count: totalProcessos },
+    { data: tagHistorico },
+    eventos,
+    { data: assinaturaHistorico },
+    { data: entregas },
+  ] = await Promise.all([
+    supabase.from("processos").select("id, created_at, updated_at, conclusao_tipo"),
+    supabase.from("processos").select("id", { count: "exact", head: true }),
+    supabase.from("processo_tag_historico").select("processo_id, tag_id"),
+    getTagsEvento(),
+    supabase
+      .from("processo_kanban_historico")
+      .select("entrada_em, saida_em")
+      .eq("kanban", "Aguardando assinatura")
+      .not("saida_em", "is", null),
+    supabase.from("processo_entregas").select("processo_id, atraso_dias"),
+  ]);
+
+  const total = totalProcessos ?? 0;
+
+  const processosPorTag = new Map<string, Set<string>>();
+  for (const h of tagHistorico ?? []) {
+    const set = processosPorTag.get(h.tag_id) ?? new Set<string>();
+    set.add(h.processo_id);
+    processosPorTag.set(h.tag_id, set);
+  }
+  const percentualPorEvento = (eventos ?? []).map((ev) => ({
+    ...ev,
+    percentual: total > 0 ? ((processosPorTag.get(ev.id)?.size ?? 0) / total) * 100 : 0,
+    quantidade: processosPorTag.get(ev.id)?.size ?? 0,
+  }));
+
+  const diasAssinatura = (assinaturaHistorico ?? []).map(
+    (h) => (new Date(h.saida_em as string).getTime() - new Date(h.entrada_em).getTime()) / MS_POR_DIA,
+  );
+  const mediaAssinatura = media(diasAssinatura);
+
+  const concluidos = (processos ?? []).filter((p) => p.conclusao_tipo);
+  const diasConclusao = concluidos.map(
+    (p) => (new Date(p.updated_at).getTime() - new Date(p.created_at).getTime()) / MS_POR_DIA,
+  );
+  const mediaConclusao = media(diasConclusao);
+
+  const entregasComAtraso = (entregas ?? []).filter((e) => (e.atraso_dias ?? 0) > 0);
+  const processosComAtraso = new Set(entregasComAtraso.map((e) => e.processo_id)).size;
+  const mediaAtraso = media(entregasComAtraso.map((e) => e.atraso_dias as number));
+
+  const maiorPercentualEvento = Math.max(1, ...percentualPorEvento.map((e) => e.percentual));
+
+  return (
+    <Painel titulo="Dados" subtitulo="KPIs de contratos" voltarHref="/dashboard" maxWidth={1000}>
+      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ ...card, flex: "1 1 220px" }}>
+            <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
+              Tempo médio aguardando assinatura
+            </span>
+            <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{formatarDias(mediaAssinatura)}</p>
+          </div>
+          <div style={{ ...card, flex: "1 1 220px" }}>
+            <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
+              Tempo médio de conclusão
+            </span>
+            <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{formatarDias(mediaConclusao)}</p>
+          </div>
+          <div style={{ ...card, flex: "1 1 220px" }}>
+            <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
+              Contratos entregues com atraso
+            </span>
+            <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0", color: processosComAtraso > 0 ? cor.urgente : cor.texto }}>
+              {processosComAtraso}
+            </p>
+          </div>
+          <div style={{ ...card, flex: "1 1 220px" }}>
+            <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
+              Tempo médio de atraso (dos que atrasaram)
+            </span>
+            <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{formatarDias(mediaAtraso)}</p>
+          </div>
+        </div>
+
+        <div style={card}>
+          <strong style={{ fontSize: 13 }}>% de processos por evento</strong>
+          <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
+            Percentual de todos os processos que já tiveram cada evento alguma vez.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {percentualPorEvento.map((ev) => {
+              const c = corEvento(ev.id);
+              return (
+                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 12.5, flex: "0 0 220px" }}>{ev.valor}</span>
+                  <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(32,31,29,.08)", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        borderRadius: 4,
+                        background: c.texto,
+                        width: `${(ev.percentual / maiorPercentualEvento) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: cor.textoTerciario, width: 90, textAlign: "right" }}>
+                    {ev.percentual.toFixed(0)}% ({ev.quantidade})
+                  </span>
+                </div>
+              );
+            })}
+            {percentualPorEvento.length === 0 && (
+              <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento cadastrado ainda.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </Painel>
+  );
+}
