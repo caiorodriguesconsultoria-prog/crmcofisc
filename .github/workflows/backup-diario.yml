@@ -29,7 +29,7 @@ jobs:
           echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
 
       - name: Guarda como artefato do GitHub (redundância, 90 dias)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARQUIVO }}
           path: ${{ env.ARQUIVO }}
