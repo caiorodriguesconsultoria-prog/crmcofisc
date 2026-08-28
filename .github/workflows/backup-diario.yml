@@ -12,8 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instala cliente do Postgres
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Instala cliente do Postgres (versão 17, compatível com o banco)
+        run: |
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
 
       - name: Gera o dump do banco
         env:
