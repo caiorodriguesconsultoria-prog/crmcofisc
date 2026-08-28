@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { KanbanAtual, EventosAtivos } from "./painel";
@@ -400,7 +399,10 @@ export async function carregarProcesso(id: string) {
   const conteudoRelatorio = (
     <div>
       <p style={{ margin: "0 0 16px" }}>
-        <Link href={`/processos/${id}/relatorio/pdf`}>Exportar PDF →</Link>
+        {/* <a> normal de propósito — dentro do modal (pilot), o <Link> do Next
+            não escapa direito pra essa rota mais profunda, deixando o modal
+            aberto por cima da página real. <a> força navegação completa. */}
+        <a href={`/processos/${id}/relatorio/pdf`}>Exportar PDF →</a>
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
