@@ -4,14 +4,6 @@ import Board from "./board";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
 
-const KANBANS = [
-  "Ofício de apresentação",
-  "Aguardando entrega",
-  "Aguardando assinatura",
-  "Aguardando pagamento",
-  "Aguardando Área Técnica",
-];
-
 function diasRestantes(prazoData: string | null) {
   if (!prazoData) return null;
   const hoje = new Date();
@@ -31,12 +23,15 @@ export default async function KanbanPage() {
     redirect("/login");
   }
 
-  const { data: processos, error } = await supabase
-    .from("processos")
-    .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, titular_id, responsavel_atual_id, coordenacoes(sigla), titular:pessoas!processos_titular_id_fkey(nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_tags(tags(id, valor))",
-    )
-    .order("created_at", { ascending: false });
+  const [{ data: processos, error }, { data: colunasCadastradas }] = await Promise.all([
+    supabase
+      .from("processos")
+      .select(
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, titular_id, responsavel_atual_id, coordenacoes(sigla), titular:pessoas!processos_titular_id_fkey(nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_tags(tags(id, valor))",
+      )
+      .order("created_at", { ascending: false }),
+    supabase.from("kanban_colunas").select("id, nome, ordem").order("ordem"),
+  ]);
 
   const { data: kanbanAtivo } = await supabase
     .from("processo_kanban_historico")
@@ -123,9 +118,11 @@ export default async function KanbanPage() {
     };
   });
 
-  const colunas = KANBANS.map((nome) => ({
-    nome,
-    cards: cards.filter((c) => c.etapaAtual === nome),
+  const colunas = (colunasCadastradas ?? []).map((c) => ({
+    id: c.id,
+    nome: c.nome,
+    ordem: c.ordem,
+    cards: cards.filter((card) => card.etapaAtual === c.nome),
   }));
 
   return (

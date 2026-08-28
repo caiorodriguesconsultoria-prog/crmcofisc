@@ -24,7 +24,7 @@ type Card = {
   agendamentos: { data: string; horario: string; rotulo: string | null }[];
 };
 
-type Coluna = { nome: string; cards: Card[] };
+type Coluna = { id: string; nome: string; ordem: number; cards: Card[] };
 
 function corPrazo(dias: number | null) {
   if (dias === null) return null;
@@ -50,6 +50,8 @@ export default function Board({ colunas }: { colunas: Coluna[] }) {
   const [carregando, setCarregando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [colunaSobrevoada, setColunaSobrevoada] = useState<string | null>(null);
+  const [criandoColuna, setCriandoColuna] = useState(false);
+  const [nomeNovaColuna, setNomeNovaColuna] = useState("");
 
   async function moverPara(processoId: string, etapaAtual: string, novaEtapa: string) {
     if (novaEtapa === etapaAtual) return;
@@ -68,14 +70,52 @@ export default function Board({ colunas }: { colunas: Coluna[] }) {
     router.refresh();
   }
 
+  async function reordenarColuna(colunaArrastadaId: string, colunaAlvoId: string) {
+    if (colunaArrastadaId === colunaAlvoId) return;
+    const semArrastada = colunas.filter((c) => c.id !== colunaArrastadaId);
+    const indiceAlvo = semArrastada.findIndex((c) => c.id === colunaAlvoId);
+    const arrastada = colunas.find((c) => c.id === colunaArrastadaId);
+    if (!arrastada || indiceAlvo === -1) return;
+    const novaOrdem = [...semArrastada.slice(0, indiceAlvo), arrastada, ...semArrastada.slice(indiceAlvo)];
+
+    setErro(null);
+    const { error } = await supabase.from("kanban_colunas").upsert(
+      novaOrdem.map((c, i) => ({ id: c.id, nome: c.nome, ordem: i })),
+    );
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function criarColuna() {
+    if (!nomeNovaColuna.trim()) return;
+    setErro(null);
+    setCarregando("nova-coluna");
+    const { error } = await supabase
+      .from("kanban_colunas")
+      .insert({ nome: nomeNovaColuna.trim(), ordem: colunas.length });
+    setCarregando(null);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setNomeNovaColuna("");
+    setCriandoColuna(false);
+    router.refresh();
+  }
+
   return (
     <div style={{ marginTop: 16 }}>
       {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
-      <p style={{ fontSize: 12, color: cor.textoTerciario }}>Arraste um card pra qualquer coluna pra mover.</p>
+      <p style={{ fontSize: 12, color: cor.textoTerciario }}>
+        Arraste um card pra qualquer coluna pra mover. Arraste o título de uma coluna pra reordenar.
+      </p>
       <div style={{ display: "flex", gap: 14, overflowX: "auto", alignItems: "flex-start", paddingBottom: 8 }}>
         {colunas.map((coluna) => (
           <div
-            key={coluna.nome}
+            key={coluna.id}
             onDragOver={(e) => {
               e.preventDefault();
               setColunaSobrevoada(coluna.nome);
@@ -84,6 +124,11 @@ export default function Board({ colunas }: { colunas: Coluna[] }) {
             onDrop={(e) => {
               e.preventDefault();
               setColunaSobrevoada(null);
+              const colunaArrastadaId = e.dataTransfer.getData("text/coluna-id");
+              if (colunaArrastadaId) {
+                reordenarColuna(colunaArrastadaId, coluna.id);
+                return;
+              }
               const processoId = e.dataTransfer.getData("text/processo-id");
               const etapaAtual = e.dataTransfer.getData("text/etapa-atual");
               if (processoId) moverPara(processoId, etapaAtual, coluna.nome);
@@ -96,7 +141,19 @@ export default function Board({ colunas }: { colunas: Coluna[] }) {
               padding: 10,
             }}
           >
-            <div style={{ fontWeight: 700, fontSize: 12.5, padding: "4px 6px 10px", color: cor.textoSecundario }}>
+            <div
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/coluna-id", coluna.id);
+              }}
+              style={{
+                fontWeight: 700,
+                fontSize: 12.5,
+                padding: "4px 6px 10px",
+                color: cor.textoSecundario,
+                cursor: "grab",
+              }}
+            >
               {coluna.nome} ({coluna.cards.length})
             </div>
             {coluna.cards.map((card) => {
@@ -248,6 +305,51 @@ export default function Board({ colunas }: { colunas: Coluna[] }) {
             )}
           </div>
         ))}
+
+        <div style={{ minWidth: 220, flex: "0 0 220px" }}>
+          {criandoColuna ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, background: cor.fundo, borderRadius: 14, padding: 10 }}>
+              <input
+                autoFocus
+                value={nomeNovaColuna}
+                onChange={(e) => setNomeNovaColuna(e.target.value)}
+                placeholder="Nome da coluna"
+                style={{ padding: 8 }}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={criarColuna} disabled={carregando === "nova-coluna" || !nomeNovaColuna.trim()}>
+                  Criar
+                </button>
+                <button
+                  onClick={() => {
+                    setCriandoColuna(false);
+                    setNomeNovaColuna("");
+                  }}
+                  disabled={carregando === "nova-coluna"}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setCriandoColuna(true)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 14,
+                border: "1px dashed rgba(0,0,0,.18)",
+                background: "transparent",
+                color: cor.textoSecundario,
+                fontSize: 12.5,
+                fontWeight: 600,
+                textAlign: "left",
+              }}
+            >
+              + Nova coluna
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
