@@ -22,7 +22,6 @@ export default async function DashboardPage() {
     { data: processos, error: erroProcessos },
     { data: kanbanAtivo, error: erroKanban },
     { data: tagHistoricoAtivo },
-    { data: tagHistoricoTodo },
     { data: agendamentosHoje },
     { data: andamentosHoje },
     { data: tarefasHoje },
@@ -35,7 +34,6 @@ export default async function DashboardPage() {
       ),
     supabase.from("processo_kanban_historico").select("id, processo_id, entrada_em").is("saida_em", null),
     supabase.from("processo_tag_historico").select("id, processo_id").is("fim_em", null),
-    supabase.from("processo_tag_historico").select("processo_id, tag_id"),
     supabase.from("processo_agendamentos").select("processo_id, horario").eq("data", hoje),
     supabase
       .from("andamentos")
@@ -81,18 +79,17 @@ export default async function DashboardPage() {
     contagemPorEtapa[p.etapaAtual] = (contagemPorEtapa[p.etapaAtual] ?? 0) + 1;
   }
 
-  // Quantos processos já tiveram cada evento alguma vez (mesmo que hoje o
-  // processo tenha várias tags ou tenha saído dele) — não é a contagem de
-  // tags ativas, é histórico via processo_tag_historico.
-  const processosPorTag = new Map<string, Set<string>>();
-  for (const h of tagHistoricoTodo ?? []) {
-    const set = processosPorTag.get(h.tag_id) ?? new Set<string>();
-    set.add(h.processo_id);
-    processosPorTag.set(h.tag_id, set);
-  }
+  // Quantos processos estão COM cada evento agora (tags ativas hoje, não
+  // histórico) — atualiza sozinho conforme os processos são movimentados.
+  // O histórico (já teve alguma vez) é uma métrica diferente, que fica só
+  // na aba Dados.
   const contagemPorEvento: Record<string, number> = {};
-  for (const [tagId, set] of processosPorTag) {
-    contagemPorEvento[tagId] = set.size;
+  for (const p of processos ?? []) {
+    for (const pt of p.processo_tags ?? []) {
+      const tagId = (pt as any).tags?.id;
+      if (!tagId) continue;
+      contagemPorEvento[tagId] = (contagemPorEvento[tagId] ?? 0) + 1;
+    }
   }
 
   // Atividade de hoje: processo_id de origem_id resolvido via kanban/tag

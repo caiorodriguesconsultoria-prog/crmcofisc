@@ -8,6 +8,7 @@ import { cor } from "@/lib/theme";
 const LINKS = [
   { href: "/dashboard", label: "Painel" },
   { href: "/processos", label: "Processos" },
+  { href: "/processos/concluidos", label: "Concluídos" },
   { href: "/dados", label: "Dados" },
   { href: "/agenda", label: "Agenda" },
   { href: "/coordenacoes", label: "Coordenações" },
@@ -84,21 +85,33 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
       </div>
 
       {LINKS.map((l) => {
-        const ativo = pathname === l.href || pathname.startsWith(l.href + "/");
+        // "/processos" não deve acender junto com "/processos/concluidos"
+        // (que também começa com "/processos/") — cada rota tem seu item.
+        const ativo =
+          pathname === l.href ||
+          (pathname.startsWith(l.href + "/") &&
+            !(l.href === "/processos" && pathname.startsWith("/processos/concluidos")));
+        const estilo: React.CSSProperties = {
+          fontSize: 13,
+          fontWeight: 600,
+          padding: "9px 12px",
+          borderRadius: 10,
+          color: ativo ? "#fff" : cor.textoSecundario,
+          background: ativo ? "linear-gradient(180deg,#4A4645,#2D2B2B)" : "transparent",
+          textDecoration: "none",
+        };
+        // /processos/concluidos tem o mesmo formato de URL que a rota
+        // interceptada do modal /processos/[id] — <a> normal (navegação
+        // completa) pra não cair lá, mesma causa raiz do bug de "+ Novo processo".
+        if (l.href === "/processos/concluidos") {
+          return (
+            <a key={l.href} href={l.href} style={estilo}>
+              {l.label}
+            </a>
+          );
+        }
         return (
-          <Link
-            key={l.href}
-            href={l.href}
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              padding: "9px 12px",
-              borderRadius: 10,
-              color: ativo ? "#fff" : cor.textoSecundario,
-              background: ativo ? "linear-gradient(180deg,#4A4645,#2D2B2B)" : "transparent",
-              textDecoration: "none",
-            }}
-          >
+          <Link key={l.href} href={l.href} style={estilo}>
             {l.label}
           </Link>
         );
