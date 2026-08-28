@@ -5,6 +5,7 @@ import Link from "next/link";
 import { card, cor, PALETA_EVENTOS } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import GraficoPizza from "@/app/_ui/grafico-pizza";
+import MedidorCircular from "@/app/_ui/medidor-circular";
 
 type Processo = {
   id: string;
@@ -52,7 +53,6 @@ export default function PainelDashboard({
     .filter((p) => p.diasParado !== null && p.diasParado >= limiteDias)
     .sort((a, b) => (b.diasParado ?? 0) - (a.diasParado ?? 0));
 
-  const maiorEvento = Math.max(1, ...Object.values(contagemPorEvento), 1);
 
   return (
     <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -194,32 +194,24 @@ export default function PainelDashboard({
       <div style={card}>
         <strong style={{ fontSize: 13 }}>Processos por evento</strong>
         <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
-          Quantos processos ATIVOS estão com cada evento agora (atualiza sozinho conforme
-          são movimentados). Um processo pode ter mais de um evento ao mesmo tempo, então
-          isso não é "parte de um todo" — por isso fica em barra, não em pizza; o total
-          histórico (já teve alguma vez) está na aba Dados.
+          De todos os processos, quantos estão COM cada evento agora — cada evento é um
+          medidor independente (um processo pode ter vários eventos ao mesmo tempo, por
+          isso cada um tem seu próprio total, em vez de dividir uma pizza só).
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
           {eventos.map((ev) => {
             const n = contagemPorEvento[ev.id] ?? 0;
             const c = corEvento(ev.id);
             return (
-              <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 12.5, flex: "0 0 220px" }}>{ev.valor}</span>
-                <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(32,31,29,.08)", overflow: "hidden" }}>
-                  <div
-                    style={{
-                      height: "100%",
-                      borderRadius: 4,
-                      background: c.texto,
-                      width: `${(n / maiorEvento) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: cor.textoTerciario, width: 24, textAlign: "right" }}>
-                  {n}
-                </span>
-              </div>
+              <MedidorCircular
+                key={ev.id}
+                valor={n}
+                total={processos.length}
+                corPreenchido={c.texto}
+                corTrilha={c.fundo}
+                rotulo={ev.valor}
+                tamanho={72}
+              />
             );
           })}
         </div>

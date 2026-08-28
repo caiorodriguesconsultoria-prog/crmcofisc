@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cor, card } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import Painel from "@/app/_ui/painel";
+import MedidorCircular from "@/app/_ui/medidor-circular";
 import { getTagsEvento } from "@/lib/dados-referencia";
 
 const MS_POR_DIA = 1000 * 60 * 60 * 24;
@@ -77,8 +78,6 @@ export default async function DadosPage() {
   const processosComAtraso = new Set(entregasComAtraso.map((e) => e.processo_id)).size;
   const mediaAtraso = media(entregasComAtraso.map((e) => e.atraso_dias as number));
 
-  const maiorPercentualEvento = Math.max(1, ...percentualPorEvento.map((e) => e.percentual));
-
   return (
     <Painel titulo="Dados" subtitulo="KPIs de contratos" voltarHref="/dashboard" maxWidth={1000}>
       <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -114,28 +113,23 @@ export default async function DadosPage() {
         <div style={card}>
           <strong style={{ fontSize: 13 }}>% de processos por evento</strong>
           <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
-            Percentual de todos os processos que já tiveram cada evento alguma vez.
+            De todos os processos, quantos já tiveram cada evento alguma vez — cada evento é
+            um medidor independente (um processo pode ter passado por vários eventos, então
+            cada um tem seu próprio total, em vez de dividir uma pizza só).
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             {percentualPorEvento.map((ev) => {
               const c = corEvento(ev.id);
               return (
-                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 12.5, flex: "0 0 220px" }}>{ev.valor}</span>
-                  <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(32,31,29,.08)", overflow: "hidden" }}>
-                    <div
-                      style={{
-                        height: "100%",
-                        borderRadius: 4,
-                        background: c.texto,
-                        width: `${(ev.percentual / maiorPercentualEvento) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: cor.textoTerciario, width: 90, textAlign: "right" }}>
-                    {ev.percentual.toFixed(0)}% ({ev.quantidade})
-                  </span>
-                </div>
+                <MedidorCircular
+                  key={ev.id}
+                  valor={ev.quantidade}
+                  total={total}
+                  corPreenchido={c.texto}
+                  corTrilha={c.fundo}
+                  rotulo={ev.valor}
+                  tamanho={72}
+                />
               );
             })}
             {percentualPorEvento.length === 0 && (
