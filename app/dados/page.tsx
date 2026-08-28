@@ -82,32 +82,32 @@ export default async function DadosPage() {
     <Painel titulo="Dados" subtitulo="KPIs de contratos" voltarHref="/dashboard" maxWidth={1000}>
       <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ ...card, flex: "1 1 220px" }}>
-            <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-              Tempo médio aguardando assinatura
-            </span>
-            <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{formatarDias(mediaAssinatura)}</p>
-          </div>
-          <div style={{ ...card, flex: "1 1 220px" }}>
-            <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-              Tempo médio de conclusão
-            </span>
-            <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{formatarDias(mediaConclusao)}</p>
-          </div>
-          <div style={{ ...card, flex: "1 1 220px" }}>
-            <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-              Contratos entregues com atraso
-            </span>
-            <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0", color: processosComAtraso > 0 ? cor.urgente : cor.texto }}>
-              {processosComAtraso}
-            </p>
-          </div>
-          <div style={{ ...card, flex: "1 1 220px" }}>
-            <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-              Tempo médio de atraso (dos que atrasaram)
-            </span>
-            <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{formatarDias(mediaAtraso)}</p>
-          </div>
+          {[
+            { rotulo: "Tempo médio aguardando assinatura", valor: formatarDias(mediaAssinatura) },
+            { rotulo: "Tempo médio de conclusão", valor: formatarDias(mediaConclusao) },
+            {
+              rotulo: "Contratos entregues com atraso",
+              valor: String(processosComAtraso),
+              cor: processosComAtraso > 0 ? cor.urgente : undefined,
+            },
+            { rotulo: "Tempo médio de atraso (dos que atrasaram)", valor: formatarDias(mediaAtraso) },
+          ].map((kpi) => (
+            <div key={kpi.rotulo} style={{ ...card, flex: "1 1 220px", display: "flex", flexDirection: "column" }}>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  textTransform: "uppercase",
+                  color: cor.textoTerciario,
+                  letterSpacing: 0.5,
+                  minHeight: 28,
+                  display: "block",
+                }}
+              >
+                {kpi.rotulo}
+              </span>
+              <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0", color: kpi.cor }}>{kpi.valor}</p>
+            </div>
+          ))}
         </div>
 
         <div style={card}>

@@ -177,47 +177,6 @@ export default function PainelDashboard({
       </div>
 
       <div style={card}>
-        <strong style={{ fontSize: 13 }}>Processos por etapa</strong>
-        <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
-          Onde cada processo ativo está agora — cada um conta pra uma única etapa.
-        </p>
-        <GraficoPizza
-          rotuloCentro="processos"
-          dados={Object.entries(contagemPorEtapa).map(([etapa, n], i) => ({
-            rotulo: etapa,
-            valor: n,
-            cor: PALETA_EVENTOS[i % PALETA_EVENTOS.length].texto,
-          }))}
-        />
-      </div>
-
-      <div style={card}>
-        <strong style={{ fontSize: 13 }}>Processos por evento</strong>
-        <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
-          De todos os processos, quantos estão COM cada evento agora — cada evento é um
-          medidor independente (um processo pode ter vários eventos ao mesmo tempo, por
-          isso cada um tem seu próprio total, em vez de dividir uma pizza só).
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-          {eventos.map((ev) => {
-            const n = contagemPorEvento[ev.id] ?? 0;
-            const c = corEvento(ev.id);
-            return (
-              <MedidorCircular
-                key={ev.id}
-                valor={n}
-                total={processos.length}
-                corPreenchido={c.texto}
-                corTrilha={c.fundo}
-                rotulo={ev.valor}
-                tamanho={72}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <strong style={{ fontSize: 13 }}>Processos parados</strong>
           <label style={{ marginLeft: "auto", fontSize: 12, color: cor.textoTerciario }}>
@@ -260,6 +219,41 @@ export default function PainelDashboard({
               <span style={{ marginLeft: "auto", color: cor.textoTerciario }}>há {p.diasParado} dias</span>
             </Link>
           ))}
+        </div>
+      </div>
+
+      <div style={card}>
+        <strong style={{ fontSize: 13 }}>Processos por etapa e evento</strong>
+        <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 12px" }}>
+          Etapa é exclusiva (cada processo conta pra uma só); cada evento é um medidor à
+          parte, com seu próprio total — um processo pode ter vários ao mesmo tempo.
+        </p>
+        <div style={{ display: "flex", gap: 28, flexWrap: "wrap", alignItems: "flex-start" }}>
+          <GraficoPizza
+            rotuloCentro="processos"
+            dados={Object.entries(contagemPorEtapa).map(([etapa, n], i) => ({
+              rotulo: etapa,
+              valor: n,
+              cor: PALETA_EVENTOS[i % PALETA_EVENTOS.length].texto,
+            }))}
+          />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, flex: "1 1 300px" }}>
+            {eventos.map((ev) => {
+              const n = contagemPorEvento[ev.id] ?? 0;
+              const c = corEvento(ev.id);
+              return (
+                <MedidorCircular
+                  key={ev.id}
+                  valor={n}
+                  total={processos.length}
+                  corPreenchido={c.texto}
+                  corTrilha={c.fundo}
+                  rotulo={ev.valor}
+                  tamanho={72}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
