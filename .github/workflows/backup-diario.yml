@@ -1,0 +1,46 @@
+name: Backup diário do banco
+
+on:
+  schedule:
+    # 06:00 UTC = 03:00 em Brasília (UTC-3 fixo, sem horário de verão)
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instala cliente do Postgres
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Gera o dump do banco
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          data=$(date +%Y-%m-%d)
+          arquivo="backup-crmcofisc-${data}.dump"
+          pg_dump "$DATABASE_URL" --format=custom --file="$arquivo"
+          echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
+
+      - name: Guarda como artefato do GitHub (redundância, 90 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARQUIVO }}
+          path: ${{ env.ARQUIVO }}
+          retention-days: 90
+
+      - name: Configura Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instala dependências do Google Drive
+        run: pip install --quiet google-api-python-client google-auth
+
+      - name: Sobe o dump pro Google Drive e limpa backups com mais de 90 dias
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: python scripts/backup_para_drive.py "$ARQUIVO"
