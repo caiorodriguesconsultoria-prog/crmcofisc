@@ -63,25 +63,23 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
           overflowY: "auto",
         }}
       >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "4px 8px 16px" }}>
+        {/* Mesmo gradiente do ícone do app (app/icon.tsx) — replicado em CSS
+        em vez de <img src="/icon-192">, porque assim escala nítido em
+        qualquer tamanho e não gasta uma requisição extra. */}
         <span
           style={{
-            width: 26,
-            height: 26,
-            borderRadius: "50%",
-            background: "linear-gradient(180deg,#4A4645,#2D2B2B)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 12,
-            fontWeight: 700,
-            flex: "none",
+            padding: "6px 14px",
+            borderRadius: 10,
+            background: "linear-gradient(90deg, #22C1DC 0%, #8FD79A 50%, #F4E266 100%)",
+            color: "#000",
+            fontWeight: 800,
+            fontSize: 14,
+            letterSpacing: -0.3,
           }}
         >
-          C
+          COFISC
         </span>
-        <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: -0.2 }}>COFISC</span>
       </div>
 
       {LINKS.map((l) => {
