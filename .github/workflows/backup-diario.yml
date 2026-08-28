@@ -25,7 +25,7 @@ jobs:
         run: |
           data=$(date +%Y-%m-%d)
           arquivo="backup-crmcofisc-${data}.dump"
-          pg_dump "$DATABASE_URL" --format=custom --file="$arquivo"
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --format=custom --file="$arquivo"
           echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
 
       - name: Guarda como artefato do GitHub (redundância, 90 dias)
