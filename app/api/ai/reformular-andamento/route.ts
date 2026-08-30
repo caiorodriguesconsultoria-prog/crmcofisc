@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 
 const SISTEMA = `Você reformata anotações informais de andamentos processuais do COFISC/DAF/SCTIE (Ministério da Saúde) em texto claro e formal, em português do Brasil, adequado a um relatório oficial.
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: "IA não configurada" }, { status: 503 });
   }
 
@@ -29,21 +29,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const openai = new OpenAI();
-    const resposta = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        { role: "system", content: SISTEMA },
-        { role: "user", content: texto },
-      ],
+    const anthropic = new Anthropic();
+    const resposta = await anthropic.messages.create({
+      model: "claude-sonnet-5",
+      max_tokens: 1024,
+      system: SISTEMA,
+      messages: [{ role: "user", content: texto }],
     });
 
-    const saida = resposta.choices[0]?.message?.content?.trim();
-    if (!saida) {
+    const bloco = resposta.content.find((b) => b.type === "text");
+    if (!bloco || bloco.type !== "text") {
       return NextResponse.json({ error: "sem resposta da IA" }, { status: 502 });
     }
 
-    return NextResponse.json({ texto: saida });
+    return NextResponse.json({ texto: bloco.text.trim() });
   } catch {
     return NextResponse.json({ error: "falha ao chamar a IA" }, { status: 502 });
   }
