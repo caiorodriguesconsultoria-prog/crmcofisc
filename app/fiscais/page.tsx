@@ -33,6 +33,7 @@ export default async function FiscaisPage() {
   return (
     <ListaPessoasPapel
       titulo="Fiscais"
+      papel="fiscal"
       novoHref="/fiscais/novo"
       isAdmin={pessoa?.is_admin ?? false}
       itens={itens}

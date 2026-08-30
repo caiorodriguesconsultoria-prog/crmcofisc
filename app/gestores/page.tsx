@@ -33,6 +33,7 @@ export default async function GestoresPage() {
   return (
     <ListaPessoasPapel
       titulo="Gestores"
+      papel="gestor"
       novoHref="/gestores/novo"
       isAdmin={pessoa?.is_admin ?? false}
       itens={itens}
