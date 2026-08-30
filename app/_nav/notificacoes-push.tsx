@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { cor } from "@/lib/theme";
 
+// Chave pública do par VAPID — não é segredo (o navegador precisa dela pra
+// criar a inscrição de push), por isso fica direto no código em vez de
+// variável de ambiente. A chave PRIVADA (VAPID_PRIVATE_KEY) é que fica só
+// no servidor, essa sim nunca aparece aqui.
+const VAPID_PUBLIC_KEY =
+  "BOmPBiH4OW_mEgtX4uad2E7CCadhl8ZRA-AZSBDQ60kWCBFEz1CE36u1jPywxERnyitlG6fUegjn8farRAlNgro";
+
 function urlBase64ParaUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -28,11 +35,6 @@ export default function NotificacoesPush() {
   }, []);
 
   async function ativar() {
-    const chave = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!chave) {
-      setErro("Notificações não configuradas no servidor.");
-      return;
-    }
     setErro(null);
     setCarregando(true);
     try {
@@ -44,7 +46,7 @@ export default function NotificacoesPush() {
       const registro = await navigator.serviceWorker.ready;
       const subscription = await registro.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ParaUint8Array(chave),
+        applicationServerKey: urlBase64ParaUint8Array(VAPID_PUBLIC_KEY),
       });
       const json = subscription.toJSON();
       const resposta = await fetch("/api/push/inscrever", {
