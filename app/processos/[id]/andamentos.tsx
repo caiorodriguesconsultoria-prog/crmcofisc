@@ -71,6 +71,7 @@ export default function Andamentos({
   const [modalAnexoId, setModalAnexoId] = useState<string | null>(null);
   const [enviandoAnexo, setEnviandoAnexo] = useState(false);
   const [erroAnexo, setErroAnexo] = useState<string | null>(null);
+  const [melhorandoTexto, setMelhorandoTexto] = useState(false);
 
   const todasAsTags = [...tagsDisponiveis, ...tagsCriadas.filter((t) => !tagsDisponiveis.some((d) => d.id === t.id))];
 
@@ -191,6 +192,29 @@ export default function Andamentos({
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   }
 
+  async function melhorarComIA() {
+    if (!texto.trim()) return;
+    setErro(null);
+    setMelhorandoTexto(true);
+    try {
+      const resposta = await fetch("/api/ai/reformular-andamento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto }),
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) {
+        setErro(dados.error ?? "Erro ao melhorar texto com IA");
+        return;
+      }
+      setTexto(dados.texto);
+    } catch {
+      setErro("Erro ao melhorar texto com IA");
+    } finally {
+      setMelhorandoTexto(false);
+    }
+  }
+
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <form
@@ -210,8 +234,31 @@ export default function Andamentos({
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Escreva livremente o que aconteceu..."
             required
-            style={{ padding: 8, paddingRight: 38, minHeight: 60, width: "100%" }}
+            style={{ padding: 8, paddingRight: 72, minHeight: 60, width: "100%" }}
           />
+          <button
+            type="button"
+            onClick={melhorarComIA}
+            disabled={melhorandoTexto || !texto.trim()}
+            title="Melhorar texto com IA"
+            aria-label="Melhorar texto com IA"
+            style={{
+              position: "absolute",
+              right: 38,
+              bottom: 8,
+              width: 26,
+              height: 26,
+              padding: 0,
+              border: "none",
+              borderRadius: 8,
+              background: "rgba(96,93,93,.10)",
+              color: cor.textoSecundario,
+              fontSize: 13,
+              opacity: melhorandoTexto || !texto.trim() ? 0.5 : 1,
+            }}
+          >
+            {melhorandoTexto ? "…" : "✨"}
+          </button>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
