@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor, pill } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 
-type Tag = { id: string; valor: string };
+type Tag = { id: string; valor: string; cor?: string | null };
 
 type Andamento = {
   id: string;
@@ -247,7 +247,7 @@ export default function Ocorrencias({
                       {a.tags.length > 0 && (
                         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
                           {a.tags.map((t) => {
-                            const c = corEvento(t.id);
+                            const c = corEvento(t.id, t.cor);
                             return (
                               <span key={t.id} style={{ ...pill, fontSize: 10, background: c.fundo, color: c.texto }}>
                                 {t.valor}

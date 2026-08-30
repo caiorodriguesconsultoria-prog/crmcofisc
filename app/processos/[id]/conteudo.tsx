@@ -102,13 +102,13 @@ export async function carregarProcesso(id: string) {
     { data: tagHistoricoAtivo },
     { data: coordenacoesLista },
   ] = await Promise.all([
-    supabase.from("processo_tags").select("tag_id, tags(id, valor)").eq("processo_id", id),
+    supabase.from("processo_tags").select("tag_id, tags(id, valor, cor)").eq("processo_id", id),
     getTagsEvento(),
     getEtapasKanban(),
     supabase
       .from("andamentos")
       .select(
-        "id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome), agendamento_data, agendamento_horario, google_event_id, andamento_tags(tags(id, valor)), andamento_anexos(id, nome_arquivo, caminho, tamanho_bytes)",
+        "id, tipo, texto, data, sei_numero, incluir_relatorio, autor:pessoas(nome), agendamento_data, agendamento_horario, google_event_id, andamento_tags(tags(id, valor, cor)), andamento_anexos(id, nome_arquivo, caminho, tamanho_bytes)",
       )
       .eq("processo_id", id)
       // "Tarefa concluída" é gerado automaticamente ao concluir uma tarefa do
@@ -156,6 +156,7 @@ export async function carregarProcesso(id: string) {
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
     id: t.tag_id,
     valor: t.tags?.valor ?? "",
+    cor: t.tags?.cor ?? null,
   }));
 
   const nupRelatorioRow = (nups ?? []).find((n) => n.tipo === "relatorio");
@@ -463,7 +464,7 @@ export async function carregarProcesso(id: string) {
         <TituloDestaque fontSize={19}>CT nº {p.numero_contrato}</TituloDestaque>
         <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
         {tagsAtivas.map((t) => {
-          const c = corEvento(t.id);
+          const c = corEvento(t.id, t.cor);
           return (
             <span key={t.id} style={{ ...pill, background: c.fundo, color: c.texto }}>
               {t.valor}

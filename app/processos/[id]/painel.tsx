@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 
-type Tag = { id: string; valor: string };
+type Tag = { id: string; valor: string; cor?: string | null };
 
 const rotuloSecao: React.CSSProperties = {
   fontSize: 10.5,
@@ -127,6 +127,7 @@ export function EventosAtivos({
   const [novaTagId, setNovaTagId] = useState("");
   const [criandoNovo, setCriandoNovo] = useState(false);
   const [nomeNovoEvento, setNomeNovoEvento] = useState("");
+  const [corNovoEvento, setCorNovoEvento] = useState("#2F5FDB");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
 
@@ -155,7 +156,7 @@ export function EventosAtivos({
     setCarregando(true);
     const { data: novaTag, error: erroTag } = await supabase
       .from("tags")
-      .insert({ categoria: "evento", valor: nomeNovoEvento.trim(), ativo: true })
+      .insert({ categoria: "evento", valor: nomeNovoEvento.trim(), ativo: true, cor: corNovoEvento })
       .select("id")
       .single();
     if (erroTag || !novaTag) {
@@ -200,7 +201,7 @@ export function EventosAtivos({
       ) : (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {tagsAtivas.map((t) => {
-            const c = corEvento(t.id);
+            const c = corEvento(t.id, t.cor);
             return (
               <span
                 key={t.id}
@@ -243,6 +244,13 @@ export function EventosAtivos({
             onChange={(e) => setNomeNovoEvento(e.target.value)}
             placeholder="Nome do novo evento"
             style={{ padding: 8, flex: 1, minWidth: 0 }}
+          />
+          <input
+            type="color"
+            value={corNovoEvento}
+            onChange={(e) => setCorNovoEvento(e.target.value)}
+            title="Cor do evento"
+            style={{ width: 38, padding: 2, flex: "none" }}
           />
           <button onClick={criarNovoEvento} disabled={carregando || !nomeNovoEvento.trim()}>
             Criar

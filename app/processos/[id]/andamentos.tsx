@@ -7,7 +7,7 @@ import { botaoPrimario, cor, pill } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { BotaoCopiar } from "@/app/_ui/campo";
 
-type Tag = { id: string; valor: string };
+type Tag = { id: string; valor: string; cor?: string | null };
 
 type Anexo = {
   id: string;
@@ -64,6 +64,7 @@ export default function Andamentos({
   const [tagsCriadas, setTagsCriadas] = useState<Tag[]>([]);
   const [criandoEvento, setCriandoEvento] = useState(false);
   const [nomeNovoEvento, setNomeNovoEvento] = useState("");
+  const [corNovoEvento, setCorNovoEvento] = useState("#2F5FDB");
   const [arquivosNovos, setArquivosNovos] = useState<FileList | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -84,8 +85,8 @@ export default function Andamentos({
     setErro(null);
     const { data: novaTag, error } = await supabase
       .from("tags")
-      .insert({ categoria: "evento", valor: nomeNovoEvento.trim(), ativo: true })
-      .select("id, valor")
+      .insert({ categoria: "evento", valor: nomeNovoEvento.trim(), ativo: true, cor: corNovoEvento })
+      .select("id, valor, cor")
       .single();
     if (error || !novaTag) {
       setErro(error?.message ?? "Erro ao criar evento");
@@ -303,6 +304,13 @@ export default function Andamentos({
                 placeholder="Nome do novo evento"
                 style={{ padding: 8, flex: 1 }}
               />
+              <input
+                type="color"
+                value={corNovoEvento}
+                onChange={(e) => setCorNovoEvento(e.target.value)}
+                title="Cor do evento"
+                style={{ width: 38, padding: 2, flex: "none" }}
+              />
               <button type="button" onClick={criarEvento} disabled={!nomeNovoEvento.trim()}>
                 Criar
               </button>
@@ -338,7 +346,7 @@ export default function Andamentos({
               {tagIds.map((id) => {
                 const t = todasAsTags.find((x) => x.id === id);
                 if (!t) return null;
-                const c = corEvento(t.id);
+                const c = corEvento(t.id, t.cor);
                 return (
                   <span
                     key={id}
@@ -404,7 +412,7 @@ export default function Andamentos({
                   <span style={{ ...pill, background: cor.urgenteFundo, color: cor.urgente }}>Ocorrência</span>
                 )}
                 {a.tags.map((t) => {
-                  const c = corEvento(t.id);
+                  const c = corEvento(t.id, t.cor);
                   return (
                     <span key={t.id} style={{ ...pill, background: c.fundo, color: c.texto }}>
                       {t.valor}

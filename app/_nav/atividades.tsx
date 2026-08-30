@@ -50,7 +50,7 @@ export default async function Atividades() {
       label: t.valor,
       count: porTag.get(t.id) ?? 0,
       href: `/processos?evento=${t.id}`,
-      dot: corEvento(t.id).texto,
+      dot: corEvento(t.id, t.cor).texto,
     }));
 
   if (atividadesKanban.length === 0 && atividadesEvento.length === 0) return null;

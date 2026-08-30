@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import PainelDashboard from "./painel-dashboard";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
-import { getTagsEvento } from "@/lib/dados-referencia";
+import { getTagsEvento, getEtapasKanban } from "@/lib/dados-referencia";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -26,11 +26,12 @@ export default async function DashboardPage() {
     { data: andamentosHoje },
     { data: tarefasHoje },
     eventos,
+    etapas,
   ] = await Promise.all([
     supabase
       .from("processos")
       .select(
-        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, processo_tags(tags(id, valor))",
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, processo_tags(tags(id, valor, cor))",
       ),
     supabase.from("processo_kanban_historico").select("id, processo_id, entrada_em").is("saida_em", null),
     supabase.from("processo_tag_historico").select("id, processo_id").is("fim_em", null),
@@ -45,6 +46,7 @@ export default async function DashboardPage() {
       .eq("concluida", false)
       .eq("agendamento_data", hoje),
     getTagsEvento(),
+    getEtapasKanban(),
   ]);
 
   const erro = erroProcessos || erroKanban;
@@ -131,7 +133,7 @@ export default async function DashboardPage() {
       etapaAtual: p.etapa_atual,
       tags: (p.processo_tags ?? [])
         .map((pt: any) => pt.tags)
-        .filter((t: any): t is { id: string; valor: string } => !!t),
+        .filter((t: any): t is { id: string; valor: string; cor: string | null } => !!t),
       itens: (atividadePorProcesso.get(p.id) ?? []).sort((a, b) => (a.horario ?? "").localeCompare(b.horario ?? "")),
     }));
 
@@ -148,6 +150,7 @@ export default async function DashboardPage() {
         vencendoHoje={vencendoHoje}
         processosAtividadeHoje={processosAtividadeHoje}
         eventos={eventos ?? []}
+        etapas={etapas ?? []}
       />
     </Painel>
   );

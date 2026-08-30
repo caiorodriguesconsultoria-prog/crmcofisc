@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { card, cor, PALETA_EVENTOS } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
-import GraficoPizza from "@/app/_ui/grafico-pizza";
 import MedidorCircular from "@/app/_ui/medidor-circular";
 
 type Processo = {
@@ -22,11 +21,19 @@ type ProcessoAtividadeHoje = {
   nup: string;
   objeto: string;
   etapaAtual: string;
-  tags: { id: string; valor: string }[];
+  tags: { id: string; valor: string; cor: string | null }[];
   itens: ItemAtividade[];
 };
 
-type Evento = { id: string; valor: string };
+type Evento = { id: string; valor: string; cor: string | null };
+type Etapa = { id: string; nome: string };
+
+const grade: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))",
+  gap: 14,
+  marginTop: 10,
+};
 
 export default function PainelDashboard({
   processos,
@@ -37,6 +44,7 @@ export default function PainelDashboard({
   vencendoHoje,
   processosAtividadeHoje,
   eventos,
+  etapas,
 }: {
   processos: Processo[];
   contagemPorEtapa: Record<string, number>;
@@ -46,6 +54,7 @@ export default function PainelDashboard({
   vencendoHoje: number;
   processosAtividadeHoje: ProcessoAtividadeHoje[];
   eventos: Evento[];
+  etapas: Etapa[];
 }) {
   const [limiteDias, setLimiteDias] = useState(15);
 
@@ -139,7 +148,7 @@ export default function PainelDashboard({
                     <td style={{ padding: "9px 10px" }}>
                       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                         {p.tags.map((t) => {
-                          const c = corEvento(t.id);
+                          const c = corEvento(t.id, t.cor);
                           return (
                             <span
                               key={t.id}
@@ -225,35 +234,48 @@ export default function PainelDashboard({
       <div style={card}>
         <strong style={{ fontSize: 13 }}>Processos por etapa e evento</strong>
         <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 12px" }}>
-          Etapa é exclusiva (cada processo conta pra uma só); cada evento é um medidor à
-          parte, com seu próprio total — um processo pode ter vários ao mesmo tempo.
+          Cada etapa e cada evento é um medidor à parte, com seu próprio total — um
+          processo está em uma única etapa, mas pode ter vários eventos ao mesmo tempo.
         </p>
-        <div style={{ display: "flex", gap: 28, flexWrap: "wrap", alignItems: "flex-start" }}>
-          <GraficoPizza
-            rotuloCentro="processos"
-            dados={Object.entries(contagemPorEtapa).map(([etapa, n], i) => ({
-              rotulo: etapa,
-              valor: n,
-              cor: PALETA_EVENTOS[i % PALETA_EVENTOS.length].texto,
-            }))}
-          />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, flex: "1 1 300px" }}>
-            {eventos.map((ev) => {
-              const n = contagemPorEvento[ev.id] ?? 0;
-              const c = corEvento(ev.id);
-              return (
-                <MedidorCircular
-                  key={ev.id}
-                  valor={n}
-                  total={processos.length}
-                  corPreenchido={c.texto}
-                  corTrilha={c.fundo}
-                  rotulo={ev.valor}
-                  tamanho={72}
-                />
-              );
-            })}
-          </div>
+
+        <span style={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
+          Etapas
+        </span>
+        <div style={grade}>
+          {etapas.map((et, i) => {
+            const c = PALETA_EVENTOS[i % PALETA_EVENTOS.length];
+            return (
+              <MedidorCircular
+                key={et.id}
+                valor={contagemPorEtapa[et.nome] ?? 0}
+                total={processos.length}
+                corPreenchido={c.texto}
+                corTrilha={c.fundo}
+                rotulo={et.nome}
+                tamanho={80}
+              />
+            );
+          })}
+        </div>
+
+        <span style={{ display: "block", marginTop: 20, fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
+          Eventos
+        </span>
+        <div style={grade}>
+          {eventos.map((ev) => {
+            const c = corEvento(ev.id, ev.cor);
+            return (
+              <MedidorCircular
+                key={ev.id}
+                valor={contagemPorEvento[ev.id] ?? 0}
+                total={processos.length}
+                corPreenchido={c.texto}
+                corTrilha={c.fundo}
+                rotulo={ev.valor}
+                tamanho={80}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

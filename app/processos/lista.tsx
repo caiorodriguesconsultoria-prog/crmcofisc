@@ -42,7 +42,7 @@ type Processo = {
   responsavel_atual_id: string | null;
   responsavel: { nome: string } | null;
   processo_eletronico_numero: string | null;
-  processo_tags: { tags: { id: string; valor: string } | null }[];
+  processo_tags: { tags: { id: string; valor: string; cor: string | null } | null }[];
   proximoAgendamento: { data: string; horario: string } | null;
 };
 
@@ -230,9 +230,9 @@ export default function ListaProcessos({
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                     {p.processo_tags
                       .map((pt) => pt.tags)
-                      .filter((t): t is { id: string; valor: string } => !!t)
+                      .filter((t): t is { id: string; valor: string; cor: string | null } => !!t)
                       .map((t) => {
-                        const c = corEvento(t.id);
+                        const c = corEvento(t.id, t.cor);
                         return (
                           <span
                             key={t.id}

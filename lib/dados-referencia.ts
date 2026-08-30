@@ -39,7 +39,7 @@ export const getTagsEvento = unstable_cache(
     const supabase = createServiceClient();
     const { data } = await supabase
       .from("tags")
-      .select("id, valor")
+      .select("id, valor, cor")
       .eq("categoria", "evento")
       .eq("ativo", true)
       .order("valor");
