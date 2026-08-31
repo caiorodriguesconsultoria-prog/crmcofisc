@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
-import { verificarPessoaDuplicada } from "@/lib/verificar-pessoa-duplicada";
+import { verificarPessoaDuplicada, garantirPessoaComPapel } from "@/lib/verificar-pessoa-duplicada";
 import Painel from "@/app/_ui/painel";
 
 export default function NovaPessoaPapelForm({
@@ -34,26 +34,10 @@ export default function NovaPessoaPapelForm({
     setErro(null);
     setSalvando(true);
 
-    const { data: pessoa, error: erroPessoa } = await supabase
-      .from("pessoas")
-      .insert({ nome, matricula })
-      .select("id")
-      .single();
-
-    if (erroPessoa || !pessoa) {
-      setErro(erroPessoa?.message ?? "Erro ao criar cadastro.");
-      setSalvando(false);
-      return;
-    }
-
-    const { error: erroPapel } = await supabase.from("pessoa_papeis").insert({
-      pessoa_id: pessoa.id,
-      papel,
-    });
-
-    if (erroPapel) {
-      setErro(erroPapel.message);
-      setSalvando(false);
+    const resultado = await garantirPessoaComPapel(supabase, nome, matricula, papel);
+    setSalvando(false);
+    if ("erro" in resultado) {
+      setErro(resultado.erro);
       return;
     }
 

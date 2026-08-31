@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { verificarPessoaDuplicada } from "@/lib/verificar-pessoa-duplicada";
+import { verificarPessoaDuplicada, garantirPessoaComPapel } from "@/lib/verificar-pessoa-duplicada";
 
 type Opcao = { id: string; nome?: string; sigla?: string; valor?: string; categoria?: string };
 type PessoaPapel = { id: string; nome: string };
@@ -57,22 +57,13 @@ export default function NovoProcessoForm({
   async function criarResponsavel() {
     if (!nomeNovoResponsavel.trim()) return;
     setErroInline(null);
-    const { data: pessoa, error: erroPessoa } = await supabase
-      .from("pessoas")
-      .insert({ nome: nomeNovoResponsavel.trim() })
-      .select("id, nome")
-      .single();
-    if (erroPessoa || !pessoa) {
-      setErroInline(erroPessoa?.message ?? "Erro ao criar responsável.");
+    const resultado = await garantirPessoaComPapel(supabase, nomeNovoResponsavel, "", "responsavel");
+    if ("erro" in resultado) {
+      setErroInline(resultado.erro);
       return;
     }
-    const { error: erroPapel } = await supabase.from("pessoa_papeis").insert({ pessoa_id: pessoa.id, papel: "responsavel" });
-    if (erroPapel) {
-      setErroInline(erroPapel.message);
-      return;
-    }
-    setResponsaveisState((atual) => [...atual, pessoa]);
-    setTitularId(pessoa.id);
+    setResponsaveisState((atual) => (atual.some((p) => p.id === resultado.id) ? atual : [...atual, resultado]));
+    setTitularId(resultado.id);
     setNomeNovoResponsavel("");
     setAvisoResponsavel(null);
     setCriandoResponsavel(false);
@@ -89,22 +80,13 @@ export default function NovoProcessoForm({
   async function criarGestor() {
     if (!nomeNovoGestor.trim() || !matriculaNovoGestor.trim()) return;
     setErroInline(null);
-    const { data: pessoa, error: erroPessoa } = await supabase
-      .from("pessoas")
-      .insert({ nome: nomeNovoGestor.trim(), matricula: matriculaNovoGestor.trim() })
-      .select("id, nome")
-      .single();
-    if (erroPessoa || !pessoa) {
-      setErroInline(erroPessoa?.message ?? "Erro ao criar gestor.");
+    const resultado = await garantirPessoaComPapel(supabase, nomeNovoGestor, matriculaNovoGestor, "gestor");
+    if ("erro" in resultado) {
+      setErroInline(resultado.erro);
       return;
     }
-    const { error: erroPapel } = await supabase.from("pessoa_papeis").insert({ pessoa_id: pessoa.id, papel: "gestor" });
-    if (erroPapel) {
-      setErroInline(erroPapel.message);
-      return;
-    }
-    setGestoresState((atual) => [...atual, pessoa]);
-    setGestorId(pessoa.id);
+    setGestoresState((atual) => (atual.some((p) => p.id === resultado.id) ? atual : [...atual, resultado]));
+    setGestorId(resultado.id);
     setNomeNovoGestor("");
     setMatriculaNovoGestor("");
     setAvisoGestor(null);
@@ -114,22 +96,13 @@ export default function NovoProcessoForm({
   async function criarFiscal() {
     if (!nomeNovoFiscal.trim() || !matriculaNovoFiscal.trim()) return;
     setErroInline(null);
-    const { data: pessoa, error: erroPessoa } = await supabase
-      .from("pessoas")
-      .insert({ nome: nomeNovoFiscal.trim(), matricula: matriculaNovoFiscal.trim() })
-      .select("id, nome")
-      .single();
-    if (erroPessoa || !pessoa) {
-      setErroInline(erroPessoa?.message ?? "Erro ao criar fiscal.");
+    const resultado = await garantirPessoaComPapel(supabase, nomeNovoFiscal, matriculaNovoFiscal, "fiscal");
+    if ("erro" in resultado) {
+      setErroInline(resultado.erro);
       return;
     }
-    const { error: erroPapel } = await supabase.from("pessoa_papeis").insert({ pessoa_id: pessoa.id, papel: "fiscal" });
-    if (erroPapel) {
-      setErroInline(erroPapel.message);
-      return;
-    }
-    setFiscaisState((atual) => [...atual, pessoa]);
-    setFiscalId(pessoa.id);
+    setFiscaisState((atual) => (atual.some((p) => p.id === resultado.id) ? atual : [...atual, resultado]));
+    setFiscalId(resultado.id);
     setNomeNovoFiscal("");
     setMatriculaNovoFiscal("");
     setAvisoFiscal(null);
@@ -158,6 +131,7 @@ export default function NovoProcessoForm({
   const [numeroContrato, setNumeroContrato] = useState("");
   const [nup, setNup] = useState("");
   const [objeto, setObjeto] = useState("");
+  const [unidadeMedida, setUnidadeMedida] = useState("");
   const [coordenacaoId, setCoordenacaoId] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
   const [titularId, setTitularId] = useState("");
@@ -189,6 +163,7 @@ export default function NovoProcessoForm({
         numero_contrato: numeroContrato,
         nup_principal: nup,
         objeto,
+        unidade_medida: unidadeMedida.trim() || null,
         coordenacao_id: coordenacaoId,
         fornecedor_id: fornecedorId,
         titular_id: titularId,
@@ -239,6 +214,15 @@ export default function NovoProcessoForm({
           value={objeto}
           onChange={(e) => setObjeto(e.target.value)}
           required
+          style={{ display: "block", width: "100%", padding: 8 }}
+        />
+      </label>
+      <label>
+        Unidade de medida
+        <input
+          value={unidadeMedida}
+          onChange={(e) => setUnidadeMedida(e.target.value)}
+          placeholder="ex.: frascos, caixas"
           style={{ display: "block", width: "100%", padding: 8 }}
         />
       </label>
