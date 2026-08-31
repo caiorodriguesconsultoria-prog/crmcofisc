@@ -57,7 +57,7 @@ export default function DadosPrincipais({
 }) {
   const router = useRouter();
   const supabase = createClient();
-  const [editando, setEditando] = useState<"relatorio" | "pagamento" | null>(null);
+  const [editando, setEditando] = useState<"relatorio" | "pagamento" | "unidade" | null>(null);
   const [valor, setValor] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -76,6 +76,28 @@ export default function DadosPrincipais({
       : await supabase
           .from("processo_nups")
           .insert({ processo_id: processoId, tipo, nup: valor.trim() });
+    setSalvando(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setEditando(null);
+    router.refresh();
+  }
+
+  function abrirEdicaoUnidade() {
+    setEditando("unidade");
+    setValor(unidadeMedida ?? "");
+    setErro(null);
+  }
+
+  async function salvarUnidade() {
+    setErro(null);
+    setSalvando(true);
+    const { error } = await supabase
+      .from("processos")
+      .update({ unidade_medida: valor.trim() || null })
+      .eq("id", processoId);
     setSalvando(false);
     if (error) {
       setErro(error.message);
@@ -161,13 +183,37 @@ export default function DadosPrincipais({
           }
         />
       </div>
-      {unidadeMedida && (
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
-          <div />
-          <div />
-          <Coluna label="Unidade de medida" valor={unidadeMedida} />
-        </div>
-      )}
+      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
+        <div />
+        <div />
+        {editando === "unidade" ? (
+          <div style={{ display: "flex", gap: 6 }}>
+            <input
+              autoFocus
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              placeholder="ex.: frascos, caixas"
+              style={{ flex: 1, padding: 6 }}
+            />
+            <button onClick={salvarUnidade} disabled={salvando} style={{ fontSize: 11 }}>
+              Salvar
+            </button>
+            <button onClick={() => setEditando(null)} disabled={salvando} style={{ fontSize: 11 }}>
+              X
+            </button>
+          </div>
+        ) : (
+          <Coluna
+            label="Unidade de medida"
+            valor={unidadeMedida ?? "não informado"}
+            acao={
+              <button onClick={abrirEdicaoUnidade} style={{ fontSize: 10, padding: "2px 6px" }}>
+                editar
+              </button>
+            }
+          />
+        )}
+      </div>
     </div>
   );
 }
