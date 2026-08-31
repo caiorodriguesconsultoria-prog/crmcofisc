@@ -42,6 +42,7 @@ export default function PainelDashboard({
   ativos,
   concluidos,
   vencendoHoje,
+  emCoberturaFerias,
   processosAtividadeHoje,
   eventos,
   etapas,
@@ -52,6 +53,7 @@ export default function PainelDashboard({
   ativos: number;
   concluidos: number;
   vencendoHoje: number;
+  emCoberturaFerias: number;
   processosAtividadeHoje: ProcessoAtividadeHoje[];
   eventos: Evento[];
   etapas: Etapa[];
@@ -276,6 +278,20 @@ export default function PainelDashboard({
               />
             );
           })}
+        </div>
+
+        <span style={{ display: "block", marginTop: 20, fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
+          Cobertura
+        </span>
+        <div style={grade}>
+          <MedidorCircular
+            valor={emCoberturaFerias}
+            total={processos.length}
+            corPreenchido={cor.atencao}
+            corTrilha={cor.atencaoFundo}
+            rotulo="Cobertura de férias"
+            tamanho={80}
+          />
         </div>
       </div>
     </div>

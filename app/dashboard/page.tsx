@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     supabase
       .from("processos")
       .select(
-        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, processo_tags(tags(id, valor, cor))",
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, titular_id, responsavel_atual_id, processo_tags(tags(id, valor, cor))",
       ),
     supabase.from("processo_kanban_historico").select("id, processo_id, entrada_em").is("saida_em", null),
     supabase.from("processo_tag_historico").select("id, processo_id").is("fim_em", null),
@@ -59,6 +59,9 @@ export default async function DashboardPage() {
   const concluidos = (processos ?? []).filter((p) => p.conclusao_tipo).length;
   const vencendoHoje = (processos ?? []).filter(
     (p) => p.prazo_data && new Date(`${p.prazo_data}T00:00:00`).getTime() === hojeTime,
+  ).length;
+  const emCoberturaFerias = (processos ?? []).filter(
+    (p) => p.titular_id && p.responsavel_atual_id && p.titular_id !== p.responsavel_atual_id,
   ).length;
 
   const entradaPorProcesso = new Map((kanbanAtivo ?? []).map((k) => [k.processo_id, k.entrada_em]));
@@ -148,6 +151,7 @@ export default async function DashboardPage() {
         ativos={ativos}
         concluidos={concluidos}
         vencendoHoje={vencendoHoje}
+        emCoberturaFerias={emCoberturaFerias}
         processosAtividadeHoje={processosAtividadeHoje}
         eventos={eventos ?? []}
         etapas={etapas ?? []}

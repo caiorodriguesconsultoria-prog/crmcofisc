@@ -48,15 +48,16 @@ type Processo = {
   proximoAgendamento: { data: string; horario: string } | null;
 };
 
-// Cor de fundo da linha pra diferenciar rápido, sem precisar ler a coluna
-// de responsável: verde = processo que eu respondo agora (titular ou
-// cobrindo férias de alguém); âmbar = está em cobertura de férias, mas
-// coberto por outra pessoa (não eu).
+// Cor de fundo da linha só quando o processo está de fato em cobertura de
+// férias (titular e responsável atual são pessoas diferentes) — verde
+// quando sou eu quem está cobrindo, âmbar quando é outra pessoa. Processo
+// normal (sem cobertura), mesmo que eu seja o responsável de sempre, fica
+// sem cor — senão a maioria dos contratos ficaria destacada à toa.
 function corDeFundoLinha(p: Processo, minhaPessoaId: string | null): string | undefined {
   if (!minhaPessoaId) return undefined;
-  if (p.responsavel_atual_id === minhaPessoaId) return cor.positivoFundo;
-  if (p.titular_id && p.responsavel_atual_id && p.titular_id !== p.responsavel_atual_id) return cor.atencaoFundo;
-  return undefined;
+  const emCobertura = !!p.titular_id && !!p.responsavel_atual_id && p.titular_id !== p.responsavel_atual_id;
+  if (!emCobertura) return undefined;
+  return p.responsavel_atual_id === minhaPessoaId ? cor.positivoFundo : cor.atencaoFundo;
 }
 
 function formatarDataAgendamento(data: string) {
@@ -287,7 +288,7 @@ export default function ListaProcessos({
           <div style={{ display: "flex", gap: 12, fontSize: 11, color: cor.textoTerciario }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ width: 10, height: 10, borderRadius: 3, background: cor.positivoFundo, flex: "none" }} />
-              Eu respondo
+              Eu estou cobrindo férias
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ width: 10, height: 10, borderRadius: 3, background: cor.atencaoFundo, flex: "none" }} />
