@@ -21,7 +21,7 @@ import { corEvento } from "@/lib/cores-evento";
 import TituloDestaque from "@/app/_ui/titulo";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
-import { getPessoasAtivas, getPapeisGestorFiscal, getTagsEvento, getEtapasKanban } from "@/lib/dados-referencia";
+import { getResponsaveis, getPapeisGestorFiscal, getTagsEvento, getEtapasKanban } from "@/lib/dados-referencia";
 
 function diasRestantes(prazoData: string | null) {
   if (!prazoData) return null;
@@ -91,7 +91,7 @@ export async function carregarProcesso(id: string) {
     etapasDisponiveis,
     { data: andamentosRaw },
     { data: pessoaAtual },
-    pessoas,
+    responsaveis,
     papeis,
     { data: nups },
     { data: execucoes },
@@ -115,7 +115,7 @@ export async function carregarProcesso(id: string) {
       .neq("tipo", "Tarefa concluída")
       .order("data", { ascending: false }),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
-    getPessoasAtivas(),
+    getResponsaveis(),
     getPapeisGestorFiscal(),
     supabase
       .from("processo_nups")
@@ -375,7 +375,7 @@ export async function carregarProcesso(id: string) {
             titular={p.titular}
             responsavelAtual={p.responsavel}
             motivoBackup={p.motivo_backup}
-            pessoas={pessoas ?? []}
+            pessoas={responsaveis}
           />
         </CartaoColapsavel>
       </div>

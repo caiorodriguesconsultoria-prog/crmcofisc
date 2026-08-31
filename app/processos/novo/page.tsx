@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import NovoProcessoForm from "./form";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
-import { getPessoasAtivas, getPapeisGestorFiscal } from "@/lib/dados-referencia";
+import { getResponsaveis, getPapeisGestorFiscal } from "@/lib/dados-referencia";
 
 export default async function NovoProcessoPage() {
   const supabase = await createClient();
@@ -20,14 +20,14 @@ export default async function NovoProcessoPage() {
     { data: coordenacoes, error: erroCoordenacoes },
     { data: fornecedores, error: erroFornecedores },
     { data: tags, error: erroTags },
-    pessoas,
+    responsaveis,
     papeis,
     { data: pessoaAtual },
   ] = await Promise.all([
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
     supabase.from("fornecedores").select("id, nome").order("nome"),
     supabase.from("tags").select("id, categoria, valor").eq("ativo", true).order("valor"),
-    getPessoasAtivas(),
+    getResponsaveis(),
     getPapeisGestorFiscal(),
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
   ]);
@@ -54,7 +54,7 @@ export default async function NovoProcessoPage() {
         coordenacoes={coordenacoes ?? []}
         fornecedores={fornecedores ?? []}
         tags={tags ?? []}
-        pessoas={pessoas ?? []}
+        responsaveis={responsaveis}
         gestores={gestores}
         fiscais={fiscais}
         isAdmin={pessoaAtual?.is_admin ?? false}

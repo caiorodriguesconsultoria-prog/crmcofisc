@@ -12,7 +12,7 @@ export default function NovoProcessoForm({
   coordenacoes,
   fornecedores,
   tags,
-  pessoas,
+  responsaveis,
   gestores,
   fiscais,
   isAdmin,
@@ -20,7 +20,7 @@ export default function NovoProcessoForm({
   coordenacoes: Opcao[];
   fornecedores: Opcao[];
   tags: Opcao[];
-  pessoas: Opcao[];
+  responsaveis: PessoaPapel[];
   gestores: PessoaPapel[];
   fiscais: PessoaPapel[];
   isAdmin: boolean;
@@ -30,6 +30,10 @@ export default function NovoProcessoForm({
 
   const formaEntregaTags = tags.filter((t) => t.categoria === "forma_entrega");
 
+  const [responsaveisState, setResponsaveisState] = useState(responsaveis);
+  const [criandoResponsavel, setCriandoResponsavel] = useState(false);
+  const [nomeNovoResponsavel, setNomeNovoResponsavel] = useState("");
+  const [avisoResponsavel, setAvisoResponsavel] = useState<string | null>(null);
   const [gestoresState, setGestoresState] = useState(gestores);
   const [fiscaisState, setFiscaisState] = useState(fiscais);
   const [fornecedoresState, setFornecedoresState] = useState(fornecedores);
@@ -45,6 +49,34 @@ export default function NovoProcessoForm({
   const [nomeNovoFornecedor, setNomeNovoFornecedor] = useState("");
   const [cnpjNovoFornecedor, setCnpjNovoFornecedor] = useState("");
   const [erroInline, setErroInline] = useState<string | null>(null);
+
+  async function checarDuplicadoResponsavel() {
+    setAvisoResponsavel(await verificarPessoaDuplicada(supabase, nomeNovoResponsavel, ""));
+  }
+
+  async function criarResponsavel() {
+    if (!nomeNovoResponsavel.trim()) return;
+    setErroInline(null);
+    const { data: pessoa, error: erroPessoa } = await supabase
+      .from("pessoas")
+      .insert({ nome: nomeNovoResponsavel.trim() })
+      .select("id, nome")
+      .single();
+    if (erroPessoa || !pessoa) {
+      setErroInline(erroPessoa?.message ?? "Erro ao criar responsável.");
+      return;
+    }
+    const { error: erroPapel } = await supabase.from("pessoa_papeis").insert({ pessoa_id: pessoa.id, papel: "responsavel" });
+    if (erroPapel) {
+      setErroInline(erroPapel.message);
+      return;
+    }
+    setResponsaveisState((atual) => [...atual, pessoa]);
+    setTitularId(pessoa.id);
+    setNomeNovoResponsavel("");
+    setAvisoResponsavel(null);
+    setCriandoResponsavel(false);
+  }
 
   async function checarDuplicadoGestor() {
     setAvisoGestor(await verificarPessoaDuplicada(supabase, nomeNovoGestor, matriculaNovoGestor));
@@ -403,13 +435,38 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Selecione</option>
-          {pessoas.map((p) => (
+          {responsaveisState.map((p) => (
             <option key={p.id} value={p.id}>
               {p.nome}
             </option>
           ))}
         </select>
       </label>
+      {isAdmin && (criandoResponsavel ? (
+        <div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              autoFocus
+              value={nomeNovoResponsavel}
+              onChange={(e) => setNomeNovoResponsavel(e.target.value)}
+              onBlur={checarDuplicadoResponsavel}
+              placeholder="Nome"
+              style={{ padding: 8, flex: 1, minWidth: 0 }}
+            />
+            <button type="button" onClick={criarResponsavel} disabled={!nomeNovoResponsavel.trim()}>
+              Criar
+            </button>
+            <button type="button" onClick={() => { setCriandoResponsavel(false); setNomeNovoResponsavel(""); setAvisoResponsavel(null); }}>
+              Cancelar
+            </button>
+          </div>
+          {avisoResponsavel && <p style={{ color: "#C08A3E", margin: "4px 0 0", fontSize: 12 }}>⚠ {avisoResponsavel}</p>}
+        </div>
+      ) : (
+        <button type="button" onClick={() => setCriandoResponsavel(true)} style={{ alignSelf: "flex-start" }}>
+          + Novo responsável
+        </button>
+      ))}
       <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
           type="checkbox"
@@ -429,7 +486,7 @@ export default function NovoProcessoForm({
               style={{ display: "block", width: "100%", padding: 8 }}
             >
               <option value="">Selecione</option>
-              {pessoas
+              {responsaveisState
                 .filter((p) => p.id !== titularId)
                 .map((p) => (
                   <option key={p.id} value={p.id}>

@@ -49,6 +49,21 @@ export const getTagsEvento = unstable_cache(
   { revalidate: 60 },
 );
 
+export const getResponsaveis = unstable_cache(
+  async () => {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from("pessoa_papeis")
+      .select("pessoa_id, pessoas(nome)")
+      .eq("papel", "responsavel");
+    return (data ?? [])
+      .map((p: any) => ({ id: p.pessoa_id as string, nome: (p.pessoas?.nome as string) ?? "" }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  },
+  ["ref-responsaveis"],
+  { revalidate: 60 },
+);
+
 export const getEtapasKanban = unstable_cache(
   async () => {
     const supabase = createServiceClient();
