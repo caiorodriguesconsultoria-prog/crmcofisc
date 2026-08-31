@@ -32,11 +32,12 @@ export default async function ProcessosPage({
     etapas,
     { data: agendamentosRaw },
     { data: tarefasAgendadasRaw },
+    { data: pessoaAtual },
   ] = await Promise.all([
     supabase
       .from("processos")
       .select(
-        "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor))",
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, titular_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor))",
       )
       .order("created_at", { ascending: false }),
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
@@ -52,6 +53,7 @@ export default async function ProcessosPage({
       .eq("concluida", false)
       .not("agendamento_data", "is", null)
       .gte("agendamento_data", hoje),
+    supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
   ]);
 
   const proximoAgendamentoPorProcesso = new Map<string, { data: string; horario: string }>();
@@ -101,6 +103,7 @@ export default async function ProcessosPage({
         eventos={eventos ?? []}
         responsaveis={responsaveis ?? []}
         etapas={etapas ?? []}
+        minhaPessoaId={pessoaAtual?.id ?? null}
       />
     </Painel>
   );

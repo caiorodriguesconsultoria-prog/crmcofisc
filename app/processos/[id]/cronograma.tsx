@@ -18,6 +18,27 @@ type Tag = { id: string; valor: string };
 
 const SITUACOES = ["pendente", "em_transito", "entregue", "atrasada"];
 
+// Escala pro quantitativo — digitar um número pequeno (ex.: 5) e escolher
+// "Milhão" em vez de ter que digitar "5000000" na mão. Campo type=number
+// não aceita ponto como separador de milhar (padrão brasileiro), então
+// números grandes digitados direto ficavam rejeitados/truncados.
+const ESCALAS = [
+  { chave: "unidade", rotulo: "Unidade", multiplicador: 1 },
+  { chave: "dezena", rotulo: "Dezena", multiplicador: 10 },
+  { chave: "centena", rotulo: "Centena", multiplicador: 100 },
+  { chave: "milhar", rotulo: "Milhar", multiplicador: 1_000 },
+  { chave: "milhao", rotulo: "Milhão", multiplicador: 1_000_000 },
+  { chave: "bilhao", rotulo: "Bilhão", multiplicador: 1_000_000_000 },
+] as const;
+
+function multiplicadorDaEscala(chave: string) {
+  return ESCALAS.find((e) => e.chave === chave)?.multiplicador ?? 1;
+}
+
+function formatarQuantidade(n: number) {
+  return n.toLocaleString("pt-BR");
+}
+
 const EVENTO_FALTA = "Falta na Entrega";
 const EVENTO_DESVIO = "Desvio de qualidade";
 const EVENTO_AVARIA = "Avaria na Entrega";
@@ -58,6 +79,43 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function CampoQuantidade({
+  base,
+  escala,
+  onBase,
+  onEscala,
+}: {
+  base: string;
+  escala: string;
+  onBase: (v: string) => void;
+  onEscala: (v: string) => void;
+}) {
+  const total = base ? Number(base) * multiplicadorDaEscala(escala) : 0;
+  return (
+    <Campo label="Quantidade">
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <input
+          type="number"
+          step="any"
+          value={base}
+          onChange={(e) => onBase(e.target.value)}
+          style={{ width: 64, padding: 4, textAlign: "center" }}
+        />
+        <select value={escala} onChange={(e) => onEscala(e.target.value)} style={{ padding: 4, fontSize: 11 }}>
+          {ESCALAS.map((e) => (
+            <option key={e.chave} value={e.chave}>
+              {e.rotulo}
+            </option>
+          ))}
+        </select>
+      </div>
+      {base && !isNaN(total) && (
+        <div style={{ fontSize: 10, color: cor.textoTerciario, marginTop: 2 }}>= {formatarQuantidade(total)}</div>
+      )}
+    </Campo>
+  );
+}
+
 export default function Cronograma({
   processoId,
   execucoes,
@@ -74,11 +132,13 @@ export default function Cronograma({
   const [editando, setEditando] = useState(false);
   const [edicao, setEdicao] = useState<{
     quantidade: string;
+    escala: string;
     data_prevista: string;
     data_entrega: string;
   } | null>(null);
   const [novo, setNovo] = useState(false);
   const [novaQuantidade, setNovaQuantidade] = useState("");
+  const [novaEscala, setNovaEscala] = useState<string>("unidade");
   const [novaData, setNovaData] = useState("");
 
   const execucoesOrdenadas = [...execucoes].sort((a, b) => a.numero - b.numero);
@@ -227,6 +287,7 @@ export default function Cronograma({
     setEditando(true);
     setEdicao({
       quantidade: e.quantidade.toString(),
+      escala: "unidade",
       data_prevista: e.data_prevista ?? "",
       data_entrega: e.data_entrega ?? "",
     });
@@ -239,7 +300,7 @@ export default function Cronograma({
     const { error } = await supabase
       .from("processo_execucoes")
       .update({
-        quantidade: Number(edicao.quantidade),
+        quantidade: Number(edicao.quantidade) * multiplicadorDaEscala(edicao.escala),
         data_prevista: edicao.data_prevista || null,
         data_entrega: edicao.data_entrega || null,
       })
@@ -276,7 +337,7 @@ export default function Cronograma({
       .insert({
         processo_id: processoId,
         numero: proximoNumero,
-        quantidade: Number(novaQuantidade),
+        quantidade: Number(novaQuantidade) * multiplicadorDaEscala(novaEscala),
         data_prevista: novaData || null,
       })
       .select("id")
@@ -288,6 +349,7 @@ export default function Cronograma({
     }
     setNovo(false);
     setNovaQuantidade("");
+    setNovaEscala("unidade");
     setNovaData("");
     if (criada) setParcelaSelecionadaId(criada.id);
     router.refresh();
@@ -344,16 +406,9 @@ export default function Cronograma({
       </div>
 
       {novo && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, color: cor.textoTerciario }}>{ordinal(proximoNumero)}</span>
-          <input
-            type="number"
-            step="0.001"
-            placeholder="Quantidade"
-            value={novaQuantidade}
-            onChange={(e) => setNovaQuantidade(e.target.value)}
-            style={{ padding: 6, width: 110 }}
-          />
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, color: cor.textoTerciario, paddingTop: 6 }}>{ordinal(proximoNumero)}</span>
+          <CampoQuantidade base={novaQuantidade} escala={novaEscala} onBase={setNovaQuantidade} onEscala={setNovaEscala} />
           <input type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} style={{ padding: 6 }} />
           <button onClick={adicionar} disabled={carregando === "novo" || !novaQuantidade}>
             Salvar
@@ -372,15 +427,12 @@ export default function Cronograma({
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
               {editando && edicao ? (
                 <>
-                  <Campo label="Quantidade">
-                    <input
-                      type="number"
-                      step="0.001"
-                      value={edicao.quantidade}
-                      onChange={(ev) => setEdicao({ ...edicao, quantidade: ev.target.value })}
-                      style={{ width: "100%", padding: 4, textAlign: "center" }}
-                    />
-                  </Campo>
+                  <CampoQuantidade
+                    base={edicao.quantidade}
+                    escala={edicao.escala}
+                    onBase={(v) => setEdicao({ ...edicao, quantidade: v })}
+                    onEscala={(v) => setEdicao({ ...edicao, escala: v })}
+                  />
                   <Campo label="Data prevista">
                     <input
                       type="date"
@@ -400,7 +452,7 @@ export default function Cronograma({
                 </>
               ) : (
                 <>
-                  <Campo label="Quantidade">{e.quantidade}</Campo>
+                  <Campo label="Quantidade">{formatarQuantidade(e.quantidade)}</Campo>
                   <Campo label="Data prevista">{formatarData(e.data_prevista)}</Campo>
                   <Campo label="Data entregue">{formatarData(e.data_entrega)}</Campo>
                 </>

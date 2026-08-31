@@ -40,12 +40,24 @@ type Processo = {
   coordenacoes: { sigla: string } | null;
   fornecedores: { nome: string } | null;
   forma_entrega_tag_id: string | null;
+  titular_id: string | null;
   responsavel_atual_id: string | null;
   responsavel: { nome: string } | null;
   processo_eletronico_numero: string | null;
   processo_tags: { tags: { id: string; valor: string; cor: string | null } | null }[];
   proximoAgendamento: { data: string; horario: string } | null;
 };
+
+// Cor de fundo da linha pra diferenciar rápido, sem precisar ler a coluna
+// de responsável: verde = processo que eu respondo agora (titular ou
+// cobrindo férias de alguém); âmbar = está em cobertura de férias, mas
+// coberto por outra pessoa (não eu).
+function corDeFundoLinha(p: Processo, minhaPessoaId: string | null): string | undefined {
+  if (!minhaPessoaId) return undefined;
+  if (p.responsavel_atual_id === minhaPessoaId) return cor.positivoFundo;
+  if (p.titular_id && p.responsavel_atual_id && p.titular_id !== p.responsavel_atual_id) return cor.atencaoFundo;
+  return undefined;
+}
 
 function formatarDataAgendamento(data: string) {
   return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
@@ -60,6 +72,7 @@ export default function ListaProcessos({
   eventos,
   responsaveis,
   etapas,
+  minhaPessoaId,
 }: {
   processos: Processo[];
   coordenacoes: Opcao[];
@@ -67,6 +80,7 @@ export default function ListaProcessos({
   eventos: Opcao[];
   responsaveis: Opcao[];
   etapas: Opcao[];
+  minhaPessoaId: string | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -265,9 +279,23 @@ export default function ListaProcessos({
         </select>
       </div>
 
-      <p style={{ marginTop: 10, color: cor.textoTerciario, fontSize: 12.5 }}>
-        {filtrados.length} de {processos.length} processos
-      </p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+        <p style={{ margin: 0, color: cor.textoTerciario, fontSize: 12.5 }}>
+          {filtrados.length} de {processos.length} processos
+        </p>
+        {minhaPessoaId && (
+          <div style={{ display: "flex", gap: 12, fontSize: 11, color: cor.textoTerciario }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: cor.positivoFundo, flex: "none" }} />
+              Eu respondo
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: cor.atencaoFundo, flex: "none" }} />
+              Cobertura de férias (outra pessoa)
+            </span>
+          </div>
+        )}
+      </div>
 
       <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 6 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -284,7 +312,7 @@ export default function ListaProcessos({
           </thead>
           <tbody>
             {filtrados.map((p) => (
-              <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
+              <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}`, background: corDeFundoLinha(p, minhaPessoaId) }}>
                 <td style={{ padding: "10px 12px" }}>
                   <Link
                     href={`/processos/${p.id}`}

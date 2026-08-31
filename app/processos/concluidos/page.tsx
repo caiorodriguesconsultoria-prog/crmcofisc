@@ -16,21 +16,29 @@ export default async function ProcessosConcluidosPage() {
     redirect("/login");
   }
 
-  const [{ data: processos, error }, { data: coordenacoes }, { data: formasEntrega }, eventos, responsaveis, etapas] =
-    await Promise.all([
-      supabase
-        .from("processos")
-        .select(
-          "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor))",
-        )
-        .not("conclusao_tipo", "is", null)
-        .order("updated_at", { ascending: false }),
-      supabase.from("coordenacoes").select("id, sigla").order("sigla"),
-      supabase.from("tags").select("id, valor").eq("categoria", "forma_entrega").eq("ativo", true).order("valor"),
-      getTagsEvento(),
-      getPessoasAtivas(),
-      getEtapasKanban(),
-    ]);
+  const [
+    { data: processos, error },
+    { data: coordenacoes },
+    { data: formasEntrega },
+    eventos,
+    responsaveis,
+    etapas,
+    { data: pessoaAtual },
+  ] = await Promise.all([
+    supabase
+      .from("processos")
+      .select(
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, titular_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor))",
+      )
+      .not("conclusao_tipo", "is", null)
+      .order("updated_at", { ascending: false }),
+    supabase.from("coordenacoes").select("id, sigla").order("sigla"),
+    supabase.from("tags").select("id, valor").eq("categoria", "forma_entrega").eq("ativo", true).order("valor"),
+    getTagsEvento(),
+    getPessoasAtivas(),
+    getEtapasKanban(),
+    supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
+  ]);
 
   const processosSemAgendamento = (processos ?? []).map((p) => ({ ...p, proximoAgendamento: null }));
 
@@ -45,6 +53,7 @@ export default async function ProcessosConcluidosPage() {
         eventos={eventos ?? []}
         responsaveis={responsaveis ?? []}
         etapas={etapas ?? []}
+        minhaPessoaId={pessoaAtual?.id ?? null}
       />
     </Painel>
   );

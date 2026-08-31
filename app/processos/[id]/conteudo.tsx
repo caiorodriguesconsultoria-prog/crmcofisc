@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EtapaAtual, EventosAtivos } from "./painel";
 import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
+import ConcluirCoberturaBotao from "./concluir-cobertura-botao";
 import Checklist from "./checklist";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import DadosPrincipais from "./dados-principais";
@@ -385,6 +386,24 @@ export async function carregarProcesso(id: string) {
           <HistoricoLazy processoId={p.id} />
         </CartaoColapsavel>
       </div>
+
+      {/* Concluir contrato (definitivo) — não confundir com "concluir cobertura de
+      férias" (temporário, botão no topo da página) */}
+      <div style={secao}>
+        <span style={rotuloSecao}>Concluir contrato</span>
+        <div style={{ marginTop: 10 }}>
+          <Conclusao
+            processoId={p.id}
+            numeroContrato={p.numero_contrato}
+            conclusao={{
+              tipo: p.conclusao_tipo,
+              checks: p.conclusao_checks,
+              texto: p.conclusao_texto,
+              penalidade: p.conclusao_penalidade,
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 
@@ -471,9 +490,12 @@ export async function carregarProcesso(id: string) {
         <BotaoCopiar texto={p.nup_principal} />
       </div>
       {emCobertura && (
-        <p style={{ fontSize: 11.5, color: cor.destaque, margin: "4px 0 0" }}>
-          Cobertura de férias · {p.responsavel?.nome}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 6 }}>
+          <p style={{ fontSize: 11.5, color: cor.destaque, margin: 0 }}>
+            Cobertura de férias · {p.responsavel?.nome}
+          </p>
+          <ConcluirCoberturaBotao processoId={p.id} titularId={p.titular.id} />
+        </div>
       )}
       {dias !== null && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11.5, fontWeight: 600, color: dot ?? undefined }}>
