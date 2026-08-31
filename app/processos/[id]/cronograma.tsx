@@ -9,7 +9,6 @@ type Execucao = {
   id: string;
   numero: number;
   quantidade: number;
-  unidade: string | null;
   data_prevista: string | null;
   data_entrega: string | null;
   situacao: string;
@@ -44,13 +43,17 @@ function formatarData(data: string | null) {
   return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "—";
 }
 
+function ordinal(n: number) {
+  return `${n}ª Parcela`;
+}
+
 function Campo({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-      <span style={{ fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+      <span style={{ fontSize: 9.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
         {label}
       </span>
-      <div style={{ fontSize: 13 }}>{children}</div>
+      <div style={{ fontSize: 12.5 }}>{children}</div>
     </div>
   );
 }
@@ -68,17 +71,21 @@ export default function Cronograma({
   const supabase = createClient();
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState<string | null>(null);
-  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [editando, setEditando] = useState(false);
   const [edicao, setEdicao] = useState<{
     quantidade: string;
-    unidade: string;
     data_prevista: string;
     data_entrega: string;
   } | null>(null);
   const [novo, setNovo] = useState(false);
   const [novaQuantidade, setNovaQuantidade] = useState("");
-  const [novaUnidade, setNovaUnidade] = useState("");
   const [novaData, setNovaData] = useState("");
+
+  const execucoesOrdenadas = [...execucoes].sort((a, b) => a.numero - b.numero);
+  const [parcelaSelecionadaId, setParcelaSelecionadaId] = useState<string | null>(
+    execucoesOrdenadas[0]?.id ?? null,
+  );
+  const selecionada = execucoesOrdenadas.find((e) => e.id === parcelaSelecionadaId) ?? null;
 
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [etapaConfirmacao, setEtapaConfirmacao] = useState<"pergunta" | "problemas" | null>(null);
@@ -217,10 +224,9 @@ export default function Cronograma({
   }
 
   function abrirEdicao(e: Execucao) {
-    setEditandoId(e.id);
+    setEditando(true);
     setEdicao({
       quantidade: e.quantidade.toString(),
-      unidade: e.unidade ?? "",
       data_prevista: e.data_prevista ?? "",
       data_entrega: e.data_entrega ?? "",
     });
@@ -234,7 +240,6 @@ export default function Cronograma({
       .from("processo_execucoes")
       .update({
         quantidade: Number(edicao.quantidade),
-        unidade: edicao.unidade || null,
         data_prevista: edicao.data_prevista || null,
         data_entrega: edicao.data_entrega || null,
       })
@@ -244,7 +249,7 @@ export default function Cronograma({
       setErro(error.message);
       return;
     }
-    setEditandoId(null);
+    setEditando(false);
     setEdicao(null);
     router.refresh();
   }
@@ -258,6 +263,7 @@ export default function Cronograma({
       setErro(error.message);
       return;
     }
+    setParcelaSelecionadaId(null);
     router.refresh();
   }
 
@@ -265,13 +271,16 @@ export default function Cronograma({
     if (!novaQuantidade) return;
     setErro(null);
     setCarregando("novo");
-    const { error } = await supabase.from("processo_execucoes").insert({
-      processo_id: processoId,
-      numero: proximoNumero,
-      quantidade: Number(novaQuantidade),
-      unidade: novaUnidade || null,
-      data_prevista: novaData || null,
-    });
+    const { data: criada, error } = await supabase
+      .from("processo_execucoes")
+      .insert({
+        processo_id: processoId,
+        numero: proximoNumero,
+        quantidade: Number(novaQuantidade),
+        data_prevista: novaData || null,
+      })
+      .select("id")
+      .single();
     setCarregando(null);
     if (error) {
       setErro(error.message);
@@ -279,8 +288,8 @@ export default function Cronograma({
     }
     setNovo(false);
     setNovaQuantidade("");
-    setNovaUnidade("");
     setNovaData("");
+    if (criada) setParcelaSelecionadaId(criada.id);
     router.refresh();
   }
 
@@ -292,223 +301,60 @@ export default function Cronograma({
         <p style={{ color: cor.textoTerciario, fontSize: 13 }}>Nenhuma entrega cadastrada.</p>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {execucoes.map((e) => {
-          const editando = editandoId === e.id;
-          const atraso = calcularAtraso(e.data_prevista, e.data_entrega);
-          return (
-            <div key={e.id} style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 12 }}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                <Campo label="Execução">{e.numero}</Campo>
-                {editando && edicao ? (
-                  <>
-                    <Campo label="Quantidade">
-                      <input
-                        type="number"
-                        step="0.001"
-                        value={edicao.quantidade}
-                        onChange={(ev) => setEdicao({ ...edicao, quantidade: ev.target.value })}
-                        style={{ width: "100%", padding: 5, textAlign: "center" }}
-                      />
-                    </Campo>
-                    <Campo label="Unidade">
-                      <input
-                        value={edicao.unidade}
-                        onChange={(ev) => setEdicao({ ...edicao, unidade: ev.target.value })}
-                        style={{ width: "100%", padding: 5, textAlign: "center" }}
-                      />
-                    </Campo>
-                    <Campo label="Data prevista">
-                      <input
-                        type="date"
-                        value={edicao.data_prevista}
-                        onChange={(ev) => setEdicao({ ...edicao, data_prevista: ev.target.value })}
-                        style={{ padding: 5 }}
-                      />
-                    </Campo>
-                    <Campo label="Data entregue">
-                      <input
-                        type="date"
-                        value={edicao.data_entrega}
-                        onChange={(ev) => setEdicao({ ...edicao, data_entrega: ev.target.value })}
-                        style={{ padding: 5 }}
-                      />
-                    </Campo>
-                  </>
-                ) : (
-                  <>
-                    <Campo label="Quantidade">{e.quantidade}</Campo>
-                    <Campo label="Unidade">{e.unidade ?? "—"}</Campo>
-                    <Campo label="Data prevista">{formatarData(e.data_prevista)}</Campo>
-                    <Campo label="Data entregue">{formatarData(e.data_entrega)}</Campo>
-                  </>
-                )}
-                <Campo label="Atraso (dias)">{atraso ?? "—"}</Campo>
-                <Campo label="Situação">
-                  <select
-                    value={e.situacao}
-                    onChange={(ev) => atualizarSituacao(e.id, ev.target.value)}
-                    disabled={carregando === e.id}
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: 20,
-                      border: "none",
-                      fontWeight: 600,
-                      fontSize: 11,
-                      color: SITUACAO_COR[e.situacao]?.fg,
-                      background: SITUACAO_COR[e.situacao]?.bg,
-                    }}
-                  >
-                    {SITUACOES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </Campo>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 12 }}>
-                {editando ? (
-                  <>
-                    <button onClick={() => salvarEdicao(e.id)} disabled={carregando === e.id} style={{ fontSize: 11.5 }}>
-                      Salvar
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditandoId(null);
-                        setEdicao(null);
-                      }}
-                      disabled={carregando === e.id}
-                      style={{ fontSize: 11.5 }}
-                    >
-                      Cancelar
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => abrirEdicao(e)} disabled={carregando === e.id} style={{ fontSize: 11.5 }}>
-                      editar
-                    </button>
-                    <button onClick={() => remover(e.id)} disabled={carregando === e.id} style={{ fontSize: 11.5 }}>
-                      remover
-                    </button>
-                    {confirmandoId !== e.id && (
-                      <button
-                        onClick={() => { setConfirmandoId(e.id); setEtapaConfirmacao("pergunta"); setProblemasMarcados([]); }}
-                        style={{ fontSize: 11.5 }}
-                      >
-                        confirmar entrega
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {confirmandoId === e.id && (
-                <div
-                  style={{
-                    marginTop: 10,
-                    padding: 10,
-                    borderRadius: 10,
-                    background: cor.fundo,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                    alignItems: "center",
-                  }}
-                >
-                  {etapaConfirmacao === "pergunta" && (
-                    <>
-                      <span style={{ fontSize: 12.5, fontWeight: 600 }}>A entrega ocorreu?</span>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button
-                          onClick={() => setEtapaConfirmacao("problemas")}
-                          disabled={processandoConfirmacao}
-                          style={{ fontSize: 11.5 }}
-                        >
-                          Sim
-                        </button>
-                        <button
-                          onClick={() => confirmarEntregaNaoOcorreu(e.id)}
-                          disabled={processandoConfirmacao}
-                          style={{ fontSize: 11.5 }}
-                        >
-                          {processandoConfirmacao ? "..." : "Não"}
-                        </button>
-                        <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
-                          Cancelar
-                        </button>
-                      </div>
-                    </>
-                  )}
-                  {etapaConfirmacao === "problemas" && (
-                    <>
-                      <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-                        Ocorreu algum desses problemas na entrega?
-                      </span>
-                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-                        {PROBLEMAS_ENTREGA.map((valor) => (
-                          <label key={valor} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-                            <input
-                              type="checkbox"
-                              checked={problemasMarcados.includes(valor)}
-                              onChange={() => alternarProblema(valor)}
-                            />
-                            {valor}
-                          </label>
-                        ))}
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button
-                          onClick={() => confirmarEntregaOcorreu(e.id)}
-                          disabled={processandoConfirmacao}
-                          style={{ fontSize: 11.5 }}
-                        >
-                          {processandoConfirmacao ? "..." : "Confirmar"}
-                        </button>
-                        <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
-                          Cancelar
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        {execucoesOrdenadas.map((e) => (
+          <button
+            key={e.id}
+            onClick={() => {
+              setParcelaSelecionadaId(e.id);
+              setNovo(false);
+              setEditando(false);
+              fecharConfirmacao();
+            }}
+            style={{
+              fontSize: 11.5,
+              fontWeight: 600,
+              padding: "5px 12px",
+              borderRadius: 20,
+              border: "none",
+              color: parcelaSelecionadaId === e.id && !novo ? "#fff" : cor.textoSecundario,
+              background: parcelaSelecionadaId === e.id && !novo ? cor.destaque : "rgba(96,93,93,.10)",
+            }}
+          >
+            {ordinal(e.numero)}
+          </button>
+        ))}
+        <button
+          onClick={() => {
+            setNovo(true);
+            setParcelaSelecionadaId(null);
+          }}
+          style={{
+            fontSize: 11.5,
+            fontWeight: 600,
+            padding: "5px 12px",
+            borderRadius: 20,
+            border: `1.5px dashed ${cor.borda}`,
+            color: cor.textoTerciario,
+            background: novo ? cor.destaqueFundo : "transparent",
+          }}
+        >
+          + Criar
+        </button>
       </div>
 
-      {novo ? (
-        <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-          <span style={{ fontSize: 12, color: cor.textoTerciario }}>Execução {proximoNumero}</span>
+      {novo && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, color: cor.textoTerciario }}>{ordinal(proximoNumero)}</span>
           <input
             type="number"
             step="0.001"
             placeholder="Quantidade"
             value={novaQuantidade}
             onChange={(e) => setNovaQuantidade(e.target.value)}
-            style={{ padding: 6, width: 100 }}
+            style={{ padding: 6, width: 110 }}
           />
-          <input
-            placeholder="Unidade"
-            value={novaUnidade}
-            onChange={(e) => setNovaUnidade(e.target.value)}
-            style={{ padding: 6, width: 100 }}
-          />
-          <input
-            type="date"
-            value={novaData}
-            onChange={(e) => setNovaData(e.target.value)}
-            style={{ padding: 6 }}
-          />
+          <input type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} style={{ padding: 6 }} />
           <button onClick={adicionar} disabled={carregando === "novo" || !novaQuantidade}>
             Salvar
           </button>
@@ -516,20 +362,184 @@ export default function Cronograma({
             Cancelar
           </button>
         </div>
-      ) : (
-        <button
-          onClick={() => setNovo(true)}
-          style={{
-            marginTop: 10,
-            width: "100%",
-            border: `1.5px dashed ${cor.borda}`,
-            background: "transparent",
-            color: cor.textoTerciario,
-          }}
-        >
-          + Adicionar entrega
-        </button>
       )}
+
+      {selecionada && !novo && (() => {
+        const e = selecionada;
+        const atraso = calcularAtraso(e.data_prevista, e.data_entrega);
+        return (
+          <div style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
+              {editando && edicao ? (
+                <>
+                  <Campo label="Quantidade">
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={edicao.quantidade}
+                      onChange={(ev) => setEdicao({ ...edicao, quantidade: ev.target.value })}
+                      style={{ width: "100%", padding: 4, textAlign: "center" }}
+                    />
+                  </Campo>
+                  <Campo label="Data prevista">
+                    <input
+                      type="date"
+                      value={edicao.data_prevista}
+                      onChange={(ev) => setEdicao({ ...edicao, data_prevista: ev.target.value })}
+                      style={{ padding: 4 }}
+                    />
+                  </Campo>
+                  <Campo label="Data entregue">
+                    <input
+                      type="date"
+                      value={edicao.data_entrega}
+                      onChange={(ev) => setEdicao({ ...edicao, data_entrega: ev.target.value })}
+                      style={{ padding: 4 }}
+                    />
+                  </Campo>
+                </>
+              ) : (
+                <>
+                  <Campo label="Quantidade">{e.quantidade}</Campo>
+                  <Campo label="Data prevista">{formatarData(e.data_prevista)}</Campo>
+                  <Campo label="Data entregue">{formatarData(e.data_entrega)}</Campo>
+                </>
+              )}
+              <Campo label="Atraso (dias)">{atraso ?? "—"}</Campo>
+              <Campo label="Situação">
+                <select
+                  value={e.situacao}
+                  onChange={(ev) => atualizarSituacao(e.id, ev.target.value)}
+                  disabled={carregando === e.id}
+                  style={{
+                    padding: "3px 7px",
+                    borderRadius: 20,
+                    border: "none",
+                    fontWeight: 600,
+                    fontSize: 10.5,
+                    color: SITUACAO_COR[e.situacao]?.fg,
+                    background: SITUACAO_COR[e.situacao]?.bg,
+                  }}
+                >
+                  {SITUACOES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 10 }}>
+              {editando ? (
+                <>
+                  <button onClick={() => salvarEdicao(e.id)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditando(false);
+                      setEdicao(null);
+                    }}
+                    disabled={carregando === e.id}
+                    style={{ fontSize: 11 }}
+                  >
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => abrirEdicao(e)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
+                    editar
+                  </button>
+                  <button onClick={() => remover(e.id)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
+                    remover
+                  </button>
+                  {confirmandoId !== e.id && (
+                    <button
+                      onClick={() => { setConfirmandoId(e.id); setEtapaConfirmacao("pergunta"); setProblemasMarcados([]); }}
+                      style={{ fontSize: 11 }}
+                    >
+                      confirmar entrega
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {confirmandoId === e.id && (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 10,
+                  borderRadius: 10,
+                  background: cor.fundo,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                {etapaConfirmacao === "pergunta" && (
+                  <>
+                    <span style={{ fontSize: 12.5, fontWeight: 600 }}>A entrega ocorreu?</span>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => setEtapaConfirmacao("problemas")}
+                        disabled={processandoConfirmacao}
+                        style={{ fontSize: 11.5 }}
+                      >
+                        Sim
+                      </button>
+                      <button
+                        onClick={() => confirmarEntregaNaoOcorreu(e.id)}
+                        disabled={processandoConfirmacao}
+                        style={{ fontSize: 11.5 }}
+                      >
+                        {processandoConfirmacao ? "..." : "Não"}
+                      </button>
+                      <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </>
+                )}
+                {etapaConfirmacao === "problemas" && (
+                  <>
+                    <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                      Ocorreu algum desses problemas na entrega?
+                    </span>
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                      {PROBLEMAS_ENTREGA.map((valor) => (
+                        <label key={valor} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={problemasMarcados.includes(valor)}
+                            onChange={() => alternarProblema(valor)}
+                          />
+                          {valor}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => confirmarEntregaOcorreu(e.id)}
+                        disabled={processandoConfirmacao}
+                        style={{ fontSize: 11.5 }}
+                      >
+                        {processandoConfirmacao ? "..." : "Confirmar"}
+                      </button>
+                      <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </section>
   );
 }
