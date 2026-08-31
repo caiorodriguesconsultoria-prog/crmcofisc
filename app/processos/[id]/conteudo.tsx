@@ -120,9 +120,8 @@ export async function carregarProcesso(id: string) {
     getPapeisGestorFiscal(),
     supabase
       .from("processo_nups")
-      .select("id, tipo, nup")
-      .eq("processo_id", id)
-      .in("tipo", ["relatorio", "pagamento"]),
+      .select("id, tipo, nup, execucao_id")
+      .eq("processo_id", id),
     supabase
       .from("processo_execucoes")
       .select("id, numero, quantidade, unidade, data_prevista, data_entrega, situacao")
@@ -160,13 +159,31 @@ export async function carregarProcesso(id: string) {
   }));
 
   const nupRelatorioRow = (nups ?? []).find((n) => n.tipo === "relatorio");
-  const nupPagamentoRow = (nups ?? []).find((n) => n.tipo === "pagamento");
   const nupRelatorio = nupRelatorioRow
-    ? { id: nupRelatorioRow.id, tipo: "relatorio" as const, valor: nupRelatorioRow.nup }
+    ? { id: nupRelatorioRow.id, tipo: "relatorio" as const, valor: nupRelatorioRow.nup ?? "" }
     : null;
-  const nupPagamento = nupPagamentoRow
-    ? { id: nupPagamentoRow.id, tipo: "pagamento" as const, valor: nupPagamentoRow.nup }
-    : null;
+
+  // Pares de NUP Entrega/Pagamento ligados a uma parcela do cronograma —
+  // separados do NUP Relatório geral acima.
+  const paresNup = (execucoes ?? [])
+    .map((exec) => {
+      const entregaRow = (nups ?? []).find((n) => n.tipo === "entrega" && n.execucao_id === exec.id);
+      const pagamentoRow = (nups ?? []).find((n) => n.tipo === "pagamento" && n.execucao_id === exec.id);
+      if (!entregaRow && !pagamentoRow) return null;
+      return {
+        execucaoId: exec.id,
+        numero: exec.numero,
+        entrega: entregaRow ? { id: entregaRow.id, valor: entregaRow.nup ?? "" } : null,
+        pagamento: pagamentoRow ? { id: pagamentoRow.id, valor: pagamentoRow.nup ?? "" } : null,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .sort((a, b) => a.numero - b.numero);
+
+  const execucoesSemPar = (execucoes ?? [])
+    .filter((exec) => !paresNup.some((p) => p.execucaoId === exec.id))
+    .map((exec) => ({ id: exec.id, numero: exec.numero }))
+    .sort((a, b) => a.numero - b.numero);
 
   const todosGestores = (papeis ?? [])
     .filter((pp) => pp.papel === "gestor")
@@ -294,7 +311,8 @@ export async function carregarProcesso(id: string) {
         processoId={p.id}
         nupPrincipal={p.nup_principal}
         nupRelatorio={nupRelatorio}
-        nupPagamento={nupPagamento}
+        paresNup={paresNup}
+        execucoesSemPar={execucoesSemPar}
         fornecedorNome={p.fornecedores?.nome ?? ""}
         cnpj={p.fornecedores?.cnpj ?? ""}
         objeto={p.objeto}
