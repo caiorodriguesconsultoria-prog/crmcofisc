@@ -44,6 +44,7 @@ export default function DadosPrincipais({
   fornecedorNome,
   cnpj,
   objeto,
+  unidadeMedida,
 }: {
   processoId: string;
   nupPrincipal: string;
@@ -52,6 +53,7 @@ export default function DadosPrincipais({
   fornecedorNome: string;
   cnpj: string;
   objeto: string;
+  unidadeMedida: string | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -148,8 +150,24 @@ export default function DadosPrincipais({
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
         <Coluna label="Contratada" valor={fornecedorNome || "não informado"} />
         <Coluna label="CNPJ" valor={cnpj || "não informado"} />
-        <Coluna label="Objeto" valor={objeto} />
+        <Coluna
+          label="Objeto"
+          valor={objeto}
+          acao={
+            <BotaoCopiar
+              texto={unidadeMedida ? `${objeto}, ${unidadeMedida}` : objeto}
+              rotulo="Copiar objeto + unidade"
+            />
+          }
+        />
       </div>
+      {unidadeMedida && (
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
+          <div />
+          <div />
+          <Coluna label="Unidade de medida" valor={unidadeMedida} />
+        </div>
+      )}
     </div>
   );
 }

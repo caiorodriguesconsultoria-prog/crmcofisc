@@ -26,6 +26,7 @@ type Processo = {
   programa_trabalho: string | null;
   natureza_despesa: string | null;
   local_entrega: string | null;
+  unidade_medida: string | null;
   conclusao_tipo: "Regular" | "Irregular" | null;
   conclusao_checks: string[] | null;
   conclusao_texto: string | null;
@@ -201,7 +202,7 @@ export default function Documento({
     { k: "Pregão Eletrônico nº", v: p.pregao_eletronico_numero ?? "não informado" },
     { k: "Ata de Registro de Preços nº", v: p.ata_registro_precos_numero ?? "não informado" },
     { k: "Contrato nº", v: p.numero_contrato },
-    { k: "Objeto", v: p.objeto },
+    { k: "Objeto", v: p.unidade_medida ? `${p.objeto}, ${p.unidade_medida}` : p.objeto },
     { k: "Quantidade Contratada", v: p.quantidade_contratada ?? "não informado" },
     { k: "Data da Assinatura", v: formatarData(p.data_assinatura) },
     { k: "Vigência do Contrato", v: `${formatarData(p.vigencia_inicio)} a ${formatarData(p.vigencia_fim)}` },

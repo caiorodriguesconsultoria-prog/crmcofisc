@@ -15,7 +15,16 @@ type Execucao = {
   situacao: string;
 };
 
+type Tag = { id: string; valor: string };
+
 const SITUACOES = ["pendente", "em_transito", "entregue", "atrasada"];
+
+const EVENTO_FALTA = "Falta na Entrega";
+const EVENTO_DESVIO = "Desvio de qualidade";
+const EVENTO_AVARIA = "Avaria na Entrega";
+const EVENTO_ATRASO = "Atraso na entrega";
+const PROBLEMAS_ENTREGA = [EVENTO_FALTA, EVENTO_DESVIO, EVENTO_AVARIA];
+const ETAPA_CRIACAO_OFICIO = "Criação de Ofício";
 
 const SITUACAO_COR: Record<string, { fg: string; bg: string }> = {
   pendente: { fg: "#8A6A3B", bg: "rgba(182,130,53,.09)" },
@@ -49,9 +58,11 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 export default function Cronograma({
   processoId,
   execucoes,
+  tagsDisponiveis,
 }: {
   processoId: string;
   execucoes: Execucao[];
+  tagsDisponiveis: Tag[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -68,6 +79,128 @@ export default function Cronograma({
   const [novaQuantidade, setNovaQuantidade] = useState("");
   const [novaUnidade, setNovaUnidade] = useState("");
   const [novaData, setNovaData] = useState("");
+
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+  const [etapaConfirmacao, setEtapaConfirmacao] = useState<"pergunta" | "problemas" | null>(null);
+  const [problemasMarcados, setProblemasMarcados] = useState<string[]>([]);
+  const [processandoConfirmacao, setProcessandoConfirmacao] = useState(false);
+
+  function fecharConfirmacao() {
+    setConfirmandoId(null);
+    setEtapaConfirmacao(null);
+    setProblemasMarcados([]);
+  }
+
+  function alternarProblema(valor: string) {
+    setProblemasMarcados((atual) => (atual.includes(valor) ? atual.filter((v) => v !== valor) : [...atual, valor]));
+  }
+
+  function idDaTag(valor: string) {
+    return tagsDisponiveis.find((t) => t.valor === valor)?.id ?? null;
+  }
+
+  async function adicionarEventoSeNovo(tagId: string) {
+    const { data: existente } = await supabase
+      .from("processo_tags")
+      .select("tag_id")
+      .eq("processo_id", processoId)
+      .eq("tag_id", tagId)
+      .maybeSingle();
+    if (!existente) {
+      await supabase.from("processo_tags").insert({ processo_id: processoId, tag_id: tagId });
+    }
+  }
+
+  // Muda a etapa do processo pra "Criação de Ofício" e devolve o id do
+  // histórico de kanban aberto (novo ou já existente, se já estava nessa
+  // etapa) — é nele que a tarefa de criar ofício é pendurada, pra aparecer
+  // no checklist visível da etapa atual.
+  async function mudarEtapaCriacaoOficio(): Promise<string | null> {
+    await supabase.from("processos").update({ etapa_atual: ETAPA_CRIACAO_OFICIO }).eq("id", processoId);
+    const { data: historico } = await supabase
+      .from("processo_kanban_historico")
+      .select("id")
+      .eq("processo_id", processoId)
+      .is("saida_em", null)
+      .order("entrada_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return historico?.id ?? null;
+  }
+
+  async function criarTarefaOficio(origemId: string, ordem: number, label: string) {
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+    await supabase.from("processo_tarefas").insert({
+      processo_id: processoId,
+      origem_tipo: "kanban",
+      origem_id: origemId,
+      ordem,
+      label,
+      agendamento_data: amanha.toISOString().slice(0, 10),
+      agendamento_horario: "09:00:00",
+    });
+  }
+
+  async function confirmarEntregaOcorreu(execucaoId: string) {
+    setErro(null);
+    setProcessandoConfirmacao(true);
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    const { error } = await supabase
+      .from("processo_execucoes")
+      .update({ situacao: "entregue", data_entrega: hoje })
+      .eq("id", execucaoId);
+    if (error) {
+      setProcessandoConfirmacao(false);
+      setErro(error.message);
+      return;
+    }
+
+    if (problemasMarcados.length > 0) {
+      for (const valor of problemasMarcados) {
+        const tagId = idDaTag(valor);
+        if (tagId) await adicionarEventoSeNovo(tagId);
+      }
+      const origemId = await mudarEtapaCriacaoOficio();
+      if (origemId) {
+        let ordem = 1;
+        for (const valor of problemasMarcados) {
+          await criarTarefaOficio(origemId, ordem++, `Criar ofício de ${valor}`);
+        }
+      }
+    }
+
+    setProcessandoConfirmacao(false);
+    fecharConfirmacao();
+    router.refresh();
+  }
+
+  async function confirmarEntregaNaoOcorreu(execucaoId: string) {
+    setErro(null);
+    setProcessandoConfirmacao(true);
+
+    const { error } = await supabase.from("processo_execucoes").update({ situacao: "atrasada" }).eq("id", execucaoId);
+    if (error) {
+      setProcessandoConfirmacao(false);
+      setErro(error.message);
+      return;
+    }
+
+    const idAtraso = idDaTag(EVENTO_ATRASO);
+    if (idAtraso) await adicionarEventoSeNovo(idAtraso);
+    const idFalta = idDaTag(EVENTO_FALTA);
+    if (idFalta) await adicionarEventoSeNovo(idFalta);
+
+    const origemId = await mudarEtapaCriacaoOficio();
+    if (origemId) {
+      await criarTarefaOficio(origemId, 1, "Criar ofício de notificação - atraso na entrega");
+    }
+
+    setProcessandoConfirmacao(false);
+    fecharConfirmacao();
+    router.refresh();
+  }
 
   const proximoNumero = execucoes.length > 0 ? Math.max(...execucoes.map((e) => e.numero)) + 1 : 1;
 
@@ -266,9 +399,88 @@ export default function Cronograma({
                     <button onClick={() => remover(e.id)} disabled={carregando === e.id} style={{ fontSize: 11.5 }}>
                       remover
                     </button>
+                    {confirmandoId !== e.id && (
+                      <button
+                        onClick={() => { setConfirmandoId(e.id); setEtapaConfirmacao("pergunta"); setProblemasMarcados([]); }}
+                        style={{ fontSize: 11.5 }}
+                      >
+                        confirmar entrega
+                      </button>
+                    )}
                   </>
                 )}
               </div>
+
+              {confirmandoId === e.id && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: 10,
+                    borderRadius: 10,
+                    background: cor.fundo,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  {etapaConfirmacao === "pergunta" && (
+                    <>
+                      <span style={{ fontSize: 12.5, fontWeight: 600 }}>A entrega ocorreu?</span>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => setEtapaConfirmacao("problemas")}
+                          disabled={processandoConfirmacao}
+                          style={{ fontSize: 11.5 }}
+                        >
+                          Sim
+                        </button>
+                        <button
+                          onClick={() => confirmarEntregaNaoOcorreu(e.id)}
+                          disabled={processandoConfirmacao}
+                          style={{ fontSize: 11.5 }}
+                        >
+                          {processandoConfirmacao ? "..." : "Não"}
+                        </button>
+                        <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
+                          Cancelar
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  {etapaConfirmacao === "problemas" && (
+                    <>
+                      <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                        Ocorreu algum desses problemas na entrega?
+                      </span>
+                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                        {PROBLEMAS_ENTREGA.map((valor) => (
+                          <label key={valor} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                            <input
+                              type="checkbox"
+                              checked={problemasMarcados.includes(valor)}
+                              onChange={() => alternarProblema(valor)}
+                            />
+                            {valor}
+                          </label>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => confirmarEntregaOcorreu(e.id)}
+                          disabled={processandoConfirmacao}
+                          style={{ fontSize: 11.5 }}
+                        >
+                          {processandoConfirmacao ? "..." : "Confirmar"}
+                        </button>
+                        <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
+                          Cancelar
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

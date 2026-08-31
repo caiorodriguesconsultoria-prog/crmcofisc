@@ -28,6 +28,7 @@ type Processo = {
   programa_trabalho: string | null;
   natureza_despesa: string | null;
   local_entrega: string | null;
+  unidade_medida: string | null;
   fornecedores: { nome: string; cnpj: string } | null;
   gestor: Pessoa;
   gestor_substituto: Pessoa;
@@ -158,6 +159,9 @@ export default function QuadroResumitivo({
     const valorAtual = processo[chave as keyof Processo] as string | null;
     if (!editando) {
       if (tipo === "data") return formatarData(valorAtual);
+      if (chave === "objeto" && valorAtual) {
+        return processo.unidade_medida ? `${valorAtual}, ${processo.unidade_medida}` : valorAtual;
+      }
       return valorAtual || "não informado";
     }
     if (tipo === "textarea") {

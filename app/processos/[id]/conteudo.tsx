@@ -75,7 +75,7 @@ export async function carregarProcesso(id: string) {
   const { data: processo, error: erroProcesso } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome, cnpj), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, unidade_medida, execucao_forma, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome, cnpj), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula)",
     )
     .eq("id", id)
     .single();
@@ -298,7 +298,16 @@ export async function carregarProcesso(id: string) {
         fornecedorNome={p.fornecedores?.nome ?? ""}
         cnpj={p.fornecedores?.cnpj ?? ""}
         objeto={p.objeto}
+        unidadeMedida={p.unidade_medida}
       />
+
+      {/* Cronograma de entregas — fixo, sem recolher, logo abaixo de Dados principais */}
+      <div style={secao}>
+        <span style={rotuloSecao}>Cronograma de entregas</span>
+        <div style={{ marginTop: 10 }}>
+          <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} tagsDisponiveis={tagsDisponiveis ?? []} />
+        </div>
+      </div>
 
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={true}>
@@ -343,6 +352,8 @@ export async function carregarProcesso(id: string) {
           formaEntrega={formaEntrega}
           naturezaDespesa={p.natureza_despesa}
           valorGlobal={p.valor_global}
+          unidadeMedida={p.unidade_medida}
+          execucaoForma={p.execucao_forma}
         />
       </div>
 
@@ -371,12 +382,6 @@ export async function carregarProcesso(id: string) {
           gestores={todosGestores}
           fiscais={todosFiscais}
         />
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <CartaoColapsavel titulo="Cronograma de entregas" abertoInicial={false}>
-          <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} />
-        </CartaoColapsavel>
       </div>
 
       <div style={{ marginTop: 16 }}>

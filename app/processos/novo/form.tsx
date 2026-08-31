@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { verificarPessoaDuplicada } from "@/lib/verificar-pessoa-duplicada";
 
 type Opcao = { id: string; nome?: string; sigla?: string; valor?: string; categoria?: string };
 type PessoaPapel = { id: string; nome: string };
@@ -35,13 +36,23 @@ export default function NovoProcessoForm({
   const [criandoGestor, setCriandoGestor] = useState(false);
   const [nomeNovoGestor, setNomeNovoGestor] = useState("");
   const [matriculaNovoGestor, setMatriculaNovoGestor] = useState("");
+  const [avisoGestor, setAvisoGestor] = useState<string | null>(null);
   const [criandoFiscal, setCriandoFiscal] = useState(false);
   const [nomeNovoFiscal, setNomeNovoFiscal] = useState("");
   const [matriculaNovoFiscal, setMatriculaNovoFiscal] = useState("");
+  const [avisoFiscal, setAvisoFiscal] = useState<string | null>(null);
   const [criandoFornecedor, setCriandoFornecedor] = useState(false);
   const [nomeNovoFornecedor, setNomeNovoFornecedor] = useState("");
   const [cnpjNovoFornecedor, setCnpjNovoFornecedor] = useState("");
   const [erroInline, setErroInline] = useState<string | null>(null);
+
+  async function checarDuplicadoGestor() {
+    setAvisoGestor(await verificarPessoaDuplicada(supabase, nomeNovoGestor, matriculaNovoGestor));
+  }
+
+  async function checarDuplicadoFiscal() {
+    setAvisoFiscal(await verificarPessoaDuplicada(supabase, nomeNovoFiscal, matriculaNovoFiscal));
+  }
 
   async function criarGestor() {
     if (!nomeNovoGestor.trim() || !matriculaNovoGestor.trim()) return;
@@ -64,6 +75,7 @@ export default function NovoProcessoForm({
     setGestorId(pessoa.id);
     setNomeNovoGestor("");
     setMatriculaNovoGestor("");
+    setAvisoGestor(null);
     setCriandoGestor(false);
   }
 
@@ -88,6 +100,7 @@ export default function NovoProcessoForm({
     setFiscalId(pessoa.id);
     setNomeNovoFiscal("");
     setMatriculaNovoFiscal("");
+    setAvisoFiscal(null);
     setCriandoFiscal(false);
   }
 
@@ -229,26 +242,31 @@ export default function NovoProcessoForm({
         </select>
       </label>
       {isAdmin && (criandoGestor ? (
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            autoFocus
-            value={nomeNovoGestor}
-            onChange={(e) => setNomeNovoGestor(e.target.value)}
-            placeholder="Nome"
-            style={{ padding: 8, flex: 2, minWidth: 0 }}
-          />
-          <input
-            value={matriculaNovoGestor}
-            onChange={(e) => setMatriculaNovoGestor(e.target.value)}
-            placeholder="Matrícula"
-            style={{ padding: 8, flex: 1, minWidth: 0 }}
-          />
-          <button type="button" onClick={criarGestor} disabled={!nomeNovoGestor.trim() || !matriculaNovoGestor.trim()}>
-            Criar
-          </button>
-          <button type="button" onClick={() => { setCriandoGestor(false); setNomeNovoGestor(""); setMatriculaNovoGestor(""); }}>
-            Cancelar
-          </button>
+        <div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              autoFocus
+              value={nomeNovoGestor}
+              onChange={(e) => setNomeNovoGestor(e.target.value)}
+              onBlur={checarDuplicadoGestor}
+              placeholder="Nome"
+              style={{ padding: 8, flex: 2, minWidth: 0 }}
+            />
+            <input
+              value={matriculaNovoGestor}
+              onChange={(e) => setMatriculaNovoGestor(e.target.value)}
+              onBlur={checarDuplicadoGestor}
+              placeholder="Matrícula"
+              style={{ padding: 8, flex: 1, minWidth: 0 }}
+            />
+            <button type="button" onClick={criarGestor} disabled={!nomeNovoGestor.trim() || !matriculaNovoGestor.trim()}>
+              Criar
+            </button>
+            <button type="button" onClick={() => { setCriandoGestor(false); setNomeNovoGestor(""); setMatriculaNovoGestor(""); setAvisoGestor(null); }}>
+              Cancelar
+            </button>
+          </div>
+          {avisoGestor && <p style={{ color: "#C08A3E", margin: "4px 0 0", fontSize: 12 }}>⚠ {avisoGestor}</p>}
         </div>
       ) : (
         <button type="button" onClick={() => setCriandoGestor(true)} style={{ alignSelf: "flex-start" }}>
@@ -286,26 +304,31 @@ export default function NovoProcessoForm({
         </select>
       </label>
       {isAdmin && (criandoFiscal ? (
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            autoFocus
-            value={nomeNovoFiscal}
-            onChange={(e) => setNomeNovoFiscal(e.target.value)}
-            placeholder="Nome"
-            style={{ padding: 8, flex: 2, minWidth: 0 }}
-          />
-          <input
-            value={matriculaNovoFiscal}
-            onChange={(e) => setMatriculaNovoFiscal(e.target.value)}
-            placeholder="Matrícula"
-            style={{ padding: 8, flex: 1, minWidth: 0 }}
-          />
-          <button type="button" onClick={criarFiscal} disabled={!nomeNovoFiscal.trim() || !matriculaNovoFiscal.trim()}>
-            Criar
-          </button>
-          <button type="button" onClick={() => { setCriandoFiscal(false); setNomeNovoFiscal(""); setMatriculaNovoFiscal(""); }}>
-            Cancelar
-          </button>
+        <div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              autoFocus
+              value={nomeNovoFiscal}
+              onChange={(e) => setNomeNovoFiscal(e.target.value)}
+              onBlur={checarDuplicadoFiscal}
+              placeholder="Nome"
+              style={{ padding: 8, flex: 2, minWidth: 0 }}
+            />
+            <input
+              value={matriculaNovoFiscal}
+              onChange={(e) => setMatriculaNovoFiscal(e.target.value)}
+              onBlur={checarDuplicadoFiscal}
+              placeholder="Matrícula"
+              style={{ padding: 8, flex: 1, minWidth: 0 }}
+            />
+            <button type="button" onClick={criarFiscal} disabled={!nomeNovoFiscal.trim() || !matriculaNovoFiscal.trim()}>
+              Criar
+            </button>
+            <button type="button" onClick={() => { setCriandoFiscal(false); setNomeNovoFiscal(""); setMatriculaNovoFiscal(""); setAvisoFiscal(null); }}>
+              Cancelar
+            </button>
+          </div>
+          {avisoFiscal && <p style={{ color: "#C08A3E", margin: "4px 0 0", fontSize: 12 }}>⚠ {avisoFiscal}</p>}
         </div>
       ) : (
         <button type="button" onClick={() => setCriandoFiscal(true)} style={{ alignSelf: "flex-start" }}>
