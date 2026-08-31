@@ -20,7 +20,6 @@ export default function NovaPessoaPapelForm({
 
   const [nome, setNome] = useState("");
   const [matricula, setMatricula] = useState("");
-  const [ramal, setRamal] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -31,7 +30,7 @@ export default function NovaPessoaPapelForm({
 
     const { data: pessoa, error: erroPessoa } = await supabase
       .from("pessoas")
-      .insert({ nome, matricula, ramal: ramal || null })
+      .insert({ nome, matricula })
       .select("id")
       .single();
 
@@ -74,14 +73,6 @@ export default function NovaPessoaPapelForm({
             value={matricula}
             onChange={(e) => setMatricula(e.target.value)}
             required
-            style={{ display: "block", width: "100%", padding: 8 }}
-          />
-        </label>
-        <label>
-          Ramal
-          <input
-            value={ramal}
-            onChange={(e) => setRamal(e.target.value)}
             style={{ display: "block", width: "100%", padding: 8 }}
           />
         </label>

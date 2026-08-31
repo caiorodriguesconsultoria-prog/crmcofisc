@@ -8,7 +8,7 @@ import { botaoPrimario, card, cor } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import Painel from "@/app/_ui/painel";
 
-type Item = { id: string; nome: string; matricula: string | null; ramal: string | null };
+type Item = { id: string; nome: string; matricula: string | null };
 
 export default function ListaPessoasPapel({
   titulo,
@@ -31,7 +31,6 @@ export default function ListaPessoasPapel({
   const [editando, setEditando] = useState<Item | null>(null);
   const [nome, setNome] = useState("");
   const [matricula, setMatricula] = useState("");
-  const [ramal, setRamal] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState<string | null>(null);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
@@ -40,7 +39,6 @@ export default function ListaPessoasPapel({
     setEditando(item);
     setNome(item.nome);
     setMatricula(item.matricula ?? "");
-    setRamal(item.ramal ?? "");
     setErroForm(null);
   }
 
@@ -51,7 +49,7 @@ export default function ListaPessoasPapel({
     setSalvando(true);
     const { error } = await supabase
       .from("pessoas")
-      .update({ nome, matricula, ramal: ramal || null })
+      .update({ nome, matricula })
       .eq("id", editando.id);
     setSalvando(false);
     if (error) {
@@ -99,7 +97,6 @@ export default function ListaPessoasPapel({
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
               <th style={{ padding: "10px 12px" }}>Nome</th>
               <th style={{ padding: "10px 12px" }}>Matrícula</th>
-              <th style={{ padding: "10px 12px" }}>Ramal</th>
               <th style={{ padding: "10px 12px" }}></th>
             </tr>
           </thead>
@@ -117,14 +114,6 @@ export default function ListaPessoasPapel({
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {i.matricula}
                       <BotaoCopiar texto={i.matricula} />
-                    </div>
-                  )}
-                </td>
-                <td style={{ padding: "10px 12px" }}>
-                  {i.ramal && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {i.ramal}
-                      <BotaoCopiar texto={i.ramal} />
                     </div>
                   )}
                 </td>
@@ -176,7 +165,7 @@ export default function ListaPessoasPapel({
             ))}
             {itens.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
+                <td colSpan={3} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
                   Nenhum cadastro ainda.
                 </td>
               </tr>
@@ -240,14 +229,6 @@ export default function ListaPessoasPapel({
                   value={matricula}
                   onChange={(e) => setMatricula(e.target.value)}
                   required
-                  style={{ display: "block", width: "100%", padding: 8 }}
-                />
-              </label>
-              <label>
-                Ramal
-                <input
-                  value={ramal}
-                  onChange={(e) => setRamal(e.target.value)}
                   style={{ display: "block", width: "100%", padding: 8 }}
                 />
               </label>

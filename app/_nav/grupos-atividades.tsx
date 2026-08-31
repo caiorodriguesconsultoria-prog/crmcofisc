@@ -11,15 +11,21 @@ function Grupo({
   titulo,
   itens,
   removivel,
+  tipoNovo,
 }: {
   titulo: string;
   itens: Atividade[];
   removivel?: boolean;
+  tipoNovo?: "etapa" | "evento";
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [aberto, setAberto] = useState(false);
   const [removendoId, setRemovendoId] = useState<string | null>(null);
+  const [criandoNovo, setCriandoNovo] = useState(false);
+  const [nomeNovo, setNomeNovo] = useState("");
+  const [corNovo, setCorNovo] = useState("#2F5FDB");
+  const [salvandoNovo, setSalvandoNovo] = useState(false);
   const total = itens.reduce((soma, a) => soma + a.count, 0);
 
   async function removerTag(id: string) {
@@ -27,6 +33,20 @@ function Grupo({
     setRemovendoId(id);
     await supabase.from("tags").delete().eq("id", id);
     setRemovendoId(null);
+    router.refresh();
+  }
+
+  async function criarNovo() {
+    if (!nomeNovo.trim()) return;
+    setSalvandoNovo(true);
+    if (tipoNovo === "etapa") {
+      await supabase.from("kanban_colunas").insert({ nome: nomeNovo.trim(), ordem: itens.length });
+    } else if (tipoNovo === "evento") {
+      await supabase.from("tags").insert({ categoria: "evento", valor: nomeNovo.trim(), ativo: true, cor: corNovo });
+    }
+    setSalvandoNovo(false);
+    setNomeNovo("");
+    setCriandoNovo(false);
     router.refresh();
   }
 
@@ -108,6 +128,62 @@ function Grupo({
               )}
             </div>
           ))}
+          {tipoNovo &&
+            (criandoNovo ? (
+              <div style={{ display: "flex", gap: 4, padding: "4px 12px 6px" }}>
+                <input
+                  autoFocus
+                  value={nomeNovo}
+                  onChange={(e) => setNomeNovo(e.target.value)}
+                  placeholder={tipoNovo === "etapa" ? "Nome da etapa" : "Nome do evento"}
+                  style={{ padding: 6, fontSize: 12, flex: 1, minWidth: 0 }}
+                />
+                {tipoNovo === "evento" && (
+                  <input
+                    type="color"
+                    value={corNovo}
+                    onChange={(e) => setCorNovo(e.target.value)}
+                    title="Cor do evento"
+                    style={{ width: 30, padding: 1, flex: "none" }}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={criarNovo}
+                  disabled={salvandoNovo || !nomeNovo.trim()}
+                  style={{ fontSize: 11, padding: "4px 8px", flex: "none" }}
+                >
+                  Criar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setCriandoNovo(false); setNomeNovo(""); }}
+                  style={{ fontSize: 11, padding: "4px 8px", flex: "none" }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCriandoNovo(true)}
+                style={{
+                  display: "block",
+                  width: "calc(100% - 8px)",
+                  margin: "2px 4px",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: "6px 12px",
+                  border: "none",
+                  borderRadius: 8,
+                  background: "transparent",
+                  color: cor.textoTerciario,
+                  textAlign: "left",
+                }}
+              >
+                {tipoNovo === "etapa" ? "+ Nova Etapa" : "+ Novo Evento"}
+              </button>
+            ))}
         </div>
       )}
     </div>
@@ -125,8 +201,8 @@ export default function GruposAtividades({
 }) {
   return (
     <>
-      {atividades.length > 0 && <Grupo titulo="Atividades" itens={atividades} />}
-      {eventos.length > 0 && <Grupo titulo="Eventos" itens={eventos} removivel={ehAdmin} />}
+      {atividades.length > 0 && <Grupo titulo="Atividades" itens={atividades} tipoNovo="etapa" />}
+      {eventos.length > 0 && <Grupo titulo="Eventos" itens={eventos} removivel={ehAdmin} tipoNovo="evento" />}
     </>
   );
 }

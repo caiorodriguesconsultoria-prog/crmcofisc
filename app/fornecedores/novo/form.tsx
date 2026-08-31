@@ -38,7 +38,7 @@ export default function NovoFornecedorForm() {
       .from("fornecedores")
       .insert({
         nome,
-        cnpj,
+        cnpj: cnpj.trim() || null,
         preposto: preposto || null,
         telefone: telefone || null,
       })
@@ -83,11 +83,10 @@ export default function NovoFornecedorForm() {
         />
       </label>
       <label>
-        CNPJ
+        CNPJ (opcional)
         <input
           value={cnpj}
           onChange={(e) => setCnpj(e.target.value)}
-          required
           style={{ display: "block", width: "100%", padding: 8 }}
         />
       </label>

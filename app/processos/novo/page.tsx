@@ -22,12 +22,14 @@ export default async function NovoProcessoPage() {
     { data: tags, error: erroTags },
     pessoas,
     papeis,
+    { data: pessoaAtual },
   ] = await Promise.all([
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
     supabase.from("fornecedores").select("id, nome").order("nome"),
     supabase.from("tags").select("id, categoria, valor").eq("ativo", true).order("valor"),
     getPessoasAtivas(),
     getPapeisGestorFiscal(),
+    supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
   ]);
 
   const erros = [
@@ -55,6 +57,7 @@ export default async function NovoProcessoPage() {
         pessoas={pessoas ?? []}
         gestores={gestores}
         fiscais={fiscais}
+        isAdmin={pessoaAtual?.is_admin ?? false}
       />
     </Painel>
   );

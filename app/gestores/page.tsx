@@ -17,7 +17,7 @@ export default async function GestoresPage() {
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
     supabase
       .from("pessoa_papeis")
-      .select("pessoa_id, pessoas(id, nome, matricula, ramal)")
+      .select("pessoa_id, pessoas(id, nome, matricula)")
       .eq("papel", "gestor"),
   ]);
 
@@ -26,7 +26,6 @@ export default async function GestoresPage() {
       id: p.pessoas?.id ?? p.pessoa_id,
       nome: p.pessoas?.nome ?? "",
       matricula: p.pessoas?.matricula ?? null,
-      ramal: p.pessoas?.ramal ?? null,
     }))
     .sort((a, b) => a.nome.localeCompare(b.nome));
 

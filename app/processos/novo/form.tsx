@@ -14,6 +14,7 @@ export default function NovoProcessoForm({
   pessoas,
   gestores,
   fiscais,
+  isAdmin,
 }: {
   coordenacoes: Opcao[];
   fornecedores: Opcao[];
@@ -21,11 +22,93 @@ export default function NovoProcessoForm({
   pessoas: Opcao[];
   gestores: PessoaPapel[];
   fiscais: PessoaPapel[];
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const supabase = createClient();
 
   const formaEntregaTags = tags.filter((t) => t.categoria === "forma_entrega");
+
+  const [gestoresState, setGestoresState] = useState(gestores);
+  const [fiscaisState, setFiscaisState] = useState(fiscais);
+  const [fornecedoresState, setFornecedoresState] = useState(fornecedores);
+  const [criandoGestor, setCriandoGestor] = useState(false);
+  const [nomeNovoGestor, setNomeNovoGestor] = useState("");
+  const [matriculaNovoGestor, setMatriculaNovoGestor] = useState("");
+  const [criandoFiscal, setCriandoFiscal] = useState(false);
+  const [nomeNovoFiscal, setNomeNovoFiscal] = useState("");
+  const [matriculaNovoFiscal, setMatriculaNovoFiscal] = useState("");
+  const [criandoFornecedor, setCriandoFornecedor] = useState(false);
+  const [nomeNovoFornecedor, setNomeNovoFornecedor] = useState("");
+  const [cnpjNovoFornecedor, setCnpjNovoFornecedor] = useState("");
+  const [erroInline, setErroInline] = useState<string | null>(null);
+
+  async function criarGestor() {
+    if (!nomeNovoGestor.trim() || !matriculaNovoGestor.trim()) return;
+    setErroInline(null);
+    const { data: pessoa, error: erroPessoa } = await supabase
+      .from("pessoas")
+      .insert({ nome: nomeNovoGestor.trim(), matricula: matriculaNovoGestor.trim() })
+      .select("id, nome")
+      .single();
+    if (erroPessoa || !pessoa) {
+      setErroInline(erroPessoa?.message ?? "Erro ao criar gestor.");
+      return;
+    }
+    const { error: erroPapel } = await supabase.from("pessoa_papeis").insert({ pessoa_id: pessoa.id, papel: "gestor" });
+    if (erroPapel) {
+      setErroInline(erroPapel.message);
+      return;
+    }
+    setGestoresState((atual) => [...atual, pessoa]);
+    setGestorId(pessoa.id);
+    setNomeNovoGestor("");
+    setMatriculaNovoGestor("");
+    setCriandoGestor(false);
+  }
+
+  async function criarFiscal() {
+    if (!nomeNovoFiscal.trim() || !matriculaNovoFiscal.trim()) return;
+    setErroInline(null);
+    const { data: pessoa, error: erroPessoa } = await supabase
+      .from("pessoas")
+      .insert({ nome: nomeNovoFiscal.trim(), matricula: matriculaNovoFiscal.trim() })
+      .select("id, nome")
+      .single();
+    if (erroPessoa || !pessoa) {
+      setErroInline(erroPessoa?.message ?? "Erro ao criar fiscal.");
+      return;
+    }
+    const { error: erroPapel } = await supabase.from("pessoa_papeis").insert({ pessoa_id: pessoa.id, papel: "fiscal" });
+    if (erroPapel) {
+      setErroInline(erroPapel.message);
+      return;
+    }
+    setFiscaisState((atual) => [...atual, pessoa]);
+    setFiscalId(pessoa.id);
+    setNomeNovoFiscal("");
+    setMatriculaNovoFiscal("");
+    setCriandoFiscal(false);
+  }
+
+  async function criarFornecedor() {
+    if (!nomeNovoFornecedor.trim()) return;
+    setErroInline(null);
+    const { data: fornecedor, error } = await supabase
+      .from("fornecedores")
+      .insert({ nome: nomeNovoFornecedor.trim(), cnpj: cnpjNovoFornecedor.trim() || null })
+      .select("id, nome")
+      .single();
+    if (error || !fornecedor) {
+      setErroInline(error?.message ?? "Erro ao criar fornecedor.");
+      return;
+    }
+    setFornecedoresState((atual) => [...atual, fornecedor]);
+    setFornecedorId(fornecedor.id);
+    setNomeNovoFornecedor("");
+    setCnpjNovoFornecedor("");
+    setCriandoFornecedor(false);
+  }
 
   const [numeroContrato, setNumeroContrato] = useState("");
   const [nup, setNup] = useState("");
@@ -138,13 +221,40 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Não informado</option>
-          {gestores.map((g) => (
+          {gestoresState.map((g) => (
             <option key={g.id} value={g.id}>
               {g.nome}
             </option>
           ))}
         </select>
       </label>
+      {isAdmin && (criandoGestor ? (
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            autoFocus
+            value={nomeNovoGestor}
+            onChange={(e) => setNomeNovoGestor(e.target.value)}
+            placeholder="Nome"
+            style={{ padding: 8, flex: 2, minWidth: 0 }}
+          />
+          <input
+            value={matriculaNovoGestor}
+            onChange={(e) => setMatriculaNovoGestor(e.target.value)}
+            placeholder="Matrícula"
+            style={{ padding: 8, flex: 1, minWidth: 0 }}
+          />
+          <button type="button" onClick={criarGestor} disabled={!nomeNovoGestor.trim() || !matriculaNovoGestor.trim()}>
+            Criar
+          </button>
+          <button type="button" onClick={() => { setCriandoGestor(false); setNomeNovoGestor(""); setMatriculaNovoGestor(""); }}>
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setCriandoGestor(true)} style={{ alignSelf: "flex-start" }}>
+          + Novo gestor
+        </button>
+      ))}
       <label>
         Gestor substituto
         <select
@@ -153,7 +263,7 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Não informado</option>
-          {gestores.map((g) => (
+          {gestoresState.map((g) => (
             <option key={g.id} value={g.id}>
               {g.nome}
             </option>
@@ -168,13 +278,40 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Não informado</option>
-          {fiscais.map((f) => (
+          {fiscaisState.map((f) => (
             <option key={f.id} value={f.id}>
               {f.nome}
             </option>
           ))}
         </select>
       </label>
+      {isAdmin && (criandoFiscal ? (
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            autoFocus
+            value={nomeNovoFiscal}
+            onChange={(e) => setNomeNovoFiscal(e.target.value)}
+            placeholder="Nome"
+            style={{ padding: 8, flex: 2, minWidth: 0 }}
+          />
+          <input
+            value={matriculaNovoFiscal}
+            onChange={(e) => setMatriculaNovoFiscal(e.target.value)}
+            placeholder="Matrícula"
+            style={{ padding: 8, flex: 1, minWidth: 0 }}
+          />
+          <button type="button" onClick={criarFiscal} disabled={!nomeNovoFiscal.trim() || !matriculaNovoFiscal.trim()}>
+            Criar
+          </button>
+          <button type="button" onClick={() => { setCriandoFiscal(false); setNomeNovoFiscal(""); setMatriculaNovoFiscal(""); }}>
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setCriandoFiscal(true)} style={{ alignSelf: "flex-start" }}>
+          + Novo fiscal
+        </button>
+      ))}
       <label>
         Fiscal substituto
         <select
@@ -183,7 +320,7 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Não informado</option>
-          {fiscais.map((f) => (
+          {fiscaisState.map((f) => (
             <option key={f.id} value={f.id}>
               {f.nome}
             </option>
@@ -199,13 +336,41 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Selecione</option>
-          {fornecedores.map((f) => (
+          {fornecedoresState.map((f) => (
             <option key={f.id} value={f.id}>
               {f.nome}
             </option>
           ))}
         </select>
       </label>
+      {isAdmin && (criandoFornecedor ? (
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            autoFocus
+            value={nomeNovoFornecedor}
+            onChange={(e) => setNomeNovoFornecedor(e.target.value)}
+            placeholder="Nome"
+            style={{ padding: 8, flex: 2, minWidth: 0 }}
+          />
+          <input
+            value={cnpjNovoFornecedor}
+            onChange={(e) => setCnpjNovoFornecedor(e.target.value)}
+            placeholder="CNPJ (opcional)"
+            style={{ padding: 8, flex: 1, minWidth: 0 }}
+          />
+          <button type="button" onClick={criarFornecedor} disabled={!nomeNovoFornecedor.trim()}>
+            Criar
+          </button>
+          <button type="button" onClick={() => { setCriandoFornecedor(false); setNomeNovoFornecedor(""); setCnpjNovoFornecedor(""); }}>
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setCriandoFornecedor(true)} style={{ alignSelf: "flex-start" }}>
+          + Novo fornecedor
+        </button>
+      ))}
+      {erroInline && <p style={{ color: "#B0655C" }}>{erroInline}</p>}
       <label>
         Responsável (titular)
         <select

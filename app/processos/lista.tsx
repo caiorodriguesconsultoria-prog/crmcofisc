@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { card, cor } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 
@@ -69,12 +70,61 @@ export default function ListaProcessos({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = createClient();
   const [coordenacaoId, setCoordenacaoId] = useState("");
   const [formaEntregaId, setFormaEntregaId] = useState("");
   const [eventoId, setEventoId] = useState(() => searchParams.get("evento") ?? "");
   const [responsavelId, setResponsavelId] = useState("");
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
   const [busca, setBusca] = useState("");
+
+  const [etapasState, setEtapasState] = useState(etapas);
+  const [eventosState, setEventosState] = useState(eventos);
+  const [criandoEtapa, setCriandoEtapa] = useState(false);
+  const [nomeNovaEtapa, setNomeNovaEtapa] = useState("");
+  const [criandoEvento, setCriandoEvento] = useState(false);
+  const [nomeNovoEvento, setNomeNovoEvento] = useState("");
+  const [corNovoEvento, setCorNovoEvento] = useState("#2F5FDB");
+  const [salvandoNovo, setSalvandoNovo] = useState(false);
+
+  useEffect(() => {
+    setEtapasState(etapas);
+  }, [etapas]);
+  useEffect(() => {
+    setEventosState(eventos);
+  }, [eventos]);
+
+  async function criarEtapa() {
+    if (!nomeNovaEtapa.trim()) return;
+    setSalvandoNovo(true);
+    const { data: nova, error } = await supabase
+      .from("kanban_colunas")
+      .insert({ nome: nomeNovaEtapa.trim(), ordem: etapasState.length })
+      .select("id, nome")
+      .single();
+    setSalvandoNovo(false);
+    if (error || !nova) return;
+    setEtapasState((atual) => [...atual, nova]);
+    setNomeNovaEtapa("");
+    setCriandoEtapa(false);
+    router.refresh();
+  }
+
+  async function criarEvento() {
+    if (!nomeNovoEvento.trim()) return;
+    setSalvandoNovo(true);
+    const { data: novo, error } = await supabase
+      .from("tags")
+      .insert({ categoria: "evento", valor: nomeNovoEvento.trim(), ativo: true, cor: corNovoEvento })
+      .select("id, valor")
+      .single();
+    setSalvandoNovo(false);
+    if (error || !novo) return;
+    setEventosState((atual) => [...atual, novo]);
+    setNomeNovoEvento("");
+    setCriandoEvento(false);
+    router.refresh();
+  }
 
   // Se o usuário já tinha visitado /processos antes, o Next reaproveita essa
   // mesma instância do componente ao clicar num atalho de Atividades (mesma
@@ -126,12 +176,33 @@ export default function ListaProcessos({
       >
         <select value={etapa} onChange={(e) => setEtapa(e.target.value)}>
           <option value="">Etapa (todas)</option>
-          {etapas.map((e) => (
+          {etapasState.map((e) => (
             <option key={e.id} value={e.nome}>
               {e.nome}
             </option>
           ))}
         </select>
+        {criandoEtapa ? (
+          <div style={{ display: "flex", gap: 4 }}>
+            <input
+              autoFocus
+              value={nomeNovaEtapa}
+              onChange={(e) => setNomeNovaEtapa(e.target.value)}
+              placeholder="Nome da etapa"
+              style={{ padding: 8, width: 150 }}
+            />
+            <button type="button" onClick={criarEtapa} disabled={salvandoNovo || !nomeNovaEtapa.trim()}>
+              Criar
+            </button>
+            <button type="button" onClick={() => { setCriandoEtapa(false); setNomeNovaEtapa(""); }}>
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setCriandoEtapa(true)} style={{ whiteSpace: "nowrap" }}>
+            + Nova Etapa
+          </button>
+        )}
         <select value={coordenacaoId} onChange={(e) => setCoordenacaoId(e.target.value)}>
           <option value="">Coordenação (todas)</option>
           {coordenacoes.map((c) => (
@@ -150,12 +221,40 @@ export default function ListaProcessos({
         </select>
         <select value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
           <option value="">Evento (todos)</option>
-          {eventos.map((ev) => (
+          {eventosState.map((ev) => (
             <option key={ev.id} value={ev.id}>
               {ev.valor}
             </option>
           ))}
         </select>
+        {criandoEvento ? (
+          <div style={{ display: "flex", gap: 4 }}>
+            <input
+              autoFocus
+              value={nomeNovoEvento}
+              onChange={(e) => setNomeNovoEvento(e.target.value)}
+              placeholder="Nome do evento"
+              style={{ padding: 8, width: 150 }}
+            />
+            <input
+              type="color"
+              value={corNovoEvento}
+              onChange={(e) => setCorNovoEvento(e.target.value)}
+              title="Cor do evento"
+              style={{ width: 38, padding: 2 }}
+            />
+            <button type="button" onClick={criarEvento} disabled={salvandoNovo || !nomeNovoEvento.trim()}>
+              Criar
+            </button>
+            <button type="button" onClick={() => { setCriandoEvento(false); setNomeNovoEvento(""); }}>
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setCriandoEvento(true)} style={{ whiteSpace: "nowrap" }}>
+            + Novo Evento
+          </button>
+        )}
         <select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
           <option value="">Responsável (todos)</option>
           {responsaveis.map((r) => (

@@ -337,7 +337,7 @@ export default function Andamentos({
                   ))}
               </select>
               <button type="button" onClick={() => setCriandoEvento(true)} style={{ whiteSpace: "nowrap" }}>
-                + Novo
+                + Novo Evento
               </button>
             </div>
           )}

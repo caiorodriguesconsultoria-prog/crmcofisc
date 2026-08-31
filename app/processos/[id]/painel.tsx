@@ -104,7 +104,7 @@ export function EtapaAtual({
             Salvar
           </button>
           <button onClick={() => setCriandoNova(true)} disabled={carregando}>
-            + Nova
+            + Nova Etapa
           </button>
         </div>
       )}
@@ -278,7 +278,7 @@ export function EventosAtivos({
             ))}
           </select>
           <button type="button" onClick={() => setCriandoNovo(true)} disabled={carregando} style={{ whiteSpace: "nowrap" }}>
-            + Novo
+            + Novo Evento
           </button>
         </div>
       )}
