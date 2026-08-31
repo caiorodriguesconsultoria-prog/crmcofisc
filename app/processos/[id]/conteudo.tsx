@@ -7,7 +7,6 @@ import Checklist from "./checklist";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import DadosPrincipais from "./dados-principais";
 import DadosProcesso from "./dados-processo";
-import Agendamentos from "./agendamentos";
 import Cronograma from "./cronograma";
 import Conclusao from "./conclusao";
 import Abas from "./abas";
@@ -354,21 +353,6 @@ export async function carregarProcesso(id: string) {
           valorGlobal={p.valor_global}
           unidadeMedida={p.unidade_medida}
           execucaoForma={p.execucao_forma}
-        />
-      </div>
-
-      {/* Agendamento de entrega — fixo, sem recolher */}
-      <div style={secao}>
-        <Agendamentos
-          processoId={p.id}
-          numeroContrato={p.numero_contrato}
-          agendamentos={(agendamentos ?? []).map((a: any) => ({
-            id: a.id,
-            data: a.data,
-            horario: a.horario,
-            observacao: a.observacao,
-            googleEventId: a.google_event_id,
-          }))}
         />
       </div>
 
