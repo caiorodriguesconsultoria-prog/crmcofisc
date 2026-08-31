@@ -467,6 +467,11 @@ export async function carregarProcesso(id: string) {
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <TituloDestaque fontSize={19}>CT nº {p.numero_contrato}</TituloDestaque>
+        {p.coordenacoes?.sigla && (
+          <span style={{ ...pill, background: "rgba(96,93,93,.10)", color: cor.textoSecundario }}>
+            {p.coordenacoes.sigla}
+          </span>
+        )}
         <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
         {tagsAtivas.map((t) => {
           const c = corEvento(t.id, t.cor);
