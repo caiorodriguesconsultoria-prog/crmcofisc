@@ -124,7 +124,7 @@ export async function carregarProcesso(id: string) {
       .eq("processo_id", id),
     supabase
       .from("processo_execucoes")
-      .select("id, numero, quantidade, unidade, data_prevista, data_entrega, situacao")
+      .select("id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao")
       .eq("processo_id", id)
       .order("numero"),
     supabase

@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cor } from "@/lib/theme";
 
+type Periodo = "manha" | "tarde";
 type Execucao = {
   id: string;
   numero: number;
   quantidade: number;
   data_prevista: string | null;
+  periodo: Periodo | null;
   data_entrega: string | null;
   situacao: string;
 };
@@ -55,11 +57,37 @@ const SITUACAO_COR: Record<string, { fg: string; bg: string }> = {
   atrasada: { fg: "#8C4A42", bg: "rgba(176,101,92,.16)" },
 };
 
-function calcularAtraso(dataPrevista: string | null, dataEntrega: string | null) {
+// Diferença entre a data prevista e a data em que a entrega de fato
+// aconteceu — positivo é atraso, negativo é entrega antecipada, zero é no
+// prazo. Só existe depois que data_entrega é lançada.
+function diferencaDias(dataPrevista: string | null, dataEntrega: string | null) {
   if (!dataPrevista || !dataEntrega) return null;
   const diffMs = new Date(`${dataEntrega}T00:00:00`).getTime() - new Date(`${dataPrevista}T00:00:00`).getTime();
-  const diffDias = Math.round(diffMs / (1000 * 60 * 60 * 24));
-  return Math.max(0, diffDias);
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+}
+
+// Enquanto a entrega ainda não foi lançada: quantos dias já passaram da data
+// prevista — só conta a partir do dia seguinte (hoje == data_prevista ainda
+// não é atraso). Usado pra pintar de vermelho e mostrar "X dias em atraso"
+// mesmo sem ninguém ter mexido na situação manualmente.
+function diasEmAtrasoAgora(dataPrevista: string | null, hoje: string) {
+  if (!dataPrevista) return null;
+  const diffMs = new Date(`${hoje}T00:00:00`).getTime() - new Date(`${dataPrevista}T00:00:00`).getTime();
+  const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return dias > 0 ? dias : null;
+}
+
+function textoAtraso(e: Execucao, hoje: string): { texto: string; destaque: "urgente" | "positivo" | null } {
+  if (e.data_entrega) {
+    const diff = diferencaDias(e.data_prevista, e.data_entrega);
+    if (diff === null) return { texto: "—", destaque: null };
+    if (diff > 0) return { texto: `${diff} dia${diff > 1 ? "s" : ""} em atraso`, destaque: "urgente" };
+    if (diff < 0) return { texto: `${-diff} dia${-diff > 1 ? "s" : ""} de antecedência`, destaque: "positivo" };
+    return { texto: "entregue no prazo", destaque: "positivo" };
+  }
+  const dias = diasEmAtrasoAgora(e.data_prevista, hoje);
+  if (dias) return { texto: `${dias} dia${dias > 1 ? "s" : ""} em atraso`, destaque: "urgente" };
+  return { texto: "—", destaque: null };
 }
 
 function formatarData(data: string | null) {
@@ -95,6 +123,31 @@ function CampoQuantidade({ valor, onChange }: { valor: string; onChange: (v: str
   );
 }
 
+function SeletorPeriodo({ valor, onChange }: { valor: Periodo | ""; onChange: (p: Periodo) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 4 }}>
+      {(["manha", "tarde"] as Periodo[]).map((p) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onChange(p)}
+          style={{
+            fontSize: 10.5,
+            fontWeight: 600,
+            padding: "4px 9px",
+            borderRadius: 7,
+            border: "none",
+            color: valor === p ? cor.destaque : cor.textoTerciario,
+            background: valor === p ? cor.destaqueFundo : "rgba(96,93,93,.10)",
+          }}
+        >
+          {p === "manha" ? "Manhã" : "Tarde"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function Cronograma({
   processoId,
   execucoes,
@@ -112,11 +165,14 @@ export default function Cronograma({
   const [edicao, setEdicao] = useState<{
     quantidade: string;
     data_prevista: string;
+    periodo: Periodo | "";
     data_entrega: string;
   } | null>(null);
   const [novo, setNovo] = useState(false);
   const [novaQuantidade, setNovaQuantidade] = useState("");
   const [novaData, setNovaData] = useState("");
+  const [novoPeriodo, setNovoPeriodo] = useState<Periodo | "">("");
+  const hoje = new Date().toISOString().slice(0, 10);
 
   const execucoesOrdenadas = [...execucoes].sort((a, b) => a.numero - b.numero);
   const [parcelaSelecionadaId, setParcelaSelecionadaId] = useState<string | null>(
@@ -265,6 +321,7 @@ export default function Cronograma({
     setEdicao({
       quantidade: formatarQuantidade(e.quantidade),
       data_prevista: e.data_prevista ?? "",
+      periodo: e.periodo ?? "",
       data_entrega: e.data_entrega ?? "",
     });
   }
@@ -278,6 +335,7 @@ export default function Cronograma({
       .update({
         quantidade: paraNumero(edicao.quantidade),
         data_prevista: edicao.data_prevista || null,
+        periodo: edicao.periodo || null,
         data_entrega: edicao.data_entrega || null,
       })
       .eq("id", execucaoId);
@@ -315,6 +373,7 @@ export default function Cronograma({
         numero: proximoNumero,
         quantidade: paraNumero(novaQuantidade),
         data_prevista: novaData || null,
+        periodo: novoPeriodo || null,
       })
       .select("id")
       .single();
@@ -326,6 +385,7 @@ export default function Cronograma({
     setNovo(false);
     setNovaQuantidade("");
     setNovaData("");
+    setNovoPeriodo("");
     if (criada) setParcelaSelecionadaId(criada.id);
     router.refresh();
   }
@@ -339,28 +399,33 @@ export default function Cronograma({
       )}
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-        {execucoesOrdenadas.map((e) => (
-          <button
-            key={e.id}
-            onClick={() => {
-              setParcelaSelecionadaId(e.id);
-              setNovo(false);
-              setEditando(false);
-              fecharConfirmacao();
-            }}
-            style={{
-              fontSize: 11.5,
-              fontWeight: 600,
-              padding: "5px 12px",
-              borderRadius: 20,
-              border: "none",
-              color: parcelaSelecionadaId === e.id && !novo ? "#fff" : cor.textoSecundario,
-              background: parcelaSelecionadaId === e.id && !novo ? cor.destaque : "rgba(96,93,93,.10)",
-            }}
-          >
-            {ordinal(e.numero)}
-          </button>
-        ))}
+        {execucoesOrdenadas.map((e) => {
+          const selecionadaAgora = parcelaSelecionadaId === e.id && !novo;
+          const diasAtraso = !e.data_entrega ? diasEmAtrasoAgora(e.data_prevista, hoje) : null;
+          return (
+            <button
+              key={e.id}
+              onClick={() => {
+                setParcelaSelecionadaId(e.id);
+                setNovo(false);
+                setEditando(false);
+                fecharConfirmacao();
+              }}
+              style={{
+                fontSize: 11.5,
+                fontWeight: 600,
+                padding: "5px 12px",
+                borderRadius: 20,
+                border: "none",
+                color: selecionadaAgora ? "#fff" : diasAtraso ? cor.urgente : cor.textoSecundario,
+                background: selecionadaAgora ? (diasAtraso ? cor.urgente : cor.destaque) : diasAtraso ? cor.urgenteFundo : "rgba(96,93,93,.10)",
+              }}
+            >
+              {ordinal(e.numero)}
+              {diasAtraso ? ` · ${diasAtraso}d atraso` : ""}
+            </button>
+          );
+        })}
         <button
           onClick={() => {
             setNovo(true);
@@ -385,6 +450,7 @@ export default function Cronograma({
           <span style={{ fontSize: 12, color: cor.textoTerciario, paddingTop: 6 }}>{ordinal(proximoNumero)}</span>
           <CampoQuantidade valor={novaQuantidade} onChange={setNovaQuantidade} />
           <input type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} style={{ padding: 6 }} />
+          <SeletorPeriodo valor={novoPeriodo} onChange={setNovoPeriodo} />
           <button onClick={adicionar} disabled={carregando === "novo" || !novaQuantidade}>
             Salvar
           </button>
@@ -396,7 +462,7 @@ export default function Cronograma({
 
       {selecionada && !novo && (() => {
         const e = selecionada;
-        const atraso = calcularAtraso(e.data_prevista, e.data_entrega);
+        const atraso = textoAtraso(e, hoje);
         return (
           <div style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
@@ -414,6 +480,9 @@ export default function Cronograma({
                       style={{ padding: 4 }}
                     />
                   </Campo>
+                  <Campo label="Período">
+                    <SeletorPeriodo valor={edicao.periodo} onChange={(p) => setEdicao({ ...edicao, periodo: p })} />
+                  </Campo>
                   <Campo label="Data entregue">
                     <input
                       type="date"
@@ -426,11 +495,18 @@ export default function Cronograma({
               ) : (
                 <>
                   <Campo label="Quantidade">{formatarQuantidade(e.quantidade)}</Campo>
-                  <Campo label="Data prevista">{formatarData(e.data_prevista)}</Campo>
+                  <Campo label="Data prevista">
+                    {formatarData(e.data_prevista)}
+                    {e.periodo ? ` · ${e.periodo === "manha" ? "Manhã" : "Tarde"}` : ""}
+                  </Campo>
                   <Campo label="Data entregue">{formatarData(e.data_entrega)}</Campo>
                 </>
               )}
-              <Campo label="Atraso (dias)">{atraso ?? "—"}</Campo>
+              <Campo label="Prazo">
+                <span style={{ color: atraso.destaque === "urgente" ? cor.urgente : atraso.destaque === "positivo" ? cor.positivo : undefined, fontWeight: atraso.destaque ? 600 : 400 }}>
+                  {atraso.texto}
+                </span>
+              </Campo>
               <Campo label="Situação">
                 <select
                   value={e.situacao}
