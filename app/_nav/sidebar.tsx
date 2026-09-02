@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cor } from "@/lib/theme";
-import NotificacoesPush from "./notificacoes-push";
 
 const LINKS = [
   { href: "/dashboard", label: "Painel" },
@@ -118,11 +117,7 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
 
       {children}
 
-      <div style={{ marginTop: "auto" }}>
-        <NotificacoesPush />
-      </div>
-
-      <form action="/logout" method="post" style={{ paddingTop: 12 }}>
+      <form action="/logout" method="post" style={{ marginTop: "auto", paddingTop: 12 }}>
         <button
           type="submit"
           style={{

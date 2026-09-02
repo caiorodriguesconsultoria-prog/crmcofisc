@@ -5,6 +5,7 @@ import Link from "next/link";
 import { card, cor, PALETA_EVENTOS } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import MedidorCircular from "@/app/_ui/medidor-circular";
+import { BotaoCopiar } from "@/app/_ui/campo";
 
 type Processo = {
   id: string;
@@ -131,7 +132,12 @@ export default function PainelDashboard({
                         {p.numeroContrato}
                       </Link>
                     </td>
-                    <td style={{ padding: "9px 10px", fontSize: 12.5 }}>{p.nup}</td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {p.nup}
+                        <BotaoCopiar texto={p.nup} />
+                      </div>
+                    </td>
                     <td style={{ padding: "9px 10px", fontSize: 12.5 }}>{p.objeto}</td>
                     <td style={{ padding: "9px 10px" }}>
                       <span

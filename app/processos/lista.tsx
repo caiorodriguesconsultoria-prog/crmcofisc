@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { card, cor } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
+import { BotaoCopiar } from "@/app/_ui/campo";
 
 type DocumentComTransicao = Document & {
   startViewTransition?: (callback: () => void | Promise<void>) => void;
@@ -329,7 +330,12 @@ export default function ListaProcessos({
                     {p.numero_contrato}
                   </Link>
                 </td>
-                <td style={{ padding: "10px 12px" }}>{p.nup_principal}</td>
+                <td style={{ padding: "10px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {p.nup_principal}
+                    <BotaoCopiar texto={p.nup_principal} />
+                  </div>
+                </td>
                 <td style={{ padding: "10px 12px" }}>{p.objeto}</td>
                 <td style={{ padding: "10px 12px" }}>{p.coordenacoes?.sigla}</td>
                 <td style={{ padding: "10px 12px" }}>{p.fornecedores?.nome}</td>
