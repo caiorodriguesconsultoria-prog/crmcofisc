@@ -220,6 +220,18 @@ export default function DadosProcesso({
         </>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, padding: "6px 0" }}>
+          <div style={{ fontSize: 11, color: cor.textoTerciario }}>
+            Nº de execuções
+            <div style={{ marginTop: 4, color: cor.texto }}>{numeroExecucoes}</div>
+          </div>
+          <div style={{ fontSize: 11, color: cor.textoTerciario }}>
+            Data de encerramento
+            <div style={{ marginTop: 4, color: cor.texto }}>{formatarData(encerramento)}</div>
+          </div>
+          <div style={{ fontSize: 11, color: cor.textoTerciario }}>
+            Forma de entrega
+            <div style={{ marginTop: 4, color: cor.texto }}>{formaEntrega}</div>
+          </div>
           <label style={{ fontSize: 11 }}>
             Quantidade total
             <input
