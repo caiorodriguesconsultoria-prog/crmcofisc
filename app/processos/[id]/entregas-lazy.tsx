@@ -23,27 +23,30 @@ type Entrega = {
 export default function EntregasLazy({ processoId }: { processoId: string }) {
   const [entregas, setEntregas] = useState<Entrega[] | null>(null);
 
-  useEffect(() => {
-    let ativo = true;
+  async function carregar() {
     const supabase = createClient();
-    supabase
+    const { data } = await supabase
       .from("processo_entregas")
       .select(
         "id, local_entrega, quantidade, valor_total_nf, danfe_venda, danfe_remessa, lote, data_fabricacao, data_validade, data_entrega, responsavel, atraso_dias, percentual_transcurso",
       )
       .eq("processo_id", processoId)
-      .order("created_at")
-      .then(({ data }) => {
-        if (ativo) setEntregas((data ?? []) as Entrega[]);
-      });
-    return () => {
-      ativo = false;
-    };
+      .order("created_at");
+    setEntregas((data ?? []) as Entrega[]);
+  }
+
+  useEffect(() => {
+    carregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [processoId]);
 
   if (!entregas) {
     return <p style={{ fontSize: 12, color: "#7D7979", marginTop: 20 }}>Carregando…</p>;
   }
 
-  return <DadosEntrega processoId={processoId} entregas={entregas} />;
+  // Esse componente busca os próprios dados (client-side), fora da árvore
+  // que o router.refresh() do Next recarrega — sem isso, adicionar/remover
+  // uma entrega salvava certo no banco, mas a tabela continuava mostrando
+  // a lista antiga até a página ser recarregada de verdade.
+  return <DadosEntrega processoId={processoId} entregas={entregas} onSalvo={carregar} />;
 }

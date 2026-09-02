@@ -1,8 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { CampoMascarado } from "@/app/_ui/campo";
+import { formatarMoedaBR, paraNumeroMoeda } from "@/lib/moeda";
+
+// Mesma máscara de milhar em tempo real usada no cronograma de entregas,
+// só que com 3 casas decimais (padrão pra quantidade em numeric(14,3)).
+function formatarQuantidadeBR(valorDigitado: string): string {
+  const limpo = valorDigitado.replace(/[^\d,]/g, "");
+  const [inteiroBruto, ...resto] = limpo.split(",");
+  const inteiro = inteiroBruto.replace(/^0+(?=\d)/, "");
+  const inteiroFormatado = inteiro ? Number(inteiro).toLocaleString("pt-BR") : "";
+  const decimal = resto.length > 0 ? "," + resto.join("").slice(0, 3) : "";
+  return inteiroFormatado + decimal;
+}
+
+function paraNumeroQuantidade(valorFormatado: string): number | null {
+  const normalizado = valorFormatado.replace(/\./g, "").replace(",", ".");
+  return normalizado ? Number(normalizado) : null;
+}
 
 type Entrega = {
   id: string;
@@ -43,8 +60,15 @@ function formatarMoeda(valor: number | null) {
   return valor != null ? valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—";
 }
 
-export default function DadosEntrega({ processoId, entregas }: { processoId: string; entregas: Entrega[] }) {
-  const router = useRouter();
+export default function DadosEntrega({
+  processoId,
+  entregas,
+  onSalvo,
+}: {
+  processoId: string;
+  entregas: Entrega[];
+  onSalvo?: () => void;
+}) {
   const supabase = createClient();
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -64,8 +88,8 @@ export default function DadosEntrega({ processoId, entregas }: { processoId: str
     const { error } = await supabase.from("processo_entregas").insert({
       processo_id: processoId,
       local_entrega: campos.local_entrega || null,
-      quantidade: campos.quantidade ? Number(campos.quantidade) : null,
-      valor_total_nf: campos.valor_total_nf ? Number(campos.valor_total_nf) : null,
+      quantidade: paraNumeroQuantidade(campos.quantidade),
+      valor_total_nf: paraNumeroMoeda(campos.valor_total_nf),
       danfe_venda: campos.danfe_venda || null,
       danfe_remessa: campos.danfe_remessa || null,
       lote: campos.lote || null,
@@ -83,7 +107,7 @@ export default function DadosEntrega({ processoId, entregas }: { processoId: str
     }
     setNovo(false);
     setCampos(CAMPOS_VAZIOS);
-    router.refresh();
+    onSalvo?.();
   }
 
   async function remover(id: string) {
@@ -95,7 +119,7 @@ export default function DadosEntrega({ processoId, entregas }: { processoId: str
       setErro(error.message);
       return;
     }
-    router.refresh();
+    onSalvo?.();
   }
 
   return (
@@ -184,20 +208,18 @@ export default function DadosEntrega({ processoId, entregas }: { processoId: str
             onChange={(e) => atualizar("local_entrega", e.target.value)}
             style={{ padding: 6 }}
           />
-          <input
-            type="number"
-            step="0.001"
+          <CampoMascarado
+            valor={campos.quantidade}
+            formatar={formatarQuantidadeBR}
+            onChange={(v) => atualizar("quantidade", v)}
             placeholder="Quantidade"
-            value={campos.quantidade}
-            onChange={(e) => atualizar("quantidade", e.target.value)}
             style={{ padding: 6 }}
           />
-          <input
-            type="number"
-            step="0.01"
+          <CampoMascarado
+            valor={campos.valor_total_nf}
+            formatar={formatarMoedaBR}
+            onChange={(v) => atualizar("valor_total_nf", v)}
             placeholder="Valor total da NF"
-            value={campos.valor_total_nf}
-            onChange={(e) => atualizar("valor_total_nf", e.target.value)}
             style={{ padding: 6 }}
           />
           <input
