@@ -126,16 +126,38 @@ export default function Ocorrencias({
     setErro(null);
   }
 
-  async function salvarEdicao(id: string) {
+  async function salvarEdicao(id: string, texto: string) {
+    if (!texto.trim()) return;
     setSalvandoEdicao(true);
     setErro(null);
-    const { error } = await supabase.from("andamentos").update({ texto: textoEdicao }).eq("id", id);
+    const { error } = await supabase.from("andamentos").update({ texto }).eq("id", id);
     setSalvandoEdicao(false);
     if (error) {
       setErro(error.message);
       return;
     }
     setEditandoId(null);
+    router.refresh();
+  }
+
+  // Salva sozinho assim que o foco sai da área de edição (clicar fora,
+  // fechar o processo) — não fica dependendo de lembrar de clicar em
+  // Salvar antes de sair. Clicar em Cancelar continua descartando, porque
+  // o botão está dentro da mesma área (o blur não dispara pra ele).
+  function aoPerderFocoEdicao(e: React.FocusEvent<HTMLDivElement>, id: string) {
+    if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
+    salvarEdicao(id, textoEdicao);
+  }
+
+  async function excluirOcorrencia(a: Andamento) {
+    if (!window.confirm("Excluir essa ocorrência? Essa ação não pode ser desfeita.")) return;
+    setErro(null);
+    const { error } = await supabase.from("andamentos").delete().eq("id", a.id);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    if (editandoId === a.id) setEditandoId(null);
     router.refresh();
   }
 
@@ -164,7 +186,11 @@ export default function Ocorrencias({
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
           {marcados.map((a) =>
             editandoId === a.id ? (
-              <div key={a.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div
+                key={a.id}
+                onBlur={(e) => aoPerderFocoEdicao(e, a.id)}
+                style={{ display: "flex", flexDirection: "column", gap: 6 }}
+              >
                 <textarea
                   value={textoEdicao}
                   onChange={(e) => setTextoEdicao(e.target.value)}
@@ -173,7 +199,7 @@ export default function Ocorrencias({
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
                     type="button"
-                    onClick={() => salvarEdicao(a.id)}
+                    onClick={() => salvarEdicao(a.id, textoEdicao)}
                     disabled={salvandoEdicao || !textoEdicao.trim()}
                     style={{ ...botaoPrimario, fontSize: 11, padding: "5px 12px" }}
                   >
@@ -192,15 +218,26 @@ export default function Ocorrencias({
             ) : (
               <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                 <p style={{ textAlign: "justify", textIndent: "2em", margin: 0, flex: 1 }}>{a.texto}</p>
-                <button
-                  type="button"
-                  onClick={() => abrirEdicao(a)}
-                  title="Editar ocorrência"
-                  aria-label="Editar ocorrência"
-                  style={{ fontSize: 10.5, padding: "3px 8px", flex: "none" }}
-                >
-                  editar
-                </button>
+                <div style={{ display: "flex", gap: 4, flex: "none" }}>
+                  <button
+                    type="button"
+                    onClick={() => abrirEdicao(a)}
+                    title="Editar ocorrência"
+                    aria-label="Editar ocorrência"
+                    style={{ fontSize: 10.5, padding: "3px 8px" }}
+                  >
+                    editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => excluirOcorrencia(a)}
+                    title="Excluir ocorrência"
+                    aria-label="Excluir ocorrência"
+                    style={{ fontSize: 10.5, padding: "3px 8px", color: cor.urgente }}
+                  >
+                    excluir
+                  </button>
+                </div>
               </div>
             ),
           )}
