@@ -4,6 +4,7 @@ import PainelDashboard from "./painel-dashboard";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
 import { getTagsEvento, getEtapasKanban } from "@/lib/dados-referencia";
+import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -73,7 +74,7 @@ export default async function DashboardPage() {
       : null;
     return {
       id: p.id,
-      numeroContrato: p.numero_contrato,
+      numeroContrato: numeroContratoSemSei(p.numero_contrato),
       etapaAtual: p.etapa_atual,
       diasParado,
     };
@@ -138,7 +139,7 @@ export default async function DashboardPage() {
     .filter((p) => atividadePorProcesso.has(p.id))
     .map((p) => ({
       id: p.id,
-      numeroContrato: p.numero_contrato,
+      numeroContrato: numeroContratoSemSei(p.numero_contrato),
       nup: p.nup_principal,
       objeto: p.objeto,
       etapaAtual: p.etapa_atual,

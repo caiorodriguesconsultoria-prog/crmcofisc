@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
 function escaparTexto(texto: string) {
   return texto.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
 
   const eventosPrazo = (processos ?? [])
     .map((p: any) => {
-      const resumo = escaparTexto(`CT nº ${p.numero_contrato} - ${p.etapa_atual}`);
+      const resumo = escaparTexto(`CT nº ${numeroContratoSemSei(p.numero_contrato)} - ${p.etapa_atual}`);
       const descricao = escaparTexto(
         `Coordenação: ${p.coordenacoes?.sigla ?? ""} · Fornecedor: ${p.fornecedores?.nome ?? ""}`,
       );
@@ -84,7 +85,7 @@ export async function GET(request: Request) {
       .map((a: any) => ({
         id: `agendamento-${a.id}`,
         processoId: a.processos.id,
-        numeroContrato: a.processos.numero_contrato,
+        numeroContrato: numeroContratoSemSei(a.processos.numero_contrato),
         data: a.data as string,
         horario: a.horario as string,
         tarefa: (a.observacao as string | null) ?? "Agendamento de entrega",
@@ -94,7 +95,7 @@ export async function GET(request: Request) {
       .map((a: any) => ({
         id: `andamento-${a.id}`,
         processoId: a.processos.id,
-        numeroContrato: a.processos.numero_contrato,
+        numeroContrato: numeroContratoSemSei(a.processos.numero_contrato),
         data: a.agendamento_data as string,
         horario: a.agendamento_horario as string,
         tarefa: a.texto as string,

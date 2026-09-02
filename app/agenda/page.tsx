@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { googleConectado } from "@/lib/google-calendar";
+import { numeroContratoSemSei } from "@/lib/numero-contrato";
 import Calendario from "./calendario";
 import { card, cor, botaoPrimario } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
@@ -58,7 +59,7 @@ export default async function AgendaPage({
 
   const prazos = (processos ?? []).map((p: any) => ({
     id: p.id,
-    numeroContrato: p.numero_contrato,
+    numeroContrato: numeroContratoSemSei(p.numero_contrato),
     prazoData: p.prazo_data as string,
     coordenacaoSigla: p.coordenacoes?.sigla ?? "",
     fornecedorNome: p.fornecedores?.nome ?? "",
@@ -70,7 +71,7 @@ export default async function AgendaPage({
       .map((a: any) => ({
         id: a.id,
         processoId: a.processos.id,
-        numeroContrato: a.processos.numero_contrato,
+        numeroContrato: numeroContratoSemSei(a.processos.numero_contrato),
         data: a.data as string,
         horario: a.horario as string,
         observacao: a.observacao as string | null,
@@ -80,7 +81,7 @@ export default async function AgendaPage({
       .map((a: any) => ({
         id: a.id,
         processoId: a.processos.id,
-        numeroContrato: a.processos.numero_contrato,
+        numeroContrato: numeroContratoSemSei(a.processos.numero_contrato),
         data: a.agendamento_data as string,
         horario: a.agendamento_horario as string,
         observacao: a.texto as string | null,
@@ -99,7 +100,7 @@ export default async function AgendaPage({
       return {
         id: e.id,
         processoId: e.processos.id,
-        numeroContrato: e.processos.numero_contrato,
+        numeroContrato: numeroContratoSemSei(e.processos.numero_contrato),
         numeroParcela: e.numero as number,
         dias: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
       };

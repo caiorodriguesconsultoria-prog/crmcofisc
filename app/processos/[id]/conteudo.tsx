@@ -13,13 +13,7 @@ import Conclusao from "./conclusao";
 import Abas from "./abas";
 import QuadroResumitivo from "./relatorio/quadro-resumitivo";
 import CronogramaRelatorio from "./relatorio/cronograma-relatorio";
-
-// Alguns contratos têm o número de um documento SEI digitado junto do
-// número do contrato, tipo "255/2026 (0057340889)" — útil no Quadro
-// Resumitivo, mas polui o título no topo da página. Aqui só pro título.
-function numeroContratoSemSei(numero: string) {
-  return numero.replace(/\s*\([^)]*\)\s*$/, "").trim();
-}
+import { numeroContratoSemSei } from "@/lib/numero-contrato";
 import PautaDistribuicao from "./relatorio/pauta-distribuicao";
 import EntregasLazy from "./entregas-lazy";
 import HistoricoLazy from "./historico-lazy";
@@ -349,7 +343,7 @@ export async function carregarProcesso(id: string) {
             <Checklist
               processoId={p.id}
               autorId={pessoaAtual?.id ?? null}
-              numeroContrato={p.numero_contrato}
+              numeroContrato={numeroContratoSemSei(p.numero_contrato)}
               grupos={gruposTarefas}
             />
           </div>
@@ -419,7 +413,7 @@ export async function carregarProcesso(id: string) {
         <div style={{ marginTop: 10 }}>
           <Conclusao
             processoId={p.id}
-            numeroContrato={p.numero_contrato}
+            numeroContrato={numeroContratoSemSei(p.numero_contrato)}
             conclusao={{
               tipo: p.conclusao_tipo,
               checks: p.conclusao_checks,
@@ -478,7 +472,7 @@ export async function carregarProcesso(id: string) {
           <span style={rotuloSecao}>8. Conclusões</span>
           <Conclusao
             processoId={p.id}
-            numeroContrato={p.numero_contrato}
+            numeroContrato={numeroContratoSemSei(p.numero_contrato)}
             conclusao={{
               tipo: p.conclusao_tipo,
               checks: p.conclusao_checks,

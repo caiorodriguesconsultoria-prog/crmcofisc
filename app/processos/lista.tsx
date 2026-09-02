@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { card, cor } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { BotaoCopiar } from "@/app/_ui/campo";
+import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
 type DocumentComTransicao = Document & {
   startViewTransition?: (callback: () => void | Promise<void>) => void;
@@ -327,7 +328,7 @@ export default function ListaProcessos({
                       } as React.CSSProperties
                     }
                   >
-                    {p.numero_contrato}
+                    {numeroContratoSemSei(p.numero_contrato)}
                   </Link>
                 </td>
                 <td style={{ padding: "10px 12px" }}>

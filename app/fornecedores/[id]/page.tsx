@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { card, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
 function formatarData(data: string | null) {
   return data ? new Date(data).toLocaleDateString("pt-BR") : "—";
@@ -88,7 +89,7 @@ export default async function FornecedorPage({
               <tr key={c.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
                 <td style={{ padding: "10px 12px" }}>
                   <Link href={`/processos/${c.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
-                    {c.numero_contrato}
+                    {numeroContratoSemSei(c.numero_contrato)}
                   </Link>
                 </td>
                 <td style={{ padding: "10px 12px" }}>{c.coordenacoes?.sigla}</td>
