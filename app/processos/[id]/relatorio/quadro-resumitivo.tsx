@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { valorPorExtenso } from "@/lib/extenso";
 import { formatarMoedaBR, paraNumeroMoeda, moedaParaFormatado } from "@/lib/moeda";
+import { BotaoCopiar } from "@/app/_ui/campo";
 
 type Pessoa = { nome: string; matricula: string | null } | null;
 
@@ -159,11 +160,20 @@ export default function QuadroResumitivo({
   function campoValor(chave: string, tipo: CampoTexto["tipo"]) {
     const valorAtual = processo[chave as keyof Processo] as string | null;
     if (!editando) {
-      if (tipo === "data") return formatarData(valorAtual);
-      if (chave === "objeto" && valorAtual) {
-        return processo.unidade_medida ? `${valorAtual}, ${processo.unidade_medida}` : valorAtual;
+      let texto: string;
+      if (tipo === "data") texto = formatarData(valorAtual);
+      else if (chave === "objeto" && valorAtual) {
+        texto = processo.unidade_medida ? `${valorAtual}, ${processo.unidade_medida}` : valorAtual;
+      } else {
+        texto = valorAtual || "não informado";
       }
-      return valorAtual || "não informado";
+      if (!valorAtual) return texto;
+      return (
+        <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 6 }}>
+          {texto}
+          <BotaoCopiar texto={texto} />
+        </span>
+      );
     }
     if (tipo === "textarea") {
       return (
@@ -232,7 +242,12 @@ export default function QuadroResumitivo({
           </div>
           <div style={{ marginTop: 2 }}>
             {!editando ? (
-              `${formatarData(processo.vigencia_inicio)} a ${formatarData(processo.vigencia_fim)}`
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                {`${formatarData(processo.vigencia_inicio)} a ${formatarData(processo.vigencia_fim)}`}
+                {(processo.vigencia_inicio || processo.vigencia_fim) && (
+                  <BotaoCopiar texto={`${formatarData(processo.vigencia_inicio)} a ${formatarData(processo.vigencia_fim)}`} />
+                )}
+              </span>
             ) : (
               <div style={{ display: "flex", gap: 6 }}>
                 <input
@@ -256,14 +271,20 @@ export default function QuadroResumitivo({
           <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
             Empresa
           </div>
-          <div style={{ marginTop: 2 }}>{processo.fornecedores?.nome ?? "não informado"}</div>
+          <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+            {processo.fornecedores?.nome ?? "não informado"}
+            {processo.fornecedores?.nome && <BotaoCopiar texto={processo.fornecedores.nome} />}
+          </div>
         </div>
 
         <div>
           <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
             CNPJ
           </div>
-          <div style={{ marginTop: 2 }}>{processo.fornecedores?.cnpj ?? "não informado"}</div>
+          <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+            {processo.fornecedores?.cnpj ?? "não informado"}
+            {processo.fornecedores?.cnpj && <BotaoCopiar texto={processo.fornecedores.cnpj} />}
+          </div>
         </div>
 
         <div>
@@ -281,7 +302,10 @@ export default function QuadroResumitivo({
               />
             ) : (
               <>
-                {formatarMoeda(processo.valor_unitario) ?? "não informado"}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  {formatarMoeda(processo.valor_unitario) ?? "não informado"}
+                  {formatarMoeda(processo.valor_unitario) && <BotaoCopiar texto={formatarMoeda(processo.valor_unitario)!} />}
+                </span>
                 {extensoMoeda(processo.valor_unitario) && (
                   <div style={{ fontSize: 11, color: "#7D7979" }}>{extensoMoeda(processo.valor_unitario)}</div>
                 )}
@@ -305,7 +329,10 @@ export default function QuadroResumitivo({
               />
             ) : (
               <>
-                {formatarMoeda(processo.valor_global) ?? "não informado"}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  {formatarMoeda(processo.valor_global) ?? "não informado"}
+                  {formatarMoeda(processo.valor_global) && <BotaoCopiar texto={formatarMoeda(processo.valor_global)!} />}
+                </span>
                 {extensoMoeda(processo.valor_global) && (
                   <div style={{ fontSize: 11, color: "#7D7979" }}>{extensoMoeda(processo.valor_global)}</div>
                 )}
@@ -329,7 +356,10 @@ export default function QuadroResumitivo({
               />
             ) : (
               <>
-                {formatarMoeda(processo.valor_garantia) ?? "não informado"}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  {formatarMoeda(processo.valor_garantia) ?? "não informado"}
+                  {formatarMoeda(processo.valor_garantia) && <BotaoCopiar texto={formatarMoeda(processo.valor_garantia)!} />}
+                </span>
                 {extensoMoeda(processo.valor_garantia) && (
                   <div style={{ fontSize: 11, color: "#7D7979" }}>{extensoMoeda(processo.valor_garantia)}</div>
                 )}
@@ -342,25 +372,37 @@ export default function QuadroResumitivo({
           <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
             Gestor Titular
           </div>
-          <div style={{ marginTop: 2 }}>{formatarPessoa(processo.gestor)}</div>
+          <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+            {formatarPessoa(processo.gestor)}
+            {processo.gestor && <BotaoCopiar texto={formatarPessoa(processo.gestor)} />}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
             Gestor Substituto
           </div>
-          <div style={{ marginTop: 2 }}>{formatarPessoa(processo.gestor_substituto)}</div>
+          <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+            {formatarPessoa(processo.gestor_substituto)}
+            {processo.gestor_substituto && <BotaoCopiar texto={formatarPessoa(processo.gestor_substituto)} />}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
             Fiscal Titular
           </div>
-          <div style={{ marginTop: 2 }}>{formatarPessoa(processo.fiscal)}</div>
+          <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+            {formatarPessoa(processo.fiscal)}
+            {processo.fiscal && <BotaoCopiar texto={formatarPessoa(processo.fiscal)} />}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
             Fiscal Substituto
           </div>
-          <div style={{ marginTop: 2 }}>{formatarPessoa(processo.fiscal_substituto)}</div>
+          <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+            {formatarPessoa(processo.fiscal_substituto)}
+            {processo.fiscal_substituto && <BotaoCopiar texto={formatarPessoa(processo.fiscal_substituto)} />}
+          </div>
         </div>
       </div>
 
