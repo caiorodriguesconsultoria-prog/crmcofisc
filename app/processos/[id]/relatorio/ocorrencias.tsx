@@ -35,6 +35,9 @@ export default function Ocorrencias({
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [textoEdicao, setTextoEdicao] = useState("");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   const marcados = andamentos.filter((a) => a.incluirRelatorio);
   const ordenados = [...andamentos].sort((a, b) => a.data.localeCompare(b.data));
@@ -117,6 +120,25 @@ export default function Ocorrencias({
     router.refresh();
   }
 
+  function abrirEdicao(a: Andamento) {
+    setEditandoId(a.id);
+    setTextoEdicao(a.texto);
+    setErro(null);
+  }
+
+  async function salvarEdicao(id: string) {
+    setSalvandoEdicao(true);
+    setErro(null);
+    const { error } = await supabase.from("andamentos").update({ texto: textoEdicao }).eq("id", id);
+    setSalvandoEdicao(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setEditandoId(null);
+    router.refresh();
+  }
+
   async function criarOcorrenciaLivre() {
     if (!textoLivre.trim()) return;
     setErro(null);
@@ -135,15 +157,53 @@ export default function Ocorrencias({
 
   return (
     <div style={{ marginTop: 8 }}>
+      {erro && !modalAberto && !confirmando && <p style={{ color: cor.urgente, margin: "0 0 8px" }}>{erro}</p>}
       {marcados.length === 0 ? (
         <p style={{ color: cor.textoTerciario, marginTop: 4 }}>Nenhum andamento marcado como ocorrência.</p>
       ) : (
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-          {marcados.map((a) => (
-            <p key={a.id} style={{ textAlign: "justify", margin: 0 }}>
-              {a.texto}
-            </p>
-          ))}
+          {marcados.map((a) =>
+            editandoId === a.id ? (
+              <div key={a.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <textarea
+                  value={textoEdicao}
+                  onChange={(e) => setTextoEdicao(e.target.value)}
+                  style={{ padding: 8, minHeight: 100, width: "100%" }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => salvarEdicao(a.id)}
+                    disabled={salvandoEdicao || !textoEdicao.trim()}
+                    style={{ ...botaoPrimario, fontSize: 11, padding: "5px 12px" }}
+                  >
+                    {salvandoEdicao ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditandoId(null)}
+                    disabled={salvandoEdicao}
+                    style={{ fontSize: 11, padding: "5px 12px" }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <p style={{ textAlign: "justify", textIndent: "2em", margin: 0, flex: 1 }}>{a.texto}</p>
+                <button
+                  type="button"
+                  onClick={() => abrirEdicao(a)}
+                  title="Editar ocorrência"
+                  aria-label="Editar ocorrência"
+                  style={{ fontSize: 10.5, padding: "3px 8px", flex: "none" }}
+                >
+                  editar
+                </button>
+              </div>
+            ),
+          )}
         </div>
       )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8, flexWrap: "wrap" }}>

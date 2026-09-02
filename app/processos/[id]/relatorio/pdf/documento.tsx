@@ -310,7 +310,7 @@ export default function Documento({
     `<p style="font-weight:600;">Dados da entrega</p>${entregasHtml}`;
   const ocorrHtml =
     andamentos.length > 0
-      ? andamentos.map((a) => `<p>${escapeHtml(a.texto)}</p>`).join("")
+      ? andamentos.map((a) => `<p style="text-indent:2em;">${escapeHtml(a.texto)}</p>`).join("")
       : "<p>Nenhum andamento marcado para inclusão.</p>";
   const conclHtml =
     `<ul>${(p.conclusao_checks ?? []).map((c) => `<li>${escapeHtml(c)}</li>`).join("")}</ul>` +
@@ -662,7 +662,7 @@ export default function Documento({
         </div>
         {andamentos.length > 0 ? (
           andamentos.map((a) => (
-            <p key={a.id} style={{ margin: "0 0 12px", fontSize: 13, textAlign: "justify" }}>
+            <p key={a.id} style={{ margin: "0 0 12px", fontSize: 13, textAlign: "justify", textIndent: "2em" }}>
               {a.texto}
             </p>
           ))
