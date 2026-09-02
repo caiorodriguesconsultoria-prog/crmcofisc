@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { valorPorExtenso } from "@/lib/extenso";
 import { formatarMoedaBR, paraNumeroMoeda, moedaParaFormatado } from "@/lib/moeda";
-import { BotaoCopiar } from "@/app/_ui/campo";
+import { BotaoCopiar, CampoMascarado } from "@/app/_ui/campo";
 
 type Pessoa = { nome: string; matricula: string | null } | null;
 
@@ -293,11 +293,10 @@ export default function QuadroResumitivo({
           </div>
           <div style={{ marginTop: 2 }}>
             {editando ? (
-              <input
-                type="text"
-                inputMode="decimal"
-                value={valores.valor_unitario}
-                onChange={(e) => atualizar("valor_unitario", formatarMoedaBR(e.target.value))}
+              <CampoMascarado
+                valor={valores.valor_unitario}
+                formatar={formatarMoedaBR}
+                onChange={(v) => atualizar("valor_unitario", v)}
                 style={{ width: "100%", padding: 6 }}
               />
             ) : (
@@ -320,11 +319,10 @@ export default function QuadroResumitivo({
           </div>
           <div style={{ marginTop: 2 }}>
             {editando ? (
-              <input
-                type="text"
-                inputMode="decimal"
-                value={valores.valor_global}
-                onChange={(e) => atualizar("valor_global", formatarMoedaBR(e.target.value))}
+              <CampoMascarado
+                valor={valores.valor_global}
+                formatar={formatarMoedaBR}
+                onChange={(v) => atualizar("valor_global", v)}
                 style={{ width: "100%", padding: 6 }}
               />
             ) : (
@@ -347,11 +345,10 @@ export default function QuadroResumitivo({
           </div>
           <div style={{ marginTop: 2 }}>
             {editando ? (
-              <input
-                type="text"
-                inputMode="decimal"
-                value={valores.valor_garantia}
-                onChange={(e) => atualizar("valor_garantia", formatarMoedaBR(e.target.value))}
+              <CampoMascarado
+                valor={valores.valor_garantia}
+                formatar={formatarMoedaBR}
+                onChange={(v) => atualizar("valor_garantia", v)}
                 style={{ width: "100%", padding: 6 }}
               />
             ) : (

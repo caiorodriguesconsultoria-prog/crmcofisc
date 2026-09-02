@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
-import { LinhaChave } from "@/app/_ui/campo";
+import { LinhaChave, CampoMascarado } from "@/app/_ui/campo";
 import { cor } from "@/lib/theme";
 import { formatarMoedaBR, paraNumeroMoeda, moedaParaFormatado } from "@/lib/moeda";
 
@@ -298,11 +298,10 @@ export default function DadosProcesso({
           </label>
           <label style={{ fontSize: 11 }}>
             Valor global
-            <input
-              type="text"
-              inputMode="decimal"
-              value={valores.valor_global}
-              onChange={(e) => setValores((v) => ({ ...v, valor_global: formatarMoedaBR(e.target.value) }))}
+            <CampoMascarado
+              valor={valores.valor_global}
+              formatar={formatarMoedaBR}
+              onChange={(v) => setValores((atual) => ({ ...atual, valor_global: v }))}
               style={{ display: "block", width: "100%", padding: 6, marginTop: 2 }}
             />
           </label>

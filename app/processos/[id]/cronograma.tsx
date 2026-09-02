@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cor } from "@/lib/theme";
+import { CampoMascarado } from "@/app/_ui/campo";
 
 type Periodo = "manha" | "tarde";
 type Execucao = {
@@ -112,11 +113,10 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 function CampoQuantidade({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
   return (
     <Campo label="Quantidade">
-      <input
-        type="text"
-        inputMode="decimal"
-        value={valor}
-        onChange={(e) => onChange(formatarNumeroBR(e.target.value))}
+      <CampoMascarado
+        valor={valor}
+        formatar={formatarNumeroBR}
+        onChange={onChange}
         style={{ width: 90, padding: 4, textAlign: "center" }}
       />
     </Campo>

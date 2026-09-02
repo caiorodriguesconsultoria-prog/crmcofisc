@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { cor } from "@/lib/theme";
 
 async function copiar(texto: string) {
@@ -127,5 +128,55 @@ export function CampoLinha({
         {acao}
       </div>
     </div>
+  );
+}
+
+// Input de texto com máscara aplicada a cada tecla (moeda, quantidade em
+// milhar) — reformatar o valor sozinho, num input controlado, faz o cursor
+// pular pro fim a cada keystroke (comportamento padrão do React quando o
+// value muda de tamanho). Sem corrigir isso, digitar no meio de um valor
+// já preenchido (ex.: editar "167,63" pra virar "1.167,63") empurra os
+// próximos caracteres pro final, onde acabam descartados pela máscara —
+// parece que o campo "trava" num valor pequeno. Aqui a posição é restaurada
+// depois de cada reformatação.
+export function CampoMascarado({
+  valor,
+  onChange,
+  formatar,
+  style,
+  placeholder,
+}: {
+  valor: string;
+  onChange: (valorFormatado: string) => void;
+  formatar: (valorDigitado: string) => string;
+  style?: React.CSSProperties;
+  placeholder?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function aoDigitar(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const cursorAntes = input.selectionStart ?? input.value.length;
+    const comprimentoAntes = input.value.length;
+    const formatado = formatar(input.value);
+    onChange(formatado);
+    requestAnimationFrame(() => {
+      if (!inputRef.current) return;
+      const diferenca = formatado.length - comprimentoAntes;
+      const posicao = Math.max(0, cursorAntes + diferenca);
+      inputRef.current.setSelectionRange(posicao, posicao);
+    });
+  }
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      value={valor}
+      onChange={aoDigitar}
+      placeholder={placeholder}
+      style={style}
+    />
   );
 }
