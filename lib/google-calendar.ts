@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+const TASKS_URL = "https://tasks.googleapis.com/tasks/v1/lists/@default/tasks";
 
 // google_event_id vem do cliente (via /api/google/sync) e é concatenado na
 // URL da chamada pro Google — id de evento de verdade nunca tem esses
@@ -95,6 +96,50 @@ export async function removerEventoGoogle(googleEventId: string): Promise<void> 
   const accessToken = await obterAccessToken();
   if (!accessToken) return;
   await fetch(`${EVENTS_URL}/${googleEventId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+// Tarefas viram Google Tasks, não eventos de Calendar — aparecem na lista
+// "Tarefas" do próprio Calendar (painel lateral), em vez de um bloco de
+// horário que empilha em cima de outros quando várias caem no mesmo
+// horário. A API de Tasks do Google não guarda hora, só data (o horário
+// digitado no CRM fica só aqui dentro, não vai pro Google).
+export async function criarOuAtualizarTarefaGoogle(params: {
+  googleTaskId: string | null;
+  titulo: string;
+  notas: string;
+  data: string;
+}): Promise<string | null> {
+  const accessToken = await obterAccessToken();
+  if (!accessToken) return null;
+
+  const body = {
+    title: params.titulo,
+    notes: params.notas,
+    due: `${params.data}T00:00:00.000Z`,
+  };
+
+  if (params.googleTaskId && !idDeEventoValido(params.googleTaskId)) return null;
+  const metodo = params.googleTaskId ? "PATCH" : "POST";
+  const endpoint = params.googleTaskId ? `${TASKS_URL}/${params.googleTaskId}` : TASKS_URL;
+
+  const resposta = await fetch(endpoint, {
+    method: metodo,
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!resposta.ok) return null;
+  const dados = await resposta.json();
+  return (dados.id as string) ?? null;
+}
+
+export async function removerTarefaGoogle(googleTaskId: string): Promise<void> {
+  if (!idDeEventoValido(googleTaskId)) return;
+  const accessToken = await obterAccessToken();
+  if (!accessToken) return;
+  await fetch(`${TASKS_URL}/${googleTaskId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
