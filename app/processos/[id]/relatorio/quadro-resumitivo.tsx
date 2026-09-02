@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { valorPorExtenso } from "@/lib/extenso";
+import { formatarMoedaBR, paraNumeroMoeda, moedaParaFormatado } from "@/lib/moeda";
 
 type Pessoa = { nome: string; matricula: string | null } | null;
 
@@ -109,9 +110,9 @@ export default function QuadroResumitivo({
     }
     iniciais.vigencia_inicio = processo.vigencia_inicio ?? "";
     iniciais.vigencia_fim = processo.vigencia_fim ?? "";
-    iniciais.valor_unitario = processo.valor_unitario?.toString() ?? "";
-    iniciais.valor_global = processo.valor_global?.toString() ?? "";
-    iniciais.valor_garantia = processo.valor_garantia?.toString() ?? "";
+    iniciais.valor_unitario = moedaParaFormatado(processo.valor_unitario);
+    iniciais.valor_global = moedaParaFormatado(processo.valor_global);
+    iniciais.valor_garantia = moedaParaFormatado(processo.valor_garantia);
     return iniciais;
   });
 
@@ -136,9 +137,9 @@ export default function QuadroResumitivo({
         vigencia_fim: valores.vigencia_fim || null,
         publicacao_dou: valores.publicacao_dou || null,
         publicacao_pncp: valores.publicacao_pncp || null,
-        valor_unitario: valores.valor_unitario ? Number(valores.valor_unitario) : null,
-        valor_global: valores.valor_global ? Number(valores.valor_global) : null,
-        valor_garantia: valores.valor_garantia ? Number(valores.valor_garantia) : null,
+        valor_unitario: paraNumeroMoeda(valores.valor_unitario),
+        valor_global: paraNumeroMoeda(valores.valor_global),
+        valor_garantia: paraNumeroMoeda(valores.valor_garantia),
         portaria_designacao_fiscal: valores.portaria_designacao_fiscal || null,
         nota_empenho_numero: valores.nota_empenho_numero || null,
         programa_trabalho: valores.programa_trabalho || null,
@@ -183,18 +184,24 @@ export default function QuadroResumitivo({
     );
   }
 
+  // Salva sozinho assim que o foco sai de toda a área de edição (clicar em
+  // outro lugar da página, fechar o processo, etc.) — não fica mais
+  // dependendo de lembrar de clicar em "Salvar" antes de sair daqui.
+  function aoPerderFoco(e: React.FocusEvent<HTMLDivElement>) {
+    if (!editando) return;
+    if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
+    salvar();
+  }
+
   return (
-    <div style={{ marginTop: 8 }}>
+    <div style={{ marginTop: 8 }} onBlur={aoPerderFoco}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         {!editando ? (
           <button onClick={() => setEditando(true)}>Editar</button>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={salvar} disabled={salvando}>
-              Salvar
-            </button>
-            <button onClick={() => setEditando(false)} disabled={salvando}>
-              Cancelar
+              {salvando ? "Salvando..." : "Salvar e fechar"}
             </button>
           </div>
         )}
@@ -266,10 +273,10 @@ export default function QuadroResumitivo({
           <div style={{ marginTop: 2 }}>
             {editando ? (
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={valores.valor_unitario}
-                onChange={(e) => atualizar("valor_unitario", e.target.value)}
+                onChange={(e) => atualizar("valor_unitario", formatarMoedaBR(e.target.value))}
                 style={{ width: "100%", padding: 6 }}
               />
             ) : (
@@ -290,10 +297,10 @@ export default function QuadroResumitivo({
           <div style={{ marginTop: 2 }}>
             {editando ? (
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={valores.valor_global}
-                onChange={(e) => atualizar("valor_global", e.target.value)}
+                onChange={(e) => atualizar("valor_global", formatarMoedaBR(e.target.value))}
                 style={{ width: "100%", padding: 6 }}
               />
             ) : (
@@ -314,10 +321,10 @@ export default function QuadroResumitivo({
           <div style={{ marginTop: 2 }}>
             {editando ? (
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={valores.valor_garantia}
-                onChange={(e) => atualizar("valor_garantia", e.target.value)}
+                onChange={(e) => atualizar("valor_garantia", formatarMoedaBR(e.target.value))}
                 style={{ width: "100%", padding: 6 }}
               />
             ) : (

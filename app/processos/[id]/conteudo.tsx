@@ -13,6 +13,13 @@ import Conclusao from "./conclusao";
 import Abas from "./abas";
 import QuadroResumitivo from "./relatorio/quadro-resumitivo";
 import CronogramaRelatorio from "./relatorio/cronograma-relatorio";
+
+// Alguns contratos têm o número de um documento SEI digitado junto do
+// número do contrato, tipo "255/2026 (0057340889)" — útil no Quadro
+// Resumitivo, mas polui o título no topo da página. Aqui só pro título.
+function numeroContratoSemSei(numero: string) {
+  return numero.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
 import PautaDistribuicao from "./relatorio/pauta-distribuicao";
 import EntregasLazy from "./entregas-lazy";
 import HistoricoLazy from "./historico-lazy";
@@ -487,7 +494,7 @@ export async function carregarProcesso(id: string) {
   const topo = (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <TituloDestaque fontSize={19}>CT nº {p.numero_contrato}</TituloDestaque>
+        <TituloDestaque fontSize={19}>CT nº {numeroContratoSemSei(p.numero_contrato)}</TituloDestaque>
         {p.coordenacoes?.sigla && (
           <span style={{ ...pill, background: "rgba(96,93,93,.10)", color: cor.textoSecundario }}>
             {p.coordenacoes.sigla}

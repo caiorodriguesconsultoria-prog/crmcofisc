@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
 import { LinhaChave } from "@/app/_ui/campo";
 import { cor } from "@/lib/theme";
+import { formatarMoedaBR, paraNumeroMoeda, moedaParaFormatado } from "@/lib/moeda";
 
 function formatarData(data: string | null) {
   return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "não informado";
@@ -75,7 +76,7 @@ export default function DadosProcesso({
     vigencia_inicio: vigenciaInicio ?? "",
     vigencia_fim: vigenciaFim ?? "",
     natureza_despesa: naturezaDespesa ?? "",
-    valor_global: valorGlobal?.toString() ?? "",
+    valor_global: moedaParaFormatado(valorGlobal),
     unidade_medida: unidadeMedida ?? "",
     execucao_forma: execucaoForma ?? "",
   });
@@ -108,7 +109,7 @@ export default function DadosProcesso({
       vigencia_inicio: vigenciaInicio ?? "",
       vigencia_fim: vigenciaFim ?? "",
       natureza_despesa: naturezaDespesa ?? "",
-      valor_global: valorGlobal?.toString() ?? "",
+      valor_global: moedaParaFormatado(valorGlobal),
       unidade_medida: unidadeMedida ?? "",
       execucao_forma: execucaoForma ?? "",
     });
@@ -127,7 +128,7 @@ export default function DadosProcesso({
         vigencia_inicio: valores.vigencia_inicio || null,
         vigencia_fim: valores.vigencia_fim || null,
         natureza_despesa: valores.natureza_despesa || null,
-        valor_global: valores.valor_global ? Number(valores.valor_global) : null,
+        valor_global: paraNumeroMoeda(valores.valor_global),
         unidade_medida: valores.unidade_medida || null,
         execucao_forma: valores.execucao_forma || null,
       })
@@ -286,10 +287,10 @@ export default function DadosProcesso({
           <label style={{ fontSize: 11 }}>
             Valor global
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={valores.valor_global}
-              onChange={(e) => setValores((v) => ({ ...v, valor_global: e.target.value }))}
+              onChange={(e) => setValores((v) => ({ ...v, valor_global: formatarMoedaBR(e.target.value) }))}
               style={{ display: "block", width: "100%", padding: 6, marginTop: 2 }}
             />
           </label>
