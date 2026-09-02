@@ -5,13 +5,14 @@
 // bloqueia a ação principal.
 export async function sincronizarGoogle(params: {
   tipo: "agendamento" | "tarefa" | "andamento";
-  acao: "salvar" | "remover";
+  acao: "salvar" | "remover" | "concluir";
   id: string;
   googleEventId: string | null;
   numeroContrato: string;
   descricao: string;
   data?: string | null;
   horario?: string | null;
+  concluida?: boolean;
   processoId: string;
 }) {
   try {
@@ -27,6 +28,7 @@ export async function sincronizarGoogle(params: {
         descricao: params.descricao,
         data: params.data ?? undefined,
         horario: params.horario ?? undefined,
+        concluida: params.concluida,
         urlProcesso: `${window.location.origin}/processos/${params.processoId}`,
       }),
     });

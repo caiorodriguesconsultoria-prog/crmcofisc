@@ -46,7 +46,7 @@ type Processo = {
   responsavel: { nome: string } | null;
   processo_eletronico_numero: string | null;
   processo_tags: { tags: { id: string; valor: string; cor: string | null } | null }[];
-  proximoAgendamento: { data: string; horario: string } | null;
+  proximoAgendamento: { data: string; horario: string | null; periodo: "manha" | "tarde" | null } | null;
 };
 
 // Cor de fundo da linha só quando o processo está de fato em cobertura de
@@ -355,7 +355,14 @@ export default function ListaProcessos({
                     </span>
                     {p.proximoAgendamento && (
                       <span style={{ fontSize: 11, color: cor.textoTerciario, whiteSpace: "nowrap" }}>
-                        {formatarDataAgendamento(p.proximoAgendamento.data)} {p.proximoAgendamento.horario.slice(0, 5)}
+                        {formatarDataAgendamento(p.proximoAgendamento.data)}{" "}
+                        {p.proximoAgendamento.horario
+                          ? p.proximoAgendamento.horario.slice(0, 5)
+                          : p.proximoAgendamento.periodo === "manha"
+                            ? "Manhã"
+                            : p.proximoAgendamento.periodo === "tarde"
+                              ? "Tarde"
+                              : ""}
                       </span>
                     )}
                   </div>

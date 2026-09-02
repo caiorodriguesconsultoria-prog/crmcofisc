@@ -42,7 +42,7 @@ export default async function DashboardPage() {
       .eq("agendamento_data", hoje),
     supabase
       .from("processo_tarefas")
-      .select("origem_tipo, origem_id, label, agendamento_horario")
+      .select("origem_tipo, origem_id, label, periodo")
       .eq("concluida", false)
       .eq("agendamento_data", hoje),
     getTagsEvento(),
@@ -103,7 +103,15 @@ export default async function DashboardPage() {
   const processoIdPorOrigemKanban = new Map((kanbanAtivo ?? []).map((k) => [k.id, k.processo_id]));
   const processoIdPorOrigemTag = new Map((tagHistoricoAtivo ?? []).map((t) => [t.id, t.processo_id]));
 
-  type ItemAtividade = { rotulo: string; horario: string | null };
+  type ItemAtividade = { rotulo: string; horario: string | null; periodo?: "manha" | "tarde" | null };
+  // Pra ordenar a lista: agendamento tem hora exata, tarefa só tem período —
+  // período vira um horário fictício só pra decidir a ordem de exibição.
+  function chaveOrdenacaoItem(item: ItemAtividade) {
+    if (item.horario) return item.horario;
+    if (item.periodo === "manha") return "08:00";
+    if (item.periodo === "tarde") return "14:00";
+    return "23:59";
+  }
   const atividadePorProcesso = new Map<string, ItemAtividade[]>();
   function adicionar(processoId: string | undefined, item: ItemAtividade) {
     if (!processoId) return;
@@ -123,7 +131,7 @@ export default async function DashboardPage() {
       t.origem_tipo === "kanban"
         ? processoIdPorOrigemKanban.get(t.origem_id)
         : processoIdPorOrigemTag.get(t.origem_id);
-    adicionar(processoId, { rotulo: t.label, horario: t.agendamento_horario });
+    adicionar(processoId, { rotulo: t.label, horario: null, periodo: t.periodo as "manha" | "tarde" | null });
   }
 
   const processosAtividadeHoje = (processos ?? [])
@@ -137,7 +145,9 @@ export default async function DashboardPage() {
       tags: (p.processo_tags ?? [])
         .map((pt: any) => pt.tags)
         .filter((t: any): t is { id: string; valor: string; cor: string | null } => !!t),
-      itens: (atividadePorProcesso.get(p.id) ?? []).sort((a, b) => (a.horario ?? "").localeCompare(b.horario ?? "")),
+      itens: (atividadePorProcesso.get(p.id) ?? []).sort((a, b) =>
+        chaveOrdenacaoItem(a).localeCompare(chaveOrdenacaoItem(b)),
+      ),
     }));
 
   return (

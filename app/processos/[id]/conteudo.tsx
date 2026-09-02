@@ -205,7 +205,7 @@ export async function carregarProcesso(id: string) {
 
   const { data: tarefasRaw } = await supabase
     .from("processo_tarefas")
-    .select("id, origem_tipo, origem_id, ordem, label, concluida, agendamento_data, agendamento_horario, google_event_id")
+    .select("id, origem_tipo, origem_id, ordem, label, concluida, agendamento_data, periodo, google_event_id")
     .eq("processo_id", id)
     .in("origem_id", origensAtivas.length > 0 ? origensAtivas : ["00000000-0000-0000-0000-000000000000"])
     .order("ordem");
@@ -215,7 +215,7 @@ export async function carregarProcesso(id: string) {
     label: string;
     concluida: boolean;
     agendamentoData: string | null;
-    agendamentoHorario: string | null;
+    periodo: "manha" | "tarde" | null;
     googleEventId: string | null;
   };
 
@@ -231,7 +231,7 @@ export async function carregarProcesso(id: string) {
       label: t.label,
       concluida: t.concluida,
       agendamentoData: t.agendamento_data,
-      agendamentoHorario: t.agendamento_horario,
+      periodo: t.periodo,
       googleEventId: t.google_event_id,
     });
     acc.set(t.origem_id, grupo);

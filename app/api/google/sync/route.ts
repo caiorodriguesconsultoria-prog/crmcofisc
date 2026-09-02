@@ -6,6 +6,7 @@ import {
   removerEventoGoogle,
   criarOuAtualizarTarefaGoogle,
   removerTarefaGoogle,
+  marcarConclusaoTarefaGoogle,
 } from "@/lib/google-calendar";
 
 // Chamado pelo navegador logo depois de criar/editar/remover/concluir um
@@ -25,9 +26,9 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { tipo, acao, id, googleEventId, numeroContrato, descricao, data, horario, urlProcesso } = body as {
+  const { tipo, acao, id, googleEventId, numeroContrato, descricao, data, horario, urlProcesso, concluida } = body as {
     tipo: "agendamento" | "tarefa" | "andamento";
-    acao: "salvar" | "remover";
+    acao: "salvar" | "remover" | "concluir";
     id: string;
     googleEventId: string | null;
     numeroContrato: string;
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
     data?: string;
     horario?: string;
     urlProcesso: string;
+    concluida?: boolean;
   };
 
   const TABELAS = {
@@ -45,6 +47,17 @@ export async function POST(request: NextRequest) {
   const tabela = TABELAS[tipo];
   if (!tabela) {
     return NextResponse.json({ error: "tipo inválido" }, { status: 400 });
+  }
+
+  if (acao === "concluir") {
+    if (tipo === "tarefa" && googleEventId) {
+      await marcarConclusaoTarefaGoogle({
+        googleTaskId: googleEventId,
+        tituloBase: `CT ${numeroContrato} - ${descricao}`,
+        concluida: !!concluida,
+      });
+    }
+    return NextResponse.json({ ok: true });
   }
 
   if (acao === "remover") {

@@ -48,7 +48,7 @@ export default async function ProcessosPage({
     supabase.from("processo_agendamentos").select("processo_id, data, horario").gte("data", hoje),
     supabase
       .from("processo_tarefas")
-      .select("processo_id, agendamento_data, agendamento_horario")
+      .select("processo_id, agendamento_data, periodo")
       .eq("origem_tipo", "evento")
       .eq("concluida", false)
       .not("agendamento_data", "is", null)
@@ -56,18 +56,34 @@ export default async function ProcessosPage({
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
   ]);
 
-  const proximoAgendamentoPorProcesso = new Map<string, { data: string; horario: string }>();
-  function considerar(processoId: string, data: string, horario: string) {
+  // Agendamentos de entrega têm horário exato; tarefas só têm período
+  // (Manhã/Tarde) — "manha"/"tarde" viram um horário fictício só pra
+  // comparar qual vem primeiro no dia, nunca são exibidos como hora real.
+  function chaveOrdenacao(horario: string | null, periodo: "manha" | "tarde" | null) {
+    if (horario) return horario;
+    if (periodo === "manha") return "08:00:00";
+    if (periodo === "tarde") return "14:00:00";
+    return "23:59:59";
+  }
+  const proximoAgendamentoPorProcesso = new Map<
+    string,
+    { data: string; horario: string | null; periodo: "manha" | "tarde" | null }
+  >();
+  function considerar(processoId: string, data: string, horario: string | null, periodo: "manha" | "tarde" | null) {
     const atual = proximoAgendamentoPorProcesso.get(processoId);
-    if (!atual || data < atual.data || (data === atual.data && horario < atual.horario)) {
-      proximoAgendamentoPorProcesso.set(processoId, { data, horario });
+    if (
+      !atual ||
+      data < atual.data ||
+      (data === atual.data && chaveOrdenacao(horario, periodo) < chaveOrdenacao(atual.horario, atual.periodo))
+    ) {
+      proximoAgendamentoPorProcesso.set(processoId, { data, horario, periodo });
     }
   }
   for (const a of agendamentosRaw ?? []) {
-    considerar(a.processo_id, a.data, a.horario);
+    considerar(a.processo_id, a.data, a.horario, null);
   }
   for (const t of tarefasAgendadasRaw ?? []) {
-    considerar(t.processo_id, t.agendamento_data as string, t.agendamento_horario as string);
+    considerar(t.processo_id, t.agendamento_data as string, null, t.periodo as "manha" | "tarde" | null);
   }
   const processosComAgendamento = (processos ?? []).map((p) => ({
     ...p,

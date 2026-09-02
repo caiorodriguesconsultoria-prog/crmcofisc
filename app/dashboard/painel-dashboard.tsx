@@ -14,7 +14,7 @@ type Processo = {
   diasParado: number | null;
 };
 
-type ItemAtividade = { rotulo: string; horario: string | null };
+type ItemAtividade = { rotulo: string; horario: string | null; periodo?: "manha" | "tarde" | null };
 
 type ProcessoAtividadeHoje = {
   id: string;
@@ -179,7 +179,11 @@ export default function PainelDashboard({
                       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                         {p.itens.map((item, i) => (
                           <span key={i} style={{ fontSize: 12 }}>
-                            {item.horario ? `${item.horario.slice(0, 5)} · ` : ""}
+                            {item.horario
+                              ? `${item.horario.slice(0, 5)} · `
+                              : item.periodo
+                                ? `${item.periodo === "manha" ? "Manhã" : "Tarde"} · `
+                                : ""}
                             {item.rotulo}
                           </span>
                         ))}

@@ -144,3 +144,22 @@ export async function removerTarefaGoogle(googleTaskId: string): Promise<void> {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
+
+// Ao concluir uma tarefa no CRM, a Google Task correspondente não é apagada
+// — só ganha um "✓ " na frente do título, pra continuar visível na lista de
+// Tarefas do Calendar em vez de sumir. Reversível: reabrir a tarefa tira o
+// prefixo de volta.
+export async function marcarConclusaoTarefaGoogle(params: {
+  googleTaskId: string;
+  tituloBase: string;
+  concluida: boolean;
+}): Promise<void> {
+  if (!idDeEventoValido(params.googleTaskId)) return;
+  const accessToken = await obterAccessToken();
+  if (!accessToken) return;
+  await fetch(`${TASKS_URL}/${params.googleTaskId}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ title: params.concluida ? `✓ ${params.tituloBase}` : params.tituloBase }),
+  });
+}
