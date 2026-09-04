@@ -467,5 +467,12 @@ Caio pediu explicação de um conjunto de ferramentas (Cloudflare, .env, Dependa
 
 Ainda não implementado no CRM-COFISC — RLS auditado nesta rodada (resultado pendente de Caio rodar `sql/auditoria_rls.sql`), health-check e log simplificado a implementar em seguida.
 
+## 2026-09-04 · Acerto a repetir — Health-check em /api/status
+`app/api/status/route.ts`: rota pública, sem autenticação (precisa ser acessível de fora, por um monitor externo). Testa o banco de verdade — não só "o servidor respondeu" — com uma consulta `head: true` (retorna só a contagem, sem baixar linha nenhuma, pra não pesar) na tabela `coordenacoes`. Responde `200 {status: "ok"}` ou `500 {status: "erro"}`, sempre com `sistema: "CRM-COFISC"` no corpo — pensado desde já pra quando Caio tiver vários sistemas rodando e monitor externo apontado pra vários endpoints, o alerta já vem dizendo qual sistema caiu. Sem dado sensível na resposta.
+
+Teste seguro embutido: env var `FORCAR_FALHA_STATUS=true` na Vercel faz a rota responder erro de propósito sem mexer no banco — liga por 1-2 minutos pra confirmar que o monitor externo detecta e o alerta chega, depois desliga. Nunca precisa derrubar o sistema de verdade pra testar o alerta.
+
+Próximo passo, ainda pendente de decisão do Caio: cadastrar `https://crmcofisc.vercel.app/api/status` num monitor externo grátis (UptimeRobot, Better Stack ou Freshping) e configurar notificação pro celular (push do app do monitor, ou webhook Telegram/Pushover).
+
 ## 2026-09-04 · Acerto a repetir — Auditoria de RLS concluída, sem pendência
 Caio rodou `sql/auditoria_rls.sql` no Supabase do CRM-COFISC. Resultado: as 24 tabelas do schema `public` estão com `rowsecurity = true` — nenhuma tabela desprotegida. 23 delas têm políticas via `is_authorized()`/`is_admin()` (padrão definido em 17/08: equipe lê/edita, admin exclui e mexe em cadastro mestre) mais `push_subscriptions` restrita por dono (`auth.uid()`). A 24ª, `google_calendar_tokens`, tem RLS ligado e propositalmente **sem nenhuma política** — bloqueia todo acesso via navegador, só o service role (que ignora RLS) grava nela. Nenhuma correção necessária. Próximo item do checklist de observabilidade: health-check + monitor externo, depois log de erro simplificado.
