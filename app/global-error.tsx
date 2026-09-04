@@ -10,6 +10,16 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     Sentry.captureException(error);
+    fetch("/api/erro/notificar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contexto: typeof window !== "undefined" ? window.location.pathname : "tela desconhecida",
+        mensagem: error.message,
+      }),
+    }).catch(() => {
+      // se nem o aviso conseguir sair, o Sentry acima já registrou o erro
+    });
   }, [error]);
 
   return (
