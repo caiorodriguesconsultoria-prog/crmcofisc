@@ -479,7 +479,7 @@ Caio criou conta no UptimeRobot, monitor apontando pra `https://crmcofisc.vercel
 
 **Detalhe pra não esquecer em projetos futuros**: no cadastro inicial do UptimeRobot, o campo de URL da tela de signup só aceita domínio simples (`crmcofisc.vercel.app`, sem `https://` nem caminho) — o path completo (`/api/status`) só entra depois, editando o monitor já criado. Tentar direto com a URL completa dá erro de "URL inválida".
 
-Falta só: reverter `FORCAR_FALHA_STATUS` pra `false`/removida + redeploy (voltar ao normal). Próximo item do checklist: log de erro com linguagem simples + identificação do sistema (Sentry já instalado, falta lapidar).
+`FORCAR_FALHA_STATUS` revertida e redeploy feito — voltou ao normal, confirmado pelo segundo alerta do UptimeRobot avisando "voltou a funcionar" (ciclo completo caiu→avisou→voltou→avisou testado com sucesso). Próximo item do checklist: log de erro com linguagem simples + identificação do sistema (Sentry já instalado, falta lapidar).
 
 ## 2026-09-04 · Acerto a repetir — Auditoria de RLS concluída, sem pendência
 Caio rodou `sql/auditoria_rls.sql` no Supabase do CRM-COFISC. Resultado: as 24 tabelas do schema `public` estão com `rowsecurity = true` — nenhuma tabela desprotegida. 23 delas têm políticas via `is_authorized()`/`is_admin()` (padrão definido em 17/08: equipe lê/edita, admin exclui e mexe em cadastro mestre) mais `push_subscriptions` restrita por dono (`auth.uid()`). A 24ª, `google_calendar_tokens`, tem RLS ligado e propositalmente **sem nenhuma política** — bloqueia todo acesso via navegador, só o service role (que ignora RLS) grava nela. Nenhuma correção necessária. Próximo item do checklist de observabilidade: health-check + monitor externo, depois log de erro simplificado.
