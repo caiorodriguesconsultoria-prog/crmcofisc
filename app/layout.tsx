@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import Sidebar from "./_nav/sidebar";
 import Atividades from "./_nav/atividades";
+import SentryUsuario from "./_sentry-usuario";
 import { cor } from "@/lib/theme";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
@@ -36,6 +37,7 @@ export default function RootLayout({
           display: "flex",
         }}
       >
+        <SentryUsuario />
         <Sidebar>
           <Suspense fallback={null}>
             <Atividades />
