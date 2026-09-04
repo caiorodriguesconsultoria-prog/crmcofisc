@@ -5,8 +5,9 @@ import NovaPessoaPapelForm from "../../_pessoas-papel/form";
 export default async function NovoFiscalPage() {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/login");
@@ -22,17 +23,5 @@ export default async function NovoFiscalPage() {
     redirect("/fiscais");
   }
 
-  const { data: coordenacoes } = await supabase
-    .from("coordenacoes")
-    .select("id, sigla")
-    .order("sigla");
-
-  return (
-    <NovaPessoaPapelForm
-      papel="fiscal"
-      titulo="Novo fiscal"
-      voltarHref="/fiscais"
-      coordenacoes={coordenacoes ?? []}
-    />
-  );
+  return <NovaPessoaPapelForm papel="fiscal" titulo="Novo fiscal" voltarHref="/fiscais" />;
 }

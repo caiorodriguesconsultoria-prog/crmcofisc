@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { botaoPrimario, cor } from "@/lib/theme";
 
 export default function NovoFornecedorForm() {
   const router = useRouter();
@@ -10,11 +11,9 @@ export default function NovoFornecedorForm() {
 
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
-  const [endereco, setEndereco] = useState("");
   const [preposto, setPreposto] = useState("");
   const [telefone, setTelefone] = useState("");
   const [emails, setEmails] = useState([{ email: "", rotulo: "" }]);
-  const [bancoConta, setBancoConta] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -39,11 +38,9 @@ export default function NovoFornecedorForm() {
       .from("fornecedores")
       .insert({
         nome,
-        cnpj,
-        endereco: endereco || null,
+        cnpj: cnpj.trim() || null,
         preposto: preposto || null,
         telefone: telefone || null,
-        banco_conta: bancoConta || null,
       })
       .select("id")
       .single();
@@ -86,19 +83,10 @@ export default function NovoFornecedorForm() {
         />
       </label>
       <label>
-        CNPJ
+        CNPJ (opcional)
         <input
           value={cnpj}
           onChange={(e) => setCnpj(e.target.value)}
-          required
-          style={{ display: "block", width: "100%", padding: 8 }}
-        />
-      </label>
-      <label>
-        Endereço
-        <input
-          value={endereco}
-          onChange={(e) => setEndereco(e.target.value)}
           style={{ display: "block", width: "100%", padding: 8 }}
         />
       </label>
@@ -146,16 +134,8 @@ export default function NovoFornecedorForm() {
           + Adicionar e-mail
         </button>
       </div>
-      <label>
-        Banco / conta
-        <input
-          value={bancoConta}
-          onChange={(e) => setBancoConta(e.target.value)}
-          style={{ display: "block", width: "100%", padding: 8 }}
-        />
-      </label>
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
-      <button type="submit" disabled={salvando} style={{ padding: 10 }}>
+      {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
+      <button type="submit" disabled={salvando} style={botaoPrimario}>
         {salvando ? "Salvando..." : "Criar fornecedor"}
       </button>
     </form>

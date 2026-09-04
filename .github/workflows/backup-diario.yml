@@ -1,0 +1,58 @@
+name: Backup diário do banco
+
+on:
+  schedule:
+    # 06:00 UTC = 03:00 em Brasília (UTC-3 fixo, sem horário de verão)
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+# Esse workflow só lê o repositório (pro checkout) e não chama a API do
+# GitHub — sem isso, o GITHUB_TOKEN herda permissão de escrita por padrão,
+# mais acesso do que o necessário.
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Instala cliente do Postgres (versão 17, compatível com o banco)
+        run: |
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Gera o dump do banco
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          data=$(date +%Y-%m-%d)
+          arquivo="backup-crmcofisc-${data}.dump"
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --format=custom --file="$arquivo"
+          echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
+
+      - name: Guarda como artefato do GitHub (redundância, 90 dias)
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARQUIVO }}
+          path: ${{ env.ARQUIVO }}
+          retention-days: 90
+
+      - name: Configura Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Instala dependências do Google Drive
+        run: pip install --quiet google-api-python-client google-auth
+
+      - name: Sobe o dump pro Google Drive e limpa backups com mais de 90 dias
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_DRIVE_REFRESH_TOKEN: ${{ secrets.GOOGLE_DRIVE_REFRESH_TOKEN }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: python scripts/backup_para_drive.py "$ARQUIVO"

@@ -1,12 +1,13 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import ListaFornecedores from "./lista";
 
 export default async function FornecedoresPage() {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/login");
@@ -23,59 +24,10 @@ export default async function FornecedoresPage() {
   const isAdmin = pessoa?.is_admin ?? false;
 
   return (
-    <main style={{ padding: 32 }}>
-      <p>
-        <Link href="/dashboard">← Voltar</Link>
-      </p>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginTop: 12,
-        }}
-      >
-        <h1 style={{ fontSize: 20 }}>Fornecedores</h1>
-        {isAdmin && <Link href="/fornecedores/novo">+ Novo fornecedor</Link>}
-      </div>
-
-      {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
-
-      <table style={{ width: "100%", marginTop: 16, borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 8 }}>Nome</th>
-            <th style={{ padding: 8 }}>CNPJ</th>
-            <th style={{ padding: 8 }}>Preposto</th>
-            <th style={{ padding: 8 }}>Telefone</th>
-            <th style={{ padding: 8 }}>E-mails</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(fornecedores ?? []).map((f) => (
-            <tr key={f.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: 8 }}>{f.nome}</td>
-              <td style={{ padding: 8 }}>{f.cnpj}</td>
-              <td style={{ padding: 8 }}>{f.preposto}</td>
-              <td style={{ padding: 8 }}>{f.telefone}</td>
-              <td style={{ padding: 8 }}>
-                {(f.fornecedor_emails ?? [])
-                  .map((e: { email: string; rotulo: string | null }) =>
-                    e.rotulo ? `${e.email} (${e.rotulo})` : e.email,
-                  )
-                  .join(", ")}
-              </td>
-            </tr>
-          ))}
-          {(fornecedores ?? []).length === 0 && (
-            <tr>
-              <td colSpan={5} style={{ padding: 8, color: "#7D7979" }}>
-                Nenhum fornecedor cadastrado.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </main>
+    <ListaFornecedores
+      fornecedores={(fornecedores ?? []) as any}
+      isAdmin={isAdmin}
+      erro={error?.message}
+    />
   );
 }

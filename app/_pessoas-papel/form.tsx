@@ -3,56 +3,41 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-type Coordenacao = { id: string; sigla: string };
+import { botaoPrimario, cor } from "@/lib/theme";
+import { verificarPessoaDuplicada, garantirPessoaComPapel } from "@/lib/verificar-pessoa-duplicada";
+import Painel from "@/app/_ui/painel";
 
 export default function NovaPessoaPapelForm({
   papel,
   titulo,
   voltarHref,
-  coordenacoes,
 }: {
   papel: "gestor" | "fiscal";
   titulo: string;
   voltarHref: string;
-  coordenacoes: Coordenacao[];
 }) {
   const router = useRouter();
   const supabase = createClient();
 
   const [nome, setNome] = useState("");
   const [matricula, setMatricula] = useState("");
-  const [email, setEmail] = useState("");
-  const [coordenacaoId, setCoordenacaoId] = useState("");
+  const [avisoDuplicado, setAvisoDuplicado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+
+  async function checarDuplicado() {
+    setAvisoDuplicado(await verificarPessoaDuplicada(supabase, nome, matricula));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
     setSalvando(true);
 
-    const { data: pessoa, error: erroPessoa } = await supabase
-      .from("pessoas")
-      .insert({ nome, matricula, email })
-      .select("id")
-      .single();
-
-    if (erroPessoa || !pessoa) {
-      setErro(erroPessoa?.message ?? "Erro ao criar cadastro.");
-      setSalvando(false);
-      return;
-    }
-
-    const { error: erroPapel } = await supabase.from("pessoa_papeis").insert({
-      pessoa_id: pessoa.id,
-      coordenacao_id: coordenacaoId,
-      papel,
-    });
-
-    if (erroPapel) {
-      setErro(erroPapel.message);
-      setSalvando(false);
+    const resultado = await garantirPessoaComPapel(supabase, nome, matricula, papel);
+    setSalvando(false);
+    if ("erro" in resultado) {
+      setErro(resultado.erro);
       return;
     }
 
@@ -61,14 +46,14 @@ export default function NovaPessoaPapelForm({
   }
 
   return (
-    <main style={{ padding: 32, maxWidth: 480 }}>
-      <h1 style={{ fontSize: 20, marginBottom: 16 }}>{titulo}</h1>
+    <Painel titulo={titulo} voltarHref={voltarHref} maxWidth={480}>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <label>
-          Nome
+          Nome completo
           <input
             value={nome}
             onChange={(e) => setNome(e.target.value)}
+            onBlur={checarDuplicado}
             required
             style={{ display: "block", width: "100%", padding: 8 }}
           />
@@ -78,41 +63,19 @@ export default function NovaPessoaPapelForm({
           <input
             value={matricula}
             onChange={(e) => setMatricula(e.target.value)}
+            onBlur={checarDuplicado}
             required
             style={{ display: "block", width: "100%", padding: 8 }}
           />
         </label>
-        <label>
-          E-mail
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ display: "block", width: "100%", padding: 8 }}
-          />
-        </label>
-        <label>
-          Coordenação
-          <select
-            value={coordenacaoId}
-            onChange={(e) => setCoordenacaoId(e.target.value)}
-            required
-            style={{ display: "block", width: "100%", padding: 8 }}
-          >
-            <option value="">Selecione</option>
-            {coordenacoes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.sigla}
-              </option>
-            ))}
-          </select>
-        </label>
-        {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
-        <button type="submit" disabled={salvando} style={{ padding: 10 }}>
+        {avisoDuplicado && (
+          <p style={{ color: cor.atencao, margin: 0, fontSize: 12.5 }}>⚠ {avisoDuplicado}</p>
+        )}
+        {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
+        <button type="submit" disabled={salvando} style={botaoPrimario}>
           {salvando ? "Salvando..." : "Criar cadastro"}
         </button>
       </form>
-    </main>
+    </Painel>
   );
 }

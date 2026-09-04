@@ -1,76 +1,126 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import ListaProcessos from "./lista";
+import { botaoPrimario, cor } from "@/lib/theme";
+import Painel from "@/app/_ui/painel";
+import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
 
-export default async function ProcessosPage() {
+export default async function ProcessosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ etapa?: string; evento?: string }>;
+}) {
+  const sp = await searchParams;
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: processos, error } = await supabase
-    .from("processos")
-    .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacoes(sigla), fornecedores(nome)",
-    )
-    .order("created_at", { ascending: false });
+  const hoje = new Date().toISOString().slice(0, 10);
+
+  const [
+    { data: processos, error },
+    { data: coordenacoes },
+    { data: formasEntrega },
+    eventos,
+    responsaveis,
+    etapas,
+    { data: agendamentosRaw },
+    { data: tarefasAgendadasRaw },
+    { data: pessoaAtual },
+  ] = await Promise.all([
+    supabase
+      .from("processos")
+      .select(
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, titular_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor))",
+      )
+      .order("created_at", { ascending: false }),
+    supabase.from("coordenacoes").select("id, sigla").order("sigla"),
+    supabase.from("tags").select("id, valor").eq("categoria", "forma_entrega").eq("ativo", true).order("valor"),
+    getTagsEvento(),
+    getPessoasAtivas(),
+    getEtapasKanban(),
+    supabase.from("processo_agendamentos").select("processo_id, data, horario").gte("data", hoje),
+    supabase
+      .from("processo_tarefas")
+      .select("processo_id, agendamento_data, periodo")
+      .eq("origem_tipo", "evento")
+      .eq("concluida", false)
+      .not("agendamento_data", "is", null)
+      .gte("agendamento_data", hoje),
+    supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
+  ]);
+
+  // Agendamentos de entrega têm horário exato; tarefas só têm período
+  // (Manhã/Tarde) — "manha"/"tarde" viram um horário fictício só pra
+  // comparar qual vem primeiro no dia, nunca são exibidos como hora real.
+  function chaveOrdenacao(horario: string | null, periodo: "manha" | "tarde" | null) {
+    if (horario) return horario;
+    if (periodo === "manha") return "08:00:00";
+    if (periodo === "tarde") return "14:00:00";
+    return "23:59:59";
+  }
+  const proximoAgendamentoPorProcesso = new Map<
+    string,
+    { data: string; horario: string | null; periodo: "manha" | "tarde" | null }
+  >();
+  function considerar(processoId: string, data: string, horario: string | null, periodo: "manha" | "tarde" | null) {
+    const atual = proximoAgendamentoPorProcesso.get(processoId);
+    if (
+      !atual ||
+      data < atual.data ||
+      (data === atual.data && chaveOrdenacao(horario, periodo) < chaveOrdenacao(atual.horario, atual.periodo))
+    ) {
+      proximoAgendamentoPorProcesso.set(processoId, { data, horario, periodo });
+    }
+  }
+  for (const a of agendamentosRaw ?? []) {
+    considerar(a.processo_id, a.data, a.horario, null);
+  }
+  for (const t of tarefasAgendadasRaw ?? []) {
+    considerar(t.processo_id, t.agendamento_data as string, null, t.periodo as "manha" | "tarde" | null);
+  }
+  const processosComAgendamento = (processos ?? []).map((p) => ({
+    ...p,
+    proximoAgendamento: proximoAgendamentoPorProcesso.get(p.id) ?? null,
+  }));
+
+  const eventoSelecionado = sp.evento ? (eventos ?? []).find((e) => e.id === sp.evento) : null;
+  const titulo = sp.etapa || eventoSelecionado?.valor || "Processos";
 
   return (
-    <main style={{ padding: 32 }}>
-      <p>
-        <Link href="/dashboard">← Voltar</Link>
-      </p>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginTop: 12,
-        }}
-      >
-        <h1 style={{ fontSize: 20 }}>Processos</h1>
-        <Link href="/processos/novo">+ Novo processo</Link>
-      </div>
+    <Painel
+      titulo={titulo}
+      subtitulo={titulo !== "Processos" ? "Processos" : undefined}
+      voltarHref="/dashboard"
+      maxWidth={1300}
+      // <a> normal (não o <Link> do Next) de propósito — /processos/novo tem o
+      // mesmo formato de URL que a rota interceptada do modal /processos/[id],
+      // e navegação client-side acaba caindo no modal tratando "novo" como id.
+      // Um <a> força navegação completa (recarrega a página), que resolve
+      // certo pelo lado do servidor.
+      acao={
+        <a href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
+          + Novo processo
+        </a>
+      }
+    >
+      {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
-      {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
-
-      <table style={{ width: "100%", marginTop: 16, borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 8 }}>Contrato</th>
-            <th style={{ padding: 8 }}>NUP</th>
-            <th style={{ padding: 8 }}>Objeto</th>
-            <th style={{ padding: 8 }}>Coord.</th>
-            <th style={{ padding: 8 }}>Fornecedor</th>
-            <th style={{ padding: 8 }}>Etapa</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(processos ?? []).map((p: any) => (
-            <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: 8 }}>
-                <Link href={`/processos/${p.id}`}>{p.numero_contrato}</Link>
-              </td>
-              <td style={{ padding: 8 }}>{p.nup_principal}</td>
-              <td style={{ padding: 8 }}>{p.objeto}</td>
-              <td style={{ padding: 8 }}>{p.coordenacoes?.sigla}</td>
-              <td style={{ padding: 8 }}>{p.fornecedores?.nome}</td>
-              <td style={{ padding: 8 }}>{p.etapa_atual}</td>
-            </tr>
-          ))}
-          {(processos ?? []).length === 0 && (
-            <tr>
-              <td colSpan={6} style={{ padding: 8, color: "#7D7979" }}>
-                Nenhum processo cadastrado.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </main>
+      <ListaProcessos
+        processos={processosComAgendamento as any}
+        coordenacoes={coordenacoes ?? []}
+        formasEntrega={formasEntrega ?? []}
+        eventos={eventos ?? []}
+        responsaveis={responsaveis ?? []}
+        etapas={etapas ?? []}
+        minhaPessoaId={pessoaAtual?.id ?? null}
+      />
+    </Painel>
   );
 }

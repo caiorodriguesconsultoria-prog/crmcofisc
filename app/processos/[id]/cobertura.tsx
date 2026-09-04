@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { botaoPrimario, cor } from "@/lib/theme";
+import { CampoLinha } from "@/app/_ui/campo";
 
 type Pessoa = { id: string; nome: string };
 
@@ -64,27 +66,25 @@ export default function Cobertura({
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <strong>Responsável</strong>
-      <p style={{ margin: "4px 0" }}>
-        Titular: {titular.nome}
-        {emBackup && (
-          <>
-            <br />
-            Responsável atual (cobertura): {responsavelAtual.nome}
-            {motivoBackup && <> — {motivoBackup}</>}
-          </>
-        )}
-      </p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <CampoLinha label="Titular" valor={titular.nome} />
+      {emBackup && (
+        <CampoLinha
+          label="Cobertura de férias"
+          valor={motivoBackup ? `${responsavelAtual.nome} — ${motivoBackup}` : responsavelAtual.nome}
+        />
+      )}
 
       {emBackup ? (
-        <button onClick={retornarAoTitular} disabled={carregando}>
+        <button onClick={retornarAoTitular} disabled={carregando} style={{ alignSelf: "flex-start" }}>
           Retornar ao titular
         </button>
       ) : !transferindo ? (
-        <button onClick={() => setTransferindo(true)}>Transferir (cobertura de férias)</button>
+        <button onClick={() => setTransferindo(true)} style={{ alignSelf: "flex-start" }}>
+          Transferir (cobertura de férias)
+        </button>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <select
             value={novoResponsavelId}
             onChange={(e) => setNovoResponsavelId(e.target.value)}
@@ -109,6 +109,7 @@ export default function Cobertura({
             <button
               onClick={transferir}
               disabled={carregando || !novoResponsavelId || !motivo.trim()}
+              style={botaoPrimario}
             >
               Confirmar
             </button>
@@ -119,7 +120,7 @@ export default function Cobertura({
         </div>
       )}
 
-      {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
     </div>
   );
 }

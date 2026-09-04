@@ -3,28 +3,135 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { verificarPessoaDuplicada, garantirPessoaComPapel } from "@/lib/verificar-pessoa-duplicada";
 
 type Opcao = { id: string; nome?: string; sigla?: string; valor?: string; categoria?: string };
+type PessoaPapel = { id: string; nome: string };
 
 export default function NovoProcessoForm({
   coordenacoes,
   fornecedores,
   tags,
-  pessoas,
+  responsaveis,
+  gestores,
+  fiscais,
+  isAdmin,
 }: {
   coordenacoes: Opcao[];
   fornecedores: Opcao[];
   tags: Opcao[];
-  pessoas: Opcao[];
+  responsaveis: PessoaPapel[];
+  gestores: PessoaPapel[];
+  fiscais: PessoaPapel[];
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const supabase = createClient();
 
   const formaEntregaTags = tags.filter((t) => t.categoria === "forma_entrega");
 
+  const [responsaveisState, setResponsaveisState] = useState(responsaveis);
+  const [criandoResponsavel, setCriandoResponsavel] = useState(false);
+  const [nomeNovoResponsavel, setNomeNovoResponsavel] = useState("");
+  const [avisoResponsavel, setAvisoResponsavel] = useState<string | null>(null);
+  const [gestoresState, setGestoresState] = useState(gestores);
+  const [fiscaisState, setFiscaisState] = useState(fiscais);
+  const [fornecedoresState, setFornecedoresState] = useState(fornecedores);
+  const [criandoGestor, setCriandoGestor] = useState(false);
+  const [nomeNovoGestor, setNomeNovoGestor] = useState("");
+  const [matriculaNovoGestor, setMatriculaNovoGestor] = useState("");
+  const [avisoGestor, setAvisoGestor] = useState<string | null>(null);
+  const [criandoFiscal, setCriandoFiscal] = useState(false);
+  const [nomeNovoFiscal, setNomeNovoFiscal] = useState("");
+  const [matriculaNovoFiscal, setMatriculaNovoFiscal] = useState("");
+  const [avisoFiscal, setAvisoFiscal] = useState<string | null>(null);
+  const [criandoFornecedor, setCriandoFornecedor] = useState(false);
+  const [nomeNovoFornecedor, setNomeNovoFornecedor] = useState("");
+  const [cnpjNovoFornecedor, setCnpjNovoFornecedor] = useState("");
+  const [erroInline, setErroInline] = useState<string | null>(null);
+
+  async function checarDuplicadoResponsavel() {
+    setAvisoResponsavel(await verificarPessoaDuplicada(supabase, nomeNovoResponsavel, ""));
+  }
+
+  async function criarResponsavel() {
+    if (!nomeNovoResponsavel.trim()) return;
+    setErroInline(null);
+    const resultado = await garantirPessoaComPapel(supabase, nomeNovoResponsavel, "", "responsavel");
+    if ("erro" in resultado) {
+      setErroInline(resultado.erro);
+      return;
+    }
+    setResponsaveisState((atual) => (atual.some((p) => p.id === resultado.id) ? atual : [...atual, resultado]));
+    setTitularId(resultado.id);
+    setNomeNovoResponsavel("");
+    setAvisoResponsavel(null);
+    setCriandoResponsavel(false);
+  }
+
+  async function checarDuplicadoGestor() {
+    setAvisoGestor(await verificarPessoaDuplicada(supabase, nomeNovoGestor, matriculaNovoGestor));
+  }
+
+  async function checarDuplicadoFiscal() {
+    setAvisoFiscal(await verificarPessoaDuplicada(supabase, nomeNovoFiscal, matriculaNovoFiscal));
+  }
+
+  async function criarGestor() {
+    if (!nomeNovoGestor.trim() || !matriculaNovoGestor.trim()) return;
+    setErroInline(null);
+    const resultado = await garantirPessoaComPapel(supabase, nomeNovoGestor, matriculaNovoGestor, "gestor");
+    if ("erro" in resultado) {
+      setErroInline(resultado.erro);
+      return;
+    }
+    setGestoresState((atual) => (atual.some((p) => p.id === resultado.id) ? atual : [...atual, resultado]));
+    setGestorId(resultado.id);
+    setNomeNovoGestor("");
+    setMatriculaNovoGestor("");
+    setAvisoGestor(null);
+    setCriandoGestor(false);
+  }
+
+  async function criarFiscal() {
+    if (!nomeNovoFiscal.trim() || !matriculaNovoFiscal.trim()) return;
+    setErroInline(null);
+    const resultado = await garantirPessoaComPapel(supabase, nomeNovoFiscal, matriculaNovoFiscal, "fiscal");
+    if ("erro" in resultado) {
+      setErroInline(resultado.erro);
+      return;
+    }
+    setFiscaisState((atual) => (atual.some((p) => p.id === resultado.id) ? atual : [...atual, resultado]));
+    setFiscalId(resultado.id);
+    setNomeNovoFiscal("");
+    setMatriculaNovoFiscal("");
+    setAvisoFiscal(null);
+    setCriandoFiscal(false);
+  }
+
+  async function criarFornecedor() {
+    if (!nomeNovoFornecedor.trim()) return;
+    setErroInline(null);
+    const { data: fornecedor, error } = await supabase
+      .from("fornecedores")
+      .insert({ nome: nomeNovoFornecedor.trim(), cnpj: cnpjNovoFornecedor.trim() || null })
+      .select("id, nome")
+      .single();
+    if (error || !fornecedor) {
+      setErroInline(error?.message ?? "Erro ao criar fornecedor.");
+      return;
+    }
+    setFornecedoresState((atual) => [...atual, fornecedor]);
+    setFornecedorId(fornecedor.id);
+    setNomeNovoFornecedor("");
+    setCnpjNovoFornecedor("");
+    setCriandoFornecedor(false);
+  }
+
   const [numeroContrato, setNumeroContrato] = useState("");
   const [nup, setNup] = useState("");
   const [objeto, setObjeto] = useState("");
+  const [unidadeMedida, setUnidadeMedida] = useState("");
   const [coordenacaoId, setCoordenacaoId] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
   const [titularId, setTitularId] = useState("");
@@ -32,6 +139,10 @@ export default function NovoProcessoForm({
   const [responsavelAtualId, setResponsavelAtualId] = useState("");
   const [motivoBackup, setMotivoBackup] = useState("");
   const [formaEntregaId, setFormaEntregaId] = useState("");
+  const [gestorId, setGestorId] = useState("");
+  const [gestorSubstitutoId, setGestorSubstitutoId] = useState("");
+  const [fiscalId, setFiscalId] = useState("");
+  const [fiscalSubstitutoId, setFiscalSubstitutoId] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -52,12 +163,17 @@ export default function NovoProcessoForm({
         numero_contrato: numeroContrato,
         nup_principal: nup,
         objeto,
+        unidade_medida: unidadeMedida.trim() || null,
         coordenacao_id: coordenacaoId,
         fornecedor_id: fornecedorId,
         titular_id: titularId,
         responsavel_atual_id: emCobertura ? responsavelAtualId : titularId,
         motivo_backup: emCobertura ? motivoBackup.trim() : null,
         forma_entrega_tag_id: formaEntregaId || null,
+        gestor_id: gestorId || null,
+        gestor_substituto_id: gestorSubstitutoId || null,
+        fiscal_id: fiscalId || null,
+        fiscal_substituto_id: fiscalSubstitutoId || null,
       })
       .select("id")
       .single();
@@ -102,6 +218,15 @@ export default function NovoProcessoForm({
         />
       </label>
       <label>
+        Unidade de medida
+        <input
+          value={unidadeMedida}
+          onChange={(e) => setUnidadeMedida(e.target.value)}
+          placeholder="ex.: frascos, caixas"
+          style={{ display: "block", width: "100%", padding: 8 }}
+        />
+      </label>
+      <label>
         Coordenação
         <select
           value={coordenacaoId}
@@ -118,6 +243,130 @@ export default function NovoProcessoForm({
         </select>
       </label>
       <label>
+        Gestor
+        <select
+          value={gestorId}
+          onChange={(e) => setGestorId(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Não informado</option>
+          {gestoresState.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.nome}
+            </option>
+          ))}
+        </select>
+      </label>
+      {isAdmin && (criandoGestor ? (
+        <div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              autoFocus
+              value={nomeNovoGestor}
+              onChange={(e) => setNomeNovoGestor(e.target.value)}
+              onBlur={checarDuplicadoGestor}
+              placeholder="Nome"
+              style={{ padding: 8, flex: 2, minWidth: 0 }}
+            />
+            <input
+              value={matriculaNovoGestor}
+              onChange={(e) => setMatriculaNovoGestor(e.target.value)}
+              onBlur={checarDuplicadoGestor}
+              placeholder="Matrícula"
+              style={{ padding: 8, flex: 1, minWidth: 0 }}
+            />
+            <button type="button" onClick={criarGestor} disabled={!nomeNovoGestor.trim() || !matriculaNovoGestor.trim()}>
+              Criar
+            </button>
+            <button type="button" onClick={() => { setCriandoGestor(false); setNomeNovoGestor(""); setMatriculaNovoGestor(""); setAvisoGestor(null); }}>
+              Cancelar
+            </button>
+          </div>
+          {avisoGestor && <p style={{ color: "#C08A3E", margin: "4px 0 0", fontSize: 12 }}>⚠ {avisoGestor}</p>}
+        </div>
+      ) : (
+        <button type="button" onClick={() => setCriandoGestor(true)} style={{ alignSelf: "flex-start" }}>
+          + Novo gestor
+        </button>
+      ))}
+      <label>
+        Gestor substituto
+        <select
+          value={gestorSubstitutoId}
+          onChange={(e) => setGestorSubstitutoId(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Não informado</option>
+          {gestoresState.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.nome}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Fiscal
+        <select
+          value={fiscalId}
+          onChange={(e) => setFiscalId(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Não informado</option>
+          {fiscaisState.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.nome}
+            </option>
+          ))}
+        </select>
+      </label>
+      {isAdmin && (criandoFiscal ? (
+        <div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              autoFocus
+              value={nomeNovoFiscal}
+              onChange={(e) => setNomeNovoFiscal(e.target.value)}
+              onBlur={checarDuplicadoFiscal}
+              placeholder="Nome"
+              style={{ padding: 8, flex: 2, minWidth: 0 }}
+            />
+            <input
+              value={matriculaNovoFiscal}
+              onChange={(e) => setMatriculaNovoFiscal(e.target.value)}
+              onBlur={checarDuplicadoFiscal}
+              placeholder="Matrícula"
+              style={{ padding: 8, flex: 1, minWidth: 0 }}
+            />
+            <button type="button" onClick={criarFiscal} disabled={!nomeNovoFiscal.trim() || !matriculaNovoFiscal.trim()}>
+              Criar
+            </button>
+            <button type="button" onClick={() => { setCriandoFiscal(false); setNomeNovoFiscal(""); setMatriculaNovoFiscal(""); setAvisoFiscal(null); }}>
+              Cancelar
+            </button>
+          </div>
+          {avisoFiscal && <p style={{ color: "#C08A3E", margin: "4px 0 0", fontSize: 12 }}>⚠ {avisoFiscal}</p>}
+        </div>
+      ) : (
+        <button type="button" onClick={() => setCriandoFiscal(true)} style={{ alignSelf: "flex-start" }}>
+          + Novo fiscal
+        </button>
+      ))}
+      <label>
+        Fiscal substituto
+        <select
+          value={fiscalSubstitutoId}
+          onChange={(e) => setFiscalSubstitutoId(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Não informado</option>
+          {fiscaisState.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.nome}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
         Fornecedor
         <select
           value={fornecedorId}
@@ -126,13 +375,41 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Selecione</option>
-          {fornecedores.map((f) => (
+          {fornecedoresState.map((f) => (
             <option key={f.id} value={f.id}>
               {f.nome}
             </option>
           ))}
         </select>
       </label>
+      {isAdmin && (criandoFornecedor ? (
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            autoFocus
+            value={nomeNovoFornecedor}
+            onChange={(e) => setNomeNovoFornecedor(e.target.value)}
+            placeholder="Nome"
+            style={{ padding: 8, flex: 2, minWidth: 0 }}
+          />
+          <input
+            value={cnpjNovoFornecedor}
+            onChange={(e) => setCnpjNovoFornecedor(e.target.value)}
+            placeholder="CNPJ (opcional)"
+            style={{ padding: 8, flex: 1, minWidth: 0 }}
+          />
+          <button type="button" onClick={criarFornecedor} disabled={!nomeNovoFornecedor.trim()}>
+            Criar
+          </button>
+          <button type="button" onClick={() => { setCriandoFornecedor(false); setNomeNovoFornecedor(""); setCnpjNovoFornecedor(""); }}>
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setCriandoFornecedor(true)} style={{ alignSelf: "flex-start" }}>
+          + Novo fornecedor
+        </button>
+      ))}
+      {erroInline && <p style={{ color: "#B0655C" }}>{erroInline}</p>}
       <label>
         Responsável (titular)
         <select
@@ -142,13 +419,38 @@ export default function NovoProcessoForm({
           style={{ display: "block", width: "100%", padding: 8 }}
         >
           <option value="">Selecione</option>
-          {pessoas.map((p) => (
+          {responsaveisState.map((p) => (
             <option key={p.id} value={p.id}>
               {p.nome}
             </option>
           ))}
         </select>
       </label>
+      {isAdmin && (criandoResponsavel ? (
+        <div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              autoFocus
+              value={nomeNovoResponsavel}
+              onChange={(e) => setNomeNovoResponsavel(e.target.value)}
+              onBlur={checarDuplicadoResponsavel}
+              placeholder="Nome"
+              style={{ padding: 8, flex: 1, minWidth: 0 }}
+            />
+            <button type="button" onClick={criarResponsavel} disabled={!nomeNovoResponsavel.trim()}>
+              Criar
+            </button>
+            <button type="button" onClick={() => { setCriandoResponsavel(false); setNomeNovoResponsavel(""); setAvisoResponsavel(null); }}>
+              Cancelar
+            </button>
+          </div>
+          {avisoResponsavel && <p style={{ color: "#C08A3E", margin: "4px 0 0", fontSize: 12 }}>⚠ {avisoResponsavel}</p>}
+        </div>
+      ) : (
+        <button type="button" onClick={() => setCriandoResponsavel(true)} style={{ alignSelf: "flex-start" }}>
+          + Novo responsável
+        </button>
+      ))}
       <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
           type="checkbox"
@@ -168,7 +470,7 @@ export default function NovoProcessoForm({
               style={{ display: "block", width: "100%", padding: 8 }}
             >
               <option value="">Selecione</option>
-              {pessoas
+              {responsaveisState
                 .filter((p) => p.id !== titularId)
                 .map((p) => (
                   <option key={p.id} value={p.id}>

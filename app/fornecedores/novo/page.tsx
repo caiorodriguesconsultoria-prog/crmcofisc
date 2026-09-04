@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import NovoFornecedorForm from "./form";
+import Painel from "@/app/_ui/painel";
 
 export default async function NovoFornecedorPage() {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/login");
@@ -23,9 +25,8 @@ export default async function NovoFornecedorPage() {
   }
 
   return (
-    <main style={{ padding: 32, maxWidth: 480 }}>
-      <h1 style={{ fontSize: 20, marginBottom: 16 }}>Novo fornecedor</h1>
+    <Painel titulo="Novo fornecedor" voltarHref="/fornecedores" maxWidth={480}>
       <NovoFornecedorForm />
-    </main>
+    </Painel>
   );
 }

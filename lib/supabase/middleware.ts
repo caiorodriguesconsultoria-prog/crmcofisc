@@ -27,8 +27,28 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // necessário para manter a sessão válida entre requisições
-  await supabase.auth.getUser();
+  // getSession() lê da sessão local (cookie) e só faz chamada de rede se o
+  // token estiver perto de expirar (renovação via refresh token) — no caso
+  // comum, não tem round-trip pro Supabase.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (session) {
+    // getClaims() valida a assinatura do token — com as JWT Signing Keys
+    // (chave assimétrica) do projeto, isso é feito localmente via cache de
+    // JWKS, sem round-trip pro Supabase; só cai pra chamada de rede (getUser())
+    // se o token ainda for do formato antigo (segredo simétrico legado).
+    const { error } = await supabase.auth.getClaims(session.access_token);
+    if (error) {
+      // token inválido/expirado/adulterado: derruba a sessão pra nenhuma página aceitá-la
+      for (const cookie of request.cookies.getAll()) {
+        if (cookie.name.startsWith("sb-") && cookie.name.includes("-auth-token")) {
+          response.cookies.delete(cookie.name);
+        }
+      }
+    }
+  }
 
   return response;
 }
