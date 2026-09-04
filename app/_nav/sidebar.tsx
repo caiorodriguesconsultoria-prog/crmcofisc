@@ -54,7 +54,11 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
         }}
         style={{
           flex: "none",
-          height: "100vh",
+          // 100dvh, não 100vh — no app instalado (PWA)/mobile, 100vh conta
+          // espaço de barra de navegador que nem sempre existe, deixando o
+          // fim da gaveta (Sair, notificações) fora da área visível mesmo
+          // com overflowY:auto certo aqui embaixo.
+          height: "100dvh",
           background: cor.branco,
           borderRight: `1px solid ${cor.borda}`,
           padding: "18px 14px",

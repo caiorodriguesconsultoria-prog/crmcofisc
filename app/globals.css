@@ -90,6 +90,7 @@ th {
   width: 240px;
   position: sticky;
   top: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .crm-sidebar-toggle {
@@ -166,6 +167,7 @@ th {
 .crm-painel-alto-corpo {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 16px 26px 26px;
 }
 
@@ -174,7 +176,10 @@ th {
     padding: 0;
   }
   .crm-painel-alto {
-    height: 100vh;
+    /* 100dvh (não 100vh) — no navegador/app mobile, 100vh conta o espaço
+       que a barra de endereço ocuparia mesmo escondida, deixando o rodapé
+       da tela (parte do conteúdo rolável) fora da área visível. */
+    height: 100dvh;
     max-height: none;
     border-radius: 0;
     box-shadow: none;
@@ -232,6 +237,7 @@ th {
 .crm-modal-corpo {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 20px 26px 32px;
 }
 

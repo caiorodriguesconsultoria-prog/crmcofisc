@@ -1,3 +1,7 @@
 {
-  "regions": ["pdx1"]
+  "regions": ["pdx1"],
+  "crons": [
+    { "path": "/api/push/verificar-lembretes", "schedule": "0 11 * * *" },
+    { "path": "/api/push/verificar-lembretes", "schedule": "0 17 * * *" }
+  ]
 }
