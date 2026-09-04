@@ -151,7 +151,8 @@ export default function ListaFornecedores({
       {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro}</p>}
 
       <div style={{ ...card, padding: 0, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
+        <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
               <th style={{ padding: "10px 12px" }}>Nome</th>
@@ -228,6 +229,7 @@ export default function ListaFornecedores({
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {editando && (

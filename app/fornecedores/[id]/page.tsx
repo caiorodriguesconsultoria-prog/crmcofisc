@@ -73,7 +73,8 @@ export default async function FornecedorPage({
       )}
 
       <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 8 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
+        <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
               <th style={{ padding: "10px 12px" }}>Contrato</th>
@@ -110,6 +111,7 @@ export default async function FornecedorPage({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </Painel>
   );

@@ -92,6 +92,7 @@ export default function ListaPessoasPapel({
       {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro}</p>}
 
       <div style={{ ...card, padding: 0, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
@@ -172,6 +173,7 @@ export default function ListaPessoasPapel({
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {editando && (
