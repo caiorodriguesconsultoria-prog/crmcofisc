@@ -334,18 +334,20 @@ export async function carregarProcesso(id: string) {
           <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
             <EtapaAtual processoId={p.id} etapaAtual={p.etapa_atual} etapasDisponiveis={etapasDisponiveis ?? []} />
           </div>
-          <Andamentos
-            processoId={p.id}
-            autorId={pessoaAtual?.id ?? null}
-            tagsDisponiveis={tagsDisponiveis ?? []}
-            andamentos={andamentosMapeados}
-          />
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
             <Checklist
               processoId={p.id}
               autorId={pessoaAtual?.id ?? null}
               numeroContrato={numeroContratoSemSei(p.numero_contrato)}
               grupos={gruposTarefas}
+            />
+          </div>
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+            <Andamentos
+              processoId={p.id}
+              autorId={pessoaAtual?.id ?? null}
+              tagsDisponiveis={tagsDisponiveis ?? []}
+              andamentos={andamentosMapeados}
             />
           </div>
         </CartaoColapsavel>
