@@ -4,6 +4,7 @@ import { EtapaAtual, EventosAtivos } from "./painel";
 import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
 import ConcluirCoberturaBotao from "./concluir-cobertura-botao";
+import ConcluirContratoBotao from "./concluir-contrato-botao";
 import Checklist from "./checklist";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import DadosPrincipais from "./dados-principais";
@@ -76,7 +77,7 @@ export async function carregarProcesso(id: string) {
   const { data: processo, error: erroProcesso } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, unidade_medida, execucao_forma, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome, cnpj), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, situacao, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, unidade_medida, execucao_forma, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome, cnpj), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula)",
     )
     .eq("id", id)
     .single();
@@ -494,7 +495,12 @@ export async function carregarProcesso(id: string) {
             {p.coordenacoes.sigla}
           </span>
         )}
-        <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
+              <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
+        {p.situacao === "concluido" ? (
+          <span style={{ ...pill, background: cor.positivoFundo, color: cor.positivo }}>Concluído ✓</span>
+        ) : (
+          <ConcluirContratoBotao processoId={p.id} parecerDefinido={!!p.conclusao_tipo} />
+        )}
         {tagsAtivas.map((t) => {
           const c = corEvento(t.id, t.cor);
           return (
