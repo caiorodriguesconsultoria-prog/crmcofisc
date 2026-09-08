@@ -38,6 +38,7 @@ type Processo = {
   nup_principal: string;
   objeto: string;
   etapa_atual: string;
+  situacao: string;
   coordenacao_id: string | null;
   coordenacoes: { sigla: string } | null;
   fornecedores: { nome: string } | null;
@@ -94,6 +95,7 @@ export default function ListaProcessos({
   const [responsavelId, setResponsavelId] = useState("");
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
   const [busca, setBusca] = useState("");
+  const [aba, setAba] = useState<"ativos" | "concluidos">("ativos");
 
   const [etapasState, setEtapasState] = useState(etapas);
   const [eventosState, setEventosState] = useState(eventos);
@@ -155,6 +157,9 @@ export default function ListaProcessos({
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return processos.filter((p) => {
+      const concluido = p.situacao === "concluido";
+      if (aba === "ativos" && concluido) return false;
+      if (aba === "concluidos" && !concluido) return false;
       if (coordenacaoId && p.coordenacao_id !== coordenacaoId) return false;
       if (formaEntregaId && p.forma_entrega_tag_id !== formaEntregaId) return false;
       if (eventoId && !p.processo_tags.some((pt) => pt.tags?.id === eventoId)) return false;
@@ -169,10 +174,46 @@ export default function ListaProcessos({
         return false;
       return true;
     });
-  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, busca]);
+  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, busca, aba]);
+
+  const totalConcluidos = useMemo(() => processos.filter((p) => p.situacao === "concluido").length, [processos]);
+  const totalAtivos = processos.length - totalConcluidos;
 
   return (
     <div>
+      <div style={{ display: "flex", gap: 6, marginTop: 16 }}>
+        <button
+          type="button"
+          onClick={() => setAba("ativos")}
+          style={{
+            fontSize: 12.5,
+            fontWeight: 600,
+            padding: "7px 16px",
+            borderRadius: 20,
+            border: "none",
+            color: aba === "ativos" ? "#fff" : cor.textoSecundario,
+            background: aba === "ativos" ? cor.destaque : "rgba(96,93,93,.10)",
+          }}
+        >
+          Ativos ({totalAtivos})
+        </button>
+        <button
+          type="button"
+          onClick={() => setAba("concluidos")}
+          style={{
+            fontSize: 12.5,
+            fontWeight: 600,
+            padding: "7px 16px",
+            borderRadius: 20,
+            border: "none",
+            color: aba === "concluidos" ? "#fff" : cor.textoSecundario,
+            background: aba === "concluidos" ? cor.destaque : "rgba(96,93,93,.10)",
+          }}
+        >
+          Concluídos ({totalConcluidos})
+        </button>
+      </div>
+
       <input
         type="search"
         value={busca}
