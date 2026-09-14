@@ -100,6 +100,7 @@ export async function carregarProcesso(id: string) {
     { data: execucoes },
     { data: pauta },
     { data: agendamentos },
+    { data: kanbanHistoricoTodos },
     { data: kanbanAtivo },
     { data: tagHistoricoAtivo },
     { data: coordenacoesLista },
@@ -140,6 +141,10 @@ export async function carregarProcesso(id: string) {
       .eq("processo_id", id)
       .order("data")
       .order("horario"),
+        supabase
+      .from("processo_kanban_historico")
+      .select("id")
+      .eq("processo_id", id),
     supabase
       .from("processo_kanban_historico")
       .select("id")
@@ -194,13 +199,19 @@ export async function carregarProcesso(id: string) {
     .filter((pp) => pp.papel === "fiscal")
     .map((pp: any) => ({ id: pp.pessoa_id, nome: pp.pessoas?.nome ?? "" }));
 
+    // Tarefas do Kanban ficam fixas no processo — não resetam a cada troca de
+  // etapa. Só saem de vista quando o processo chega numa etapa de conclusão.
+  const ETAPAS_CONCLUSAO = ["Concluído", "Cobertura concluída"];
+  const checklistConcluido = ETAPAS_CONCLUSAO.includes(p.etapa_atual);
+  const kanbanHistoricoIds = (kanbanHistoricoTodos ?? []).map((k) => k.id);
+  const kanbanInsercaoId = kanbanAtivo?.id ?? kanbanHistoricoIds[kanbanHistoricoIds.length - 1] ?? null;
+
   const origensAtivas = [
-    ...(kanbanAtivo ? [kanbanAtivo.id] : []),
+    ...kanbanHistoricoIds,
     ...(tagHistoricoAtivo ?? []).map((t) => t.id),
   ];
 
   const nomeOrigem = new Map<string, string>();
-  if (kanbanAtivo) nomeOrigem.set(kanbanAtivo.id, p.etapa_atual);
   for (const t of tagHistoricoAtivo ?? []) {
     nomeOrigem.set(t.id, (t as any).tags?.valor ?? "Evento");
   }
@@ -221,11 +232,16 @@ export async function carregarProcesso(id: string) {
     googleEventId: string | null;
   };
 
+  const CHAVE_KANBAN_MERGE = "kanban-tarefas";
+
   const mapaGruposTarefas = (tarefasRaw ?? []).reduce((acc, t) => {
-    const grupo = acc.get(t.origem_id) ?? {
-      origemId: t.origem_id,
+    // Todas as entradas de kanban (qualquer etapa) caem no mesmo grupo, pra
+    // formar um único checklist fixo por processo, em vez de um por etapa.
+    const chave = t.origem_tipo === "kanban" ? CHAVE_KANBAN_MERGE : t.origem_id;
+    const grupo = acc.get(chave) ?? {
+      origemId: t.origem_tipo === "kanban" ? (kanbanInsercaoId ?? t.origem_id) : t.origem_id,
       origemTipo: t.origem_tipo,
-      nome: nomeOrigem.get(t.origem_id) ?? t.origem_tipo,
+      nome: t.origem_tipo === "kanban" ? "Tarefas" : nomeOrigem.get(t.origem_id) ?? t.origem_tipo,
       tarefas: [] as TarefaGrupo[],
     };
     grupo.tarefas.push({
@@ -236,24 +252,26 @@ export async function carregarProcesso(id: string) {
       periodo: t.periodo,
       googleEventId: t.google_event_id,
     });
-    acc.set(t.origem_id, grupo);
+    acc.set(chave, grupo);
     return acc;
   }, new Map<string, { origemId: string; origemTipo: string; nome: string; tarefas: TarefaGrupo[] }>());
 
-  // Etapa do Kanban sem nenhuma tarefa cadastrada ainda (ex.: etapa sem lista
-  // padrão definida) não deve ficar sem seção — mantém "Tarefas" visível e
-  // com "+ Adicionar tarefa" disponível mesmo vazia.
-  if (kanbanAtivo && !mapaGruposTarefas.has(kanbanAtivo.id)) {
-    mapaGruposTarefas.set(kanbanAtivo.id, {
-      origemId: kanbanAtivo.id,
+  // Enquanto o processo não chegou numa etapa de conclusão, o checklist do
+  // Kanban fica sempre visível (mesmo vazio) com "+ Adicionar tarefa"
+  // disponível. Ao concluir, a seção some de vista.
+  if (kanbanInsercaoId && !checklistConcluido && !mapaGruposTarefas.has(CHAVE_KANBAN_MERGE)) {
+    mapaGruposTarefas.set(CHAVE_KANBAN_MERGE, {
+      origemId: kanbanInsercaoId,
       origemTipo: "kanban",
-      nome: p.etapa_atual,
+      nome: "Tarefas",
       tarefas: [],
     });
   }
+  if (checklistConcluido) {
+    mapaGruposTarefas.delete(CHAVE_KANBAN_MERGE);
+  }
 
   const gruposTarefas = Array.from(mapaGruposTarefas.values());
-
   const secao: React.CSSProperties = { ...card, marginTop: 16 };
 
   const grupoKanban = gruposTarefas.find((g) => g.origemTipo === "kanban");
