@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, card, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
-
+import { BotaoCopiar } from "@/app/_ui/campo";
 type Email = { email: string; rotulo: string | null };
 type Fornecedor = {
   id: string;
@@ -174,10 +174,17 @@ export default function ListaFornecedores({
                 <td style={{ padding: "10px 12px" }}>{f.cnpj}</td>
                 <td style={{ padding: "10px 12px" }}>{f.preposto}</td>
                 <td style={{ padding: "10px 12px" }}>{f.telefone}</td>
-                <td style={{ padding: "10px 12px" }}>
-                  {(f.fornecedor_emails ?? [])
-                    .map((e) => (e.rotulo ? `${e.email} (${e.rotulo})` : e.email))
-                    .join(", ")}
+                                <td style={{ padding: "10px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>
+                      {(f.fornecedor_emails ?? [])
+                        .map((e) => (e.rotulo ? `${e.email} (${e.rotulo})` : e.email))
+                        .join(", ")}
+                    </span>
+                    {(f.fornecedor_emails ?? []).length > 0 && (
+                      <BotaoCopiar texto={(f.fornecedor_emails ?? []).map((e) => e.email).join("; ")} />
+                    )}
+                  </div>
                 </td>
                 <td style={{ padding: "10px 12px" }}>
                   {isAdmin && (

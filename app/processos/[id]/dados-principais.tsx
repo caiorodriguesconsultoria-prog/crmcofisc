@@ -10,8 +10,7 @@ type Nup = { id: string; tipo: "relatorio" | "pagamento"; valor: string };
 type ParNup = {
   execucaoId: string;
   numero: number;
-  entrega: { id: string; valor: string } | null;
-  pagamento: { id: string; valor: string } | null;
+  pagamento: { id: string; valor: string };
 };
 type ExecucaoOpcao = { id: string; numero: number };
 
@@ -44,6 +43,7 @@ export default function DadosPrincipais({
   nupRelatorio,
   paresNup,
   execucoesSemPar,
+  totalExecucoes,
   fornecedorNome,
   cnpj,
   objeto,
@@ -54,6 +54,7 @@ export default function DadosPrincipais({
   nupRelatorio: Nup | null;
   paresNup: ParNup[];
   execucoesSemPar: ExecucaoOpcao[];
+  totalExecucoes: number;
   fornecedorNome: string;
   cnpj: string;
   objeto: string;
@@ -144,10 +145,12 @@ export default function DadosPrincipais({
     if (!execucaoEscolhida) return;
     setErro(null);
     setSalvandoPar(true);
-    const { error } = await supabase.from("processo_nups").insert([
-      { processo_id: processoId, tipo: "entrega", execucao_id: execucaoEscolhida },
-      { processo_id: processoId, tipo: "pagamento", execucao_id: execucaoEscolhida },
-    ]);
+    // NUP de Entrega não entra mais aqui — cada lançamento de entrega no
+    // Cronograma já gera o dele automaticamente (1 por lançamento, não mais
+    // 1 por parcela). Aqui só fica o de Pagamento, que continua 1 por parcela.
+    const { error } = await supabase
+      .from("processo_nups")
+      .insert({ processo_id: processoId, tipo: "pagamento", execucao_id: execucaoEscolhida });
     setSalvandoPar(false);
     if (error) {
       setErro(error.message);
@@ -245,48 +248,44 @@ export default function DadosPrincipais({
         )}
       </div>
 
-      {/* NUPs de entrega/pagamento por parcela — ligados ao cronograma */}
+      {/* NUP de Pagamento por parcela — ligado ao cronograma. NUP de Entrega
+          fica no Cronograma, um por lançamento (entrega pode ser parcial). */}
       {paresNup.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4, borderTop: `1px solid ${cor.borda}` }}>
-          {paresNup.map((par) => (
-            <div key={par.execucaoId} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              {(["entrega", "pagamento"] as const).map((tipo) => {
-                const linha = par[tipo];
-                const rotulo = `NUP ${tipo === "entrega" ? "Entrega" : "Pagamento"} - ${par.numero}ª Parcela`;
-                if (!linha) return <div key={tipo} />;
-                return editandoNupId === linha.id ? (
-                  <div key={tipo} style={{ display: "flex", gap: 6 }}>
-                    <input
-                      autoFocus
-                      value={valorNup}
-                      onChange={(e) => setValorNup(e.target.value)}
-                      style={{ flex: 1, padding: 6 }}
-                    />
-                    <button onClick={() => salvarNup(linha.id)} disabled={salvandoNup} style={{ fontSize: 11 }}>
-                      Salvar
-                    </button>
-                    <button onClick={() => setEditandoNupId(null)} disabled={salvandoNup} style={{ fontSize: 11 }}>
-                      X
-                    </button>
-                  </div>
-                ) : (
-                  <Coluna
-                    key={tipo}
-                    label={rotulo}
-                    valor={linha.valor || "não informado"}
-                    acao={
-                      <button
-                        onClick={() => abrirEdicaoNup(linha.id, linha.valor)}
-                        style={{ fontSize: 10, padding: "2px 6px" }}
-                      >
-                        editar
-                      </button>
-                    }
-                  />
-                );
-              })}
-            </div>
-          ))}
+          {paresNup.map((par) => {
+            const linha = par.pagamento;
+            const rotulo = `NUP Pagamento - ${par.numero}ª Parcela`;
+            return editandoNupId === linha.id ? (
+              <div key={par.execucaoId} style={{ display: "flex", gap: 6 }}>
+                <input
+                  autoFocus
+                  value={valorNup}
+                  onChange={(e) => setValorNup(e.target.value)}
+                  style={{ flex: 1, padding: 6 }}
+                />
+                <button onClick={() => salvarNup(linha.id)} disabled={salvandoNup} style={{ fontSize: 11 }}>
+                  Salvar
+                </button>
+                <button onClick={() => setEditandoNupId(null)} disabled={salvandoNup} style={{ fontSize: 11 }}>
+                  X
+                </button>
+              </div>
+            ) : (
+              <Coluna
+                key={par.execucaoId}
+                label={rotulo}
+                valor={linha.valor || "não informado"}
+                acao={
+                  <button
+                    onClick={() => abrirEdicaoNup(linha.id, linha.valor)}
+                    style={{ fontSize: 10, padding: "2px 6px" }}
+                  >
+                    editar
+                  </button>
+                }
+              />
+            );
+          })}
         </div>
       )}
 
@@ -317,9 +316,15 @@ export default function DadosPrincipais({
             onClick={() => setCriandoPar(true)}
             disabled={execucoesSemPar.length === 0}
             style={{ fontSize: 11.5 }}
-            title={execucoesSemPar.length === 0 ? "Todas as parcelas já têm NUP" : undefined}
+            title={
+              execucoesSemPar.length > 0
+                ? undefined
+                : totalExecucoes === 0
+                  ? "Cadastre uma parcela no Cronograma primeiro"
+                  : "Todas as parcelas já têm NUP de Pagamento"
+            }
           >
-            + Criar NUP
+            + Criar NUP de Pagamento
           </button>
         )}
       </div>

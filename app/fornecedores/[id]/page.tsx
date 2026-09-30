@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { card, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import { BotaoCopiar } from "@/app/_ui/campo";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
 function formatarData(data: string | null) {
@@ -56,13 +57,22 @@ export default async function FornecedorPage({
         <p style={{ margin: 0, fontSize: 13 }}>
           Preposto: {fornecedor.preposto || "—"} · Telefone: {fornecedor.telefone || "—"}
         </p>
-        <p style={{ margin: 0, fontSize: 13 }}>
-          E-mails:{" "}
-          {(fornecedor.fornecedor_emails ?? [])
-            .map((e: { email: string; rotulo: string | null }) =>
-              e.rotulo ? `${e.email} (${e.rotulo})` : e.email,
-            )
-            .join(", ") || "—"}
+               <p style={{ margin: 0, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+          <span>
+            E-mails:{" "}
+            {(fornecedor.fornecedor_emails ?? [])
+              .map((e: { email: string; rotulo: string | null }) =>
+                e.rotulo ? `${e.email} (${e.rotulo})` : e.email,
+              )
+              .join(", ") || "—"}
+          </span>
+          {(fornecedor.fornecedor_emails ?? []).length > 0 && (
+            <BotaoCopiar
+              texto={(fornecedor.fornecedor_emails ?? [])
+                .map((e: { email: string }) => e.email)
+                .join("; ")}
+            />
+          )}
         </p>
       </div>
 

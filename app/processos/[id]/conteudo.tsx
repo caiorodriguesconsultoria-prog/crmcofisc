@@ -4,6 +4,7 @@ import { EtapaAtual, EventosAtivos } from "./painel";
 import Andamentos from "./andamentos";
 import Cobertura from "./cobertura";
 import ConcluirCoberturaBotao from "./concluir-cobertura-botao";
+import ConcluirContratoBotao from "./concluir-contrato-botao";
 import Checklist from "./checklist";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import DadosPrincipais from "./dados-principais";
@@ -76,7 +77,7 @@ export async function carregarProcesso(id: string) {
   const { data: processo, error: erroProcesso } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, unidade_medida, execucao_forma, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome, cnpj), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, situacao, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, unidade_medida, execucao_forma, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla), fornecedores(nome, cnpj), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula)",
     )
     .eq("id", id)
     .single();
@@ -99,6 +100,7 @@ export async function carregarProcesso(id: string) {
     { data: execucoes },
     { data: pauta },
     { data: agendamentos },
+    { data: kanbanHistoricoTodos },
     { data: kanbanAtivo },
     { data: tagHistoricoAtivo },
     { data: coordenacoesLista },
@@ -125,7 +127,9 @@ export async function carregarProcesso(id: string) {
       .eq("processo_id", id),
     supabase
       .from("processo_execucoes")
-      .select("id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao")
+      .select(
+        "id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao, processo_entrega_lancamentos(id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega, processo_nups(id, nup))",
+      )
       .eq("processo_id", id)
       .order("numero"),
     supabase
@@ -139,6 +143,10 @@ export async function carregarProcesso(id: string) {
       .eq("processo_id", id)
       .order("data")
       .order("horario"),
+        supabase
+      .from("processo_kanban_historico")
+      .select("id")
+      .eq("processo_id", id),
     supabase
       .from("processo_kanban_historico")
       .select("id")
@@ -164,18 +172,18 @@ export async function carregarProcesso(id: string) {
     ? { id: nupRelatorioRow.id, tipo: "relatorio" as const, valor: nupRelatorioRow.nup ?? "" }
     : null;
 
-  // Pares de NUP Entrega/Pagamento ligados a uma parcela do cronograma —
-  // separados do NUP Relatório geral acima.
+  // NUP de Pagamento por parcela do cronograma — separado do NUP Relatório
+  // geral acima. NUP de Entrega deixou de ser 1-por-parcela: agora é
+  // 1-por-lançamento (ver processo_entrega_lancamentos, editado direto no
+  // Cronograma), então não entra mais nesse resumo.
   const paresNup = (execucoes ?? [])
     .map((exec) => {
-      const entregaRow = (nups ?? []).find((n) => n.tipo === "entrega" && n.execucao_id === exec.id);
       const pagamentoRow = (nups ?? []).find((n) => n.tipo === "pagamento" && n.execucao_id === exec.id);
-      if (!entregaRow && !pagamentoRow) return null;
+      if (!pagamentoRow) return null;
       return {
         execucaoId: exec.id,
         numero: exec.numero,
-        entrega: entregaRow ? { id: entregaRow.id, valor: entregaRow.nup ?? "" } : null,
-        pagamento: pagamentoRow ? { id: pagamentoRow.id, valor: pagamentoRow.nup ?? "" } : null,
+        pagamento: { id: pagamentoRow.id, valor: pagamentoRow.nup ?? "" },
       };
     })
     .filter((p): p is NonNullable<typeof p> => !!p)
@@ -185,6 +193,7 @@ export async function carregarProcesso(id: string) {
     .filter((exec) => !paresNup.some((p) => p.execucaoId === exec.id))
     .map((exec) => ({ id: exec.id, numero: exec.numero }))
     .sort((a, b) => a.numero - b.numero);
+  const totalExecucoes = (execucoes ?? []).length;
 
   const todosGestores = (papeis ?? [])
     .filter((pp) => pp.papel === "gestor")
@@ -193,13 +202,19 @@ export async function carregarProcesso(id: string) {
     .filter((pp) => pp.papel === "fiscal")
     .map((pp: any) => ({ id: pp.pessoa_id, nome: pp.pessoas?.nome ?? "" }));
 
+    // Tarefas do Kanban ficam fixas no processo — não resetam a cada troca de
+  // etapa. Só saem de vista quando o processo chega numa etapa de conclusão.
+  const ETAPAS_CONCLUSAO = ["Concluído", "Cobertura concluída"];
+  const checklistConcluido = ETAPAS_CONCLUSAO.includes(p.etapa_atual);
+  const kanbanHistoricoIds = (kanbanHistoricoTodos ?? []).map((k) => k.id);
+  const kanbanInsercaoId = kanbanAtivo?.id ?? kanbanHistoricoIds[kanbanHistoricoIds.length - 1] ?? null;
+
   const origensAtivas = [
-    ...(kanbanAtivo ? [kanbanAtivo.id] : []),
+    ...kanbanHistoricoIds,
     ...(tagHistoricoAtivo ?? []).map((t) => t.id),
   ];
 
   const nomeOrigem = new Map<string, string>();
-  if (kanbanAtivo) nomeOrigem.set(kanbanAtivo.id, p.etapa_atual);
   for (const t of tagHistoricoAtivo ?? []) {
     nomeOrigem.set(t.id, (t as any).tags?.valor ?? "Evento");
   }
@@ -220,11 +235,16 @@ export async function carregarProcesso(id: string) {
     googleEventId: string | null;
   };
 
+  const CHAVE_KANBAN_MERGE = "kanban-tarefas";
+
   const mapaGruposTarefas = (tarefasRaw ?? []).reduce((acc, t) => {
-    const grupo = acc.get(t.origem_id) ?? {
-      origemId: t.origem_id,
+    // Todas as entradas de kanban (qualquer etapa) caem no mesmo grupo, pra
+    // formar um único checklist fixo por processo, em vez de um por etapa.
+    const chave = t.origem_tipo === "kanban" ? CHAVE_KANBAN_MERGE : t.origem_id;
+    const grupo = acc.get(chave) ?? {
+      origemId: t.origem_tipo === "kanban" ? (kanbanInsercaoId ?? t.origem_id) : t.origem_id,
       origemTipo: t.origem_tipo,
-      nome: nomeOrigem.get(t.origem_id) ?? t.origem_tipo,
+      nome: t.origem_tipo === "kanban" ? "Tarefas" : nomeOrigem.get(t.origem_id) ?? t.origem_tipo,
       tarefas: [] as TarefaGrupo[],
     };
     grupo.tarefas.push({
@@ -235,24 +255,26 @@ export async function carregarProcesso(id: string) {
       periodo: t.periodo,
       googleEventId: t.google_event_id,
     });
-    acc.set(t.origem_id, grupo);
+    acc.set(chave, grupo);
     return acc;
   }, new Map<string, { origemId: string; origemTipo: string; nome: string; tarefas: TarefaGrupo[] }>());
 
-  // Etapa do Kanban sem nenhuma tarefa cadastrada ainda (ex.: etapa sem lista
-  // padrão definida) não deve ficar sem seção — mantém "Tarefas" visível e
-  // com "+ Adicionar tarefa" disponível mesmo vazia.
-  if (kanbanAtivo && !mapaGruposTarefas.has(kanbanAtivo.id)) {
-    mapaGruposTarefas.set(kanbanAtivo.id, {
-      origemId: kanbanAtivo.id,
+  // Enquanto o processo não chegou numa etapa de conclusão, o checklist do
+  // Kanban fica sempre visível (mesmo vazio) com "+ Adicionar tarefa"
+  // disponível. Ao concluir, a seção some de vista.
+  if (kanbanInsercaoId && !checklistConcluido && !mapaGruposTarefas.has(CHAVE_KANBAN_MERGE)) {
+    mapaGruposTarefas.set(CHAVE_KANBAN_MERGE, {
+      origemId: kanbanInsercaoId,
       origemTipo: "kanban",
-      nome: p.etapa_atual,
+      nome: "Tarefas",
       tarefas: [],
     });
   }
+  if (checklistConcluido) {
+    mapaGruposTarefas.delete(CHAVE_KANBAN_MERGE);
+  }
 
   const gruposTarefas = Array.from(mapaGruposTarefas.values());
-
   const secao: React.CSSProperties = { ...card, marginTop: 16 };
 
   const grupoKanban = gruposTarefas.find((g) => g.origemTipo === "kanban");
@@ -314,6 +336,7 @@ export async function carregarProcesso(id: string) {
         nupRelatorio={nupRelatorio}
         paresNup={paresNup}
         execucoesSemPar={execucoesSemPar}
+        totalExecucoes={totalExecucoes}
         fornecedorNome={p.fornecedores?.nome ?? ""}
         cnpj={p.fornecedores?.cnpj ?? ""}
         objeto={p.objeto}
@@ -333,18 +356,20 @@ export async function carregarProcesso(id: string) {
           <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
             <EtapaAtual processoId={p.id} etapaAtual={p.etapa_atual} etapasDisponiveis={etapasDisponiveis ?? []} />
           </div>
-          <Andamentos
-            processoId={p.id}
-            autorId={pessoaAtual?.id ?? null}
-            tagsDisponiveis={tagsDisponiveis ?? []}
-            andamentos={andamentosMapeados}
-          />
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
             <Checklist
               processoId={p.id}
               autorId={pessoaAtual?.id ?? null}
               numeroContrato={numeroContratoSemSei(p.numero_contrato)}
               grupos={gruposTarefas}
+            />
+          </div>
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+            <Andamentos
+              processoId={p.id}
+              autorId={pessoaAtual?.id ?? null}
+              tagsDisponiveis={tagsDisponiveis ?? []}
+              andamentos={andamentosMapeados}
             />
           </div>
         </CartaoColapsavel>
@@ -494,7 +519,12 @@ export async function carregarProcesso(id: string) {
             {p.coordenacoes.sigla}
           </span>
         )}
-        <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
+              <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
+        {p.situacao === "concluido" ? (
+          <span style={{ ...pill, background: cor.positivoFundo, color: cor.positivo }}>Concluído ✓</span>
+        ) : (
+          <ConcluirContratoBotao processoId={p.id} parecerDefinido={!!p.conclusao_tipo} />
+        )}
         {tagsAtivas.map((t) => {
           const c = corEvento(t.id, t.cor);
           return (

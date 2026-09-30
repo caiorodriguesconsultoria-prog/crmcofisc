@@ -73,6 +73,7 @@ export default function Andamentos({
   const [enviandoAnexo, setEnviandoAnexo] = useState(false);
   const [erroAnexo, setErroAnexo] = useState<string | null>(null);
   const [melhorandoTexto, setMelhorandoTexto] = useState(false);
+  const [listaAberta, setListaAberta] = useState(false);
 
   const todasAsTags = [...tagsDisponiveis, ...tagsCriadas.filter((t) => !tagsDisponiveis.some((d) => d.id === t.id))];
 
@@ -390,15 +391,39 @@ export default function Andamentos({
         {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
       </form>
 
-      <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
+           <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: 0 }}>
         Marcado como "Ocorrência" entra na seção 5 (Ocorrências) do Relatório.
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        {andamentos.length === 0 && (
-          <span style={{ color: cor.textoTerciario, fontSize: 13 }}>Nenhum andamento registrado.</span>
-        )}
-        {andamentos.map((a) => (
+      <button
+        type="button"
+        onClick={() => setListaAberta((v) => !v)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          alignSelf: "flex-start",
+          fontSize: 12,
+          fontWeight: 600,
+          padding: "6px 10px",
+          borderRadius: 8,
+          border: "none",
+          background: "rgba(96,93,93,.10)",
+          color: cor.textoSecundario,
+        }}
+      >
+        <span style={{ display: "inline-block", transform: listaAberta ? "rotate(90deg)" : "rotate(0deg)", transition: "transform .15s" }}>
+          ▸
+        </span>
+        {listaAberta ? "Ocultar andamentos" : "Ver andamentos"} ({andamentos.length})
+      </button>
+
+      {listaAberta && (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {andamentos.length === 0 && (
+            <span style={{ color: cor.textoTerciario, fontSize: 13 }}>Nenhum andamento registrado.</span>
+          )}
+          {andamentos.map((a) => (
           <div key={a.id} style={{ borderBottom: `1px solid ${cor.borda}`, padding: "10px 0" }}>
             <div style={{ fontSize: 11.5, color: cor.textoTerciario }}>
               {new Date(a.data).toLocaleString("pt-BR")} · {a.tipo}
@@ -472,10 +497,11 @@ export default function Andamentos({
               >
                 + Anexar
               </button>
-            </div>
+             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {modalAnexoId && (
         <div
