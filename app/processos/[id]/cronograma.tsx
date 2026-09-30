@@ -7,6 +7,14 @@ import { cor } from "@/lib/theme";
 import { CampoMascarado } from "@/app/_ui/campo";
 
 type Periodo = "manha" | "tarde";
+type LancamentoEntrega = {
+  id: string;
+  quantidade_normal: number;
+  quantidade_avaria: number;
+  quantidade_desvio: number;
+  data_entrega: string;
+  processo_nups: { id: string; nup: string | null }[];
+};
 type Execucao = {
   id: string;
   numero: number;
@@ -15,6 +23,7 @@ type Execucao = {
   periodo: Periodo | null;
   data_entrega: string | null;
   situacao: string;
+  processo_entrega_lancamentos: LancamentoEntrega[];
 };
 
 type Tag = { id: string; valor: string };
@@ -42,6 +51,21 @@ function paraNumero(valorFormatado: string): number {
 
 function formatarQuantidade(n: number) {
   return n.toLocaleString("pt-BR");
+}
+
+// Total já lançado numa parcela (soma de todos os lançamentos, cada um
+// podendo ter normal + avaria + desvio no mesmo registro).
+function totalLancado(lancamentos: LancamentoEntrega[]): number {
+  return lancamentos.reduce(
+    (soma, l) => soma + l.quantidade_normal + l.quantidade_avaria + l.quantidade_desvio,
+    0,
+  );
+}
+
+// "Falta" nunca é digitado — é sempre esperado menos o que já foi lançado.
+// Pode ficar negativo se lançarem mais do que o previsto (excedente).
+function falta(e: Execucao): number {
+  return e.quantidade - totalLancado(e.processo_entrega_lancamentos ?? []);
 }
 
 const EVENTO_FALTA = "Falta na Entrega";
@@ -179,6 +203,17 @@ export default function Cronograma({
     execucoesOrdenadas[0]?.id ?? null,
   );
   const selecionada = execucoesOrdenadas.find((e) => e.id === parcelaSelecionadaId) ?? null;
+
+  const [criandoLancamento, setCriandoLancamento] = useState(false);
+  const [novoLancData, setNovoLancData] = useState(hoje);
+  const [novoLancNormal, setNovoLancNormal] = useState("");
+  const [novoLancAvaria, setNovoLancAvaria] = useState("");
+  const [novoLancDesvio, setNovoLancDesvio] = useState("");
+  const [salvandoLancamento, setSalvandoLancamento] = useState(false);
+  const [removendoLancamentoId, setRemovendoLancamentoId] = useState<string | null>(null);
+  const [editandoNupLancId, setEditandoNupLancId] = useState<string | null>(null);
+  const [valorNupLanc, setValorNupLanc] = useState("");
+  const [salvandoNupLanc, setSalvandoNupLanc] = useState(false);
 
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [etapaConfirmacao, setEtapaConfirmacao] = useState<"pergunta" | "problemas" | null>(null);
@@ -390,6 +425,80 @@ export default function Cronograma({
     router.refresh();
   }
 
+  function abrirNovoLancamento() {
+    setCriandoLancamento(true);
+    setNovoLancData(hoje);
+    setNovoLancNormal("");
+    setNovoLancAvaria("");
+    setNovoLancDesvio("");
+    setErro(null);
+  }
+
+  // Cada lançamento de entrega já nasce com o "slot" do NUP de Entrega dele
+  // (1 por lançamento, já que uma parcela pode ter várias entregas parciais)
+  // — o número em si (vem do SEI) é preenchido depois, editando na hora.
+  async function criarLancamento(execucaoId: string) {
+    const normal = paraNumero(novoLancNormal);
+    const avaria = paraNumero(novoLancAvaria);
+    const desvio = paraNumero(novoLancDesvio);
+    if (!novoLancData || normal + avaria + desvio <= 0) return;
+    setErro(null);
+    setSalvandoLancamento(true);
+    const { data: lancamento, error } = await supabase
+      .from("processo_entrega_lancamentos")
+      .insert({
+        execucao_id: execucaoId,
+        quantidade_normal: normal,
+        quantidade_avaria: avaria,
+        quantidade_desvio: desvio,
+        data_entrega: novoLancData,
+      })
+      .select("id")
+      .single();
+    if (error || !lancamento) {
+      setSalvandoLancamento(false);
+      setErro(error?.message ?? "Não deu pra salvar o lançamento.");
+      return;
+    }
+    await supabase
+      .from("processo_nups")
+      .insert({ processo_id: processoId, tipo: "entrega", execucao_id: execucaoId, lancamento_id: lancamento.id });
+    setSalvandoLancamento(false);
+    setCriandoLancamento(false);
+    router.refresh();
+  }
+
+  async function removerLancamento(lancamentoId: string) {
+    setErro(null);
+    setRemovendoLancamentoId(lancamentoId);
+    const { error } = await supabase.from("processo_entrega_lancamentos").delete().eq("id", lancamentoId);
+    setRemovendoLancamentoId(null);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    router.refresh();
+  }
+
+  function abrirEdicaoNupLanc(nupId: string, valorAtual: string) {
+    setEditandoNupLancId(nupId);
+    setValorNupLanc(valorAtual);
+    setErro(null);
+  }
+
+  async function salvarNupLanc(nupId: string) {
+    setErro(null);
+    setSalvandoNupLanc(true);
+    const { error } = await supabase.from("processo_nups").update({ nup: valorNupLanc.trim() || null }).eq("id", nupId);
+    setSalvandoNupLanc(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setEditandoNupLancId(null);
+    router.refresh();
+  }
+
   return (
     <section>
       {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
@@ -422,6 +531,7 @@ export default function Cronograma({
               }}
             >
               {ordinal(e.numero)}
+              {(e.processo_entrega_lancamentos?.length ?? 0) > 1 ? " · Parcial" : ""}
               {diasAtraso ? ` · ${diasAtraso}d atraso` : ""}
             </button>
           );
@@ -463,6 +573,10 @@ export default function Cronograma({
       {selecionada && !novo && (() => {
         const e = selecionada;
         const atraso = textoAtraso(e, hoje);
+        const lancamentos = [...(e.processo_entrega_lancamentos ?? [])].sort((a, b) =>
+          a.data_entrega < b.data_entrega ? -1 : a.data_entrega > b.data_entrega ? 1 : 0,
+        );
+        const faltam = falta(e);
         return (
           <div style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
@@ -502,6 +616,11 @@ export default function Cronograma({
                   <Campo label="Data entregue">{formatarData(e.data_entrega)}</Campo>
                 </>
               )}
+              <Campo label="Falta">
+                <span style={{ color: faltam < 0 ? cor.urgente : undefined, fontWeight: faltam < 0 ? 600 : 400 }}>
+                  {faltam < 0 ? `excedeu ${formatarQuantidade(-faltam)}` : formatarQuantidade(faltam)}
+                </span>
+              </Campo>
               <Campo label="Prazo">
                 <span style={{ color: atraso.destaque === "urgente" ? cor.urgente : atraso.destaque === "positivo" ? cor.positivo : undefined, fontWeight: atraso.destaque ? 600 : 400 }}>
                   {atraso.texto}
@@ -638,6 +757,133 @@ export default function Cronograma({
                 )}
               </div>
             )}
+
+            <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${cor.borda}` }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                Entregas lançadas
+              </span>
+
+              {lancamentos.length === 0 && (
+                <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "6px 0 0" }}>
+                  Nenhuma entrega lançada ainda.
+                </p>
+              )}
+
+              {lancamentos.map((l) => {
+                const nupEntrega = l.processo_nups[0] ?? null;
+                return (
+                  <div
+                    key={l.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      padding: "8px 0",
+                      borderBottom: `1px solid ${cor.borda}`,
+                      fontSize: 12,
+                    }}
+                  >
+                    <span style={{ color: cor.textoTerciario, minWidth: 70 }}>{formatarData(l.data_entrega)}</span>
+                    <span>Normal: <strong>{formatarQuantidade(l.quantidade_normal)}</strong></span>
+                    {l.quantidade_avaria > 0 && (
+                      <span style={{ color: cor.urgente }}>Avaria: <strong>{formatarQuantidade(l.quantidade_avaria)}</strong></span>
+                    )}
+                    {l.quantidade_desvio > 0 && (
+                      <span style={{ color: cor.urgente }}>Desvio: <strong>{formatarQuantidade(l.quantidade_desvio)}</strong></span>
+                    )}
+                    <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                      {nupEntrega && editandoNupLancId === nupEntrega.id ? (
+                        <>
+                          <input
+                            autoFocus
+                            value={valorNupLanc}
+                            onChange={(ev) => setValorNupLanc(ev.target.value)}
+                            placeholder="NUP de entrega"
+                            style={{ padding: 4, width: 140, fontSize: 11.5 }}
+                          />
+                          <button onClick={() => salvarNupLanc(nupEntrega.id)} disabled={salvandoNupLanc} style={{ fontSize: 10.5 }}>
+                            Salvar
+                          </button>
+                          <button onClick={() => setEditandoNupLancId(null)} disabled={salvandoNupLanc} style={{ fontSize: 10.5 }}>
+                            X
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ color: cor.textoTerciario }}>
+                            NUP: {nupEntrega?.nup || "não informado"}
+                          </span>
+                          {nupEntrega && (
+                            <button
+                              onClick={() => abrirEdicaoNupLanc(nupEntrega.id, nupEntrega.nup ?? "")}
+                              style={{ fontSize: 10, padding: "2px 6px" }}
+                            >
+                              editar
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <button
+                        onClick={() => removerLancamento(l.id)}
+                        disabled={removendoLancamentoId === l.id}
+                        style={{ fontSize: 10.5 }}
+                      >
+                        remover
+                      </button>
+                    </span>
+                  </div>
+                );
+              })}
+
+              {criandoLancamento ? (
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap", marginTop: 10 }}>
+                  <Campo label="Data">
+                    <input
+                      type="date"
+                      value={novoLancData}
+                      onChange={(ev) => setNovoLancData(ev.target.value)}
+                      style={{ padding: 4 }}
+                    />
+                  </Campo>
+                  <CampoQuantidade valor={novoLancNormal} onChange={setNovoLancNormal} />
+                  <Campo label="Avaria">
+                    <CampoMascarado
+                      valor={novoLancAvaria}
+                      formatar={formatarNumeroBR}
+                      onChange={setNovoLancAvaria}
+                      style={{ width: 90, padding: 4, textAlign: "center" }}
+                    />
+                  </Campo>
+                  <Campo label="Desvio">
+                    <CampoMascarado
+                      valor={novoLancDesvio}
+                      formatar={formatarNumeroBR}
+                      onChange={setNovoLancDesvio}
+                      style={{ width: 90, padding: 4, textAlign: "center" }}
+                    />
+                  </Campo>
+                  <button
+                    onClick={() => criarLancamento(e.id)}
+                    disabled={
+                      salvandoLancamento ||
+                      !novoLancData ||
+                      paraNumero(novoLancNormal) + paraNumero(novoLancAvaria) + paraNumero(novoLancDesvio) <= 0
+                    }
+                    style={{ fontSize: 11 }}
+                  >
+                    {salvandoLancamento ? "..." : "Salvar"}
+                  </button>
+                  <button onClick={() => setCriandoLancamento(false)} disabled={salvandoLancamento} style={{ fontSize: 11 }}>
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button onClick={abrirNovoLancamento} style={{ fontSize: 11, marginTop: 10 }}>
+                  + Lançar entrega
+                </button>
+              )}
+            </div>
           </div>
         );
       })()}

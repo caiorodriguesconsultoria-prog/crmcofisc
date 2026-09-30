@@ -127,7 +127,9 @@ export async function carregarProcesso(id: string) {
       .eq("processo_id", id),
     supabase
       .from("processo_execucoes")
-      .select("id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao")
+      .select(
+        "id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao, processo_entrega_lancamentos(id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega, processo_nups(id, nup))",
+      )
       .eq("processo_id", id)
       .order("numero"),
     supabase
@@ -170,18 +172,18 @@ export async function carregarProcesso(id: string) {
     ? { id: nupRelatorioRow.id, tipo: "relatorio" as const, valor: nupRelatorioRow.nup ?? "" }
     : null;
 
-  // Pares de NUP Entrega/Pagamento ligados a uma parcela do cronograma —
-  // separados do NUP Relatório geral acima.
+  // NUP de Pagamento por parcela do cronograma — separado do NUP Relatório
+  // geral acima. NUP de Entrega deixou de ser 1-por-parcela: agora é
+  // 1-por-lançamento (ver processo_entrega_lancamentos, editado direto no
+  // Cronograma), então não entra mais nesse resumo.
   const paresNup = (execucoes ?? [])
     .map((exec) => {
-      const entregaRow = (nups ?? []).find((n) => n.tipo === "entrega" && n.execucao_id === exec.id);
       const pagamentoRow = (nups ?? []).find((n) => n.tipo === "pagamento" && n.execucao_id === exec.id);
-      if (!entregaRow && !pagamentoRow) return null;
+      if (!pagamentoRow) return null;
       return {
         execucaoId: exec.id,
         numero: exec.numero,
-        entrega: entregaRow ? { id: entregaRow.id, valor: entregaRow.nup ?? "" } : null,
-        pagamento: pagamentoRow ? { id: pagamentoRow.id, valor: pagamentoRow.nup ?? "" } : null,
+        pagamento: { id: pagamentoRow.id, valor: pagamentoRow.nup ?? "" },
       };
     })
     .filter((p): p is NonNullable<typeof p> => !!p)
@@ -191,6 +193,7 @@ export async function carregarProcesso(id: string) {
     .filter((exec) => !paresNup.some((p) => p.execucaoId === exec.id))
     .map((exec) => ({ id: exec.id, numero: exec.numero }))
     .sort((a, b) => a.numero - b.numero);
+  const totalExecucoes = (execucoes ?? []).length;
 
   const todosGestores = (papeis ?? [])
     .filter((pp) => pp.papel === "gestor")
@@ -333,6 +336,7 @@ export async function carregarProcesso(id: string) {
         nupRelatorio={nupRelatorio}
         paresNup={paresNup}
         execucoesSemPar={execucoesSemPar}
+        totalExecucoes={totalExecucoes}
         fornecedorNome={p.fornecedores?.nome ?? ""}
         cnpj={p.fornecedores?.cnpj ?? ""}
         objeto={p.objeto}
