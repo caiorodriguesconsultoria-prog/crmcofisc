@@ -134,7 +134,7 @@ export async function carregarProcesso(id: string) {
       .order("numero"),
     supabase
       .from("processo_pauta_distribuicao")
-      .select("id, uf, quantidade")
+      .select("id, uf, quantidade, data_entrega, execucao_id")
       .eq("processo_id", id)
       .order("created_at"),
     supabase
@@ -473,7 +473,11 @@ export async function carregarProcesso(id: string) {
 
         <div style={card}>
           <span style={rotuloSecao}>4. Execução do contrato</span>
-          <PautaDistribuicao processoId={id} pauta={(pauta ?? []) as any} />
+          <PautaDistribuicao
+            processoId={id}
+            pauta={(pauta ?? []) as any}
+            execucoes={(execucoes ?? []).map((exec) => ({ id: exec.id, numero: exec.numero }))}
+          />
           <EntregasLazy processoId={id} />
         </div>
 
