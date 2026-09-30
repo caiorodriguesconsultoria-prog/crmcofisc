@@ -37,6 +37,17 @@ function Coluna({ label, valor, acao }: { label: string; valor: string; acao?: R
   );
 }
 
+function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: 11, minWidth: 0 }}>
+      <span style={{ textTransform: "uppercase", letterSpacing: 1, fontSize: 10.5, color: cor.textoTerciario }}>
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
 export default function DadosPrincipais({
   processoId,
   nupPrincipal,
@@ -66,16 +77,24 @@ export default function DadosPrincipais({
 }) {
   const router = useRouter();
   const supabase = createClient();
-  const [editando, setEditando] = useState<"relatorio" | "unidade" | "responsavelPagamento" | null>(null);
-  const [valor, setValor] = useState("");
+
+  // Um único botão de edição pro card inteiro — antes cada campo (NUP
+  // Relatório, Unidade de medida, Responsável pelo pagamento) tinha seu
+  // próprio "editar" solto, ficava trabalhoso corrigir mais de um campo.
+  const [editandoTudo, setEditandoTudo] = useState(false);
+  const [valores, setValores] = useState({
+    nup_principal: nupPrincipal,
+    nup_relatorio: nupRelatorio?.valor ?? "",
+    objeto,
+    unidade_medida: unidadeMedida ?? "",
+    responsavel_pagamento_nome: responsavelPagamentoNome ?? "",
+    responsavel_pagamento_email: responsavelPagamentoEmail ?? "",
+  });
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
-  const [valorRespNome, setValorRespNome] = useState("");
-  const [valorRespEmail, setValorRespEmail] = useState("");
-
-  // Edição de um NUP de parcela (entrega ou pagamento) — identificado pelo
-  // id da linha em processo_nups, que já existe desde a criação do par.
+  // Edição de um NUP de parcela (pagamento) — identificado pelo id da linha
+  // em processo_nups, que já existe desde a criação do par.
   const [editandoNupId, setEditandoNupId] = useState<string | null>(null);
   const [valorNup, setValorNup] = useState("");
   const [salvandoNup, setSalvandoNup] = useState(false);
@@ -84,74 +103,58 @@ export default function DadosPrincipais({
   const [execucaoEscolhida, setExecucaoEscolhida] = useState("");
   const [salvandoPar, setSalvandoPar] = useState(false);
 
-  function abrirEdicao(tipo: "relatorio", atual: Nup | null) {
-    setEditando(tipo);
-    setValor(atual?.valor ?? "");
+  function abrirEdicaoTudo() {
+    setValores({
+      nup_principal: nupPrincipal,
+      nup_relatorio: nupRelatorio?.valor ?? "",
+      objeto,
+      unidade_medida: unidadeMedida ?? "",
+      responsavel_pagamento_nome: responsavelPagamentoNome ?? "",
+      responsavel_pagamento_email: responsavelPagamentoEmail ?? "",
+    });
     setErro(null);
+    setEditandoTudo(true);
   }
 
-  async function salvar(tipo: "relatorio", atual: Nup | null) {
+  async function salvarTudo() {
     setErro(null);
-    setSalvando(true);
-    const { error } = atual
-      ? await supabase.from("processo_nups").update({ nup: valor.trim() }).eq("id", atual.id)
-      : await supabase
-          .from("processo_nups")
-          .insert({ processo_id: processoId, tipo, nup: valor.trim() });
-    setSalvando(false);
-    if (error) {
-      setErro(error.message);
+    if (!valores.nup_principal.trim() || !valores.objeto.trim()) {
+      setErro("NUP Principal e Objeto não podem ficar em branco.");
       return;
     }
-    setEditando(null);
-    router.refresh();
-  }
-
-  function abrirEdicaoUnidade() {
-    setEditando("unidade");
-    setValor(unidadeMedida ?? "");
-    setErro(null);
-  }
-
-  async function salvarUnidade() {
-    setErro(null);
     setSalvando(true);
-    const { error } = await supabase
-      .from("processos")
-      .update({ unidade_medida: valor.trim() || null })
-      .eq("id", processoId);
-    setSalvando(false);
-    if (error) {
-      setErro(error.message);
-      return;
-    }
-    setEditando(null);
-    router.refresh();
-  }
 
-  function abrirEdicaoResponsavelPagamento() {
-    setEditando("responsavelPagamento");
-    setValorRespNome(responsavelPagamentoNome ?? "");
-    setValorRespEmail(responsavelPagamentoEmail ?? "");
-    setErro(null);
-  }
-
-  async function salvarResponsavelPagamento() {
-    setErro(null);
-    setSalvando(true);
-    const { error } = await supabase
+    const { error: erroProcesso } = await supabase
       .from("processos")
       .update({
-        responsavel_pagamento_nome: valorRespNome.trim() || null,
-        responsavel_pagamento_email: valorRespEmail.trim() || null,
+        nup_principal: valores.nup_principal.trim(),
+        objeto: valores.objeto.trim(),
+        unidade_medida: valores.unidade_medida.trim() || null,
+        responsavel_pagamento_nome: valores.responsavel_pagamento_nome.trim() || null,
+        responsavel_pagamento_email: valores.responsavel_pagamento_email.trim() || null,
       })
       .eq("id", processoId);
-    setSalvando(false);
-    if (error) {
-      setErro(error.message);
+    if (erroProcesso) {
+      setSalvando(false);
+      setErro(erroProcesso.message);
       return;
     }
-    setEditando(null);
+
+    const nupRelatorioValor = valores.nup_relatorio.trim();
+    const { error: erroNup } = nupRelatorio
+      ? await supabase.from("processo_nups").update({ nup: nupRelatorioValor || null }).eq("id", nupRelatorio.id)
+      : nupRelatorioValor
+        ? await supabase
+            .from("processo_nups")
+            .insert({ processo_id: processoId, tipo: "relatorio", nup: nupRelatorioValor })
+        : { error: null };
+    setSalvando(false);
+    if (erroNup) {
+      setErro(erroNup.message);
+      return;
+    }
+
+    setEditandoTudo(false);
     router.refresh();
   }
 
@@ -196,125 +199,121 @@ export default function DadosPrincipais({
 
   return (
     <div style={{ ...card, display: "flex", flexDirection: "column", gap: 14 }}>
-      <span
-        style={{
-          fontSize: 11.5,
-          fontWeight: 600,
-          color: cor.destaque,
-          letterSpacing: 0.6,
-          textTransform: "uppercase",
-        }}
-      >
-        Dados principais
-      </span>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
-        <Coluna label="NUP Principal" valor={nupPrincipal} />
-        {editando === "relatorio" ? (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <span
+          style={{
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: cor.destaque,
+            letterSpacing: 0.6,
+            textTransform: "uppercase",
+          }}
+        >
+          Dados principais
+        </span>
+        {!editandoTudo ? (
+          <button onClick={abrirEdicaoTudo} style={{ fontSize: 10.5, padding: "4px 8px" }}>
+            editar
+          </button>
+        ) : (
           <div style={{ display: "flex", gap: 6 }}>
-            <input value={valor} onChange={(e) => setValor(e.target.value)} style={{ flex: 1, padding: 6 }} />
-            <button onClick={() => salvar("relatorio", nupRelatorio)} disabled={salvando || !valor.trim()} style={{ fontSize: 11 }}>
-              Salvar
+            <button onClick={salvarTudo} disabled={salvando} style={{ fontSize: 10.5, padding: "4px 8px" }}>
+              {salvando ? "Salvando..." : "Salvar"}
             </button>
-            <button onClick={() => setEditando(null)} disabled={salvando} style={{ fontSize: 11 }}>
-              X
+            <button onClick={() => setEditandoTudo(false)} disabled={salvando} style={{ fontSize: 10.5, padding: "4px 8px" }}>
+              Cancelar
             </button>
           </div>
-        ) : (
-          <Coluna
-            label="NUP Relatório"
-            valor={nupRelatorio?.valor ?? "não informado"}
-            acao={
-              <button onClick={() => abrirEdicao("relatorio", nupRelatorio)} style={{ fontSize: 10, padding: "2px 6px" }}>
-                editar
-              </button>
-            }
-          />
         )}
       </div>
 
       {erro && <p style={{ color: cor.urgente, margin: 0, fontSize: 12 }}>{erro}</p>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
-        <Coluna label="Contratada" valor={fornecedorNome || "não informado"} />
-        <Coluna label="CNPJ" valor={cnpj || "não informado"} />
-        <Coluna
-          label="Objeto"
-          valor={objeto}
-          acao={
-            <BotaoCopiar
-              texto={unidadeMedida ? `${objeto}, ${unidadeMedida}` : objeto}
-              rotulo="Copiar objeto + unidade"
-            />
-          }
-        />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
-        <div />
-        <div />
-        {editando === "unidade" ? (
-          <div style={{ display: "flex", gap: 6 }}>
-            <input
-              autoFocus
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder="ex.: frascos, caixas"
-              style={{ flex: 1, padding: 6 }}
-            />
-            <button onClick={salvarUnidade} disabled={salvando} style={{ fontSize: 11 }}>
-              Salvar
-            </button>
-            <button onClick={() => setEditando(null)} disabled={salvando} style={{ fontSize: 11 }}>
-              X
-            </button>
+      {!editandoTudo ? (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+            <Coluna label="NUP Principal" valor={nupPrincipal} />
+            <Coluna label="NUP Relatório" valor={nupRelatorio?.valor ?? "não informado"} />
           </div>
-        ) : (
-          <Coluna
-            label="Unidade de medida"
-            valor={unidadeMedida ?? "não informado"}
-            acao={
-              <button onClick={abrirEdicaoUnidade} style={{ fontSize: 10, padding: "2px 6px" }}>
-                editar
-              </button>
-            }
-          />
-        )}
-      </div>
 
-      {editando === "responsavelPagamento" ? (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <input
-            autoFocus
-            value={valorRespNome}
-            onChange={(e) => setValorRespNome(e.target.value)}
-            placeholder="Nome do responsável"
-            style={{ flex: 1, minWidth: 140, padding: 6 }}
-          />
-          <input
-            value={valorRespEmail}
-            onChange={(e) => setValorRespEmail(e.target.value)}
-            placeholder="E-mail do responsável"
-            style={{ flex: 1, minWidth: 180, padding: 6 }}
-          />
-          <button onClick={salvarResponsavelPagamento} disabled={salvando} style={{ fontSize: 11 }}>
-            Salvar
-          </button>
-          <button onClick={() => setEditando(null)} disabled={salvando} style={{ fontSize: 11 }}>
-            X
-          </button>
-        </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
+            <Coluna label="Contratada" valor={fornecedorNome || "não informado"} />
+            <Coluna label="CNPJ" valor={cnpj || "não informado"} />
+            <Coluna
+              label="Objeto"
+              valor={objeto}
+              acao={
+                <BotaoCopiar
+                  texto={unidadeMedida ? `${objeto}, ${unidadeMedida}` : objeto}
+                  rotulo="Copiar objeto + unidade"
+                />
+              }
+            />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
+            <div />
+            <div />
+            <Coluna label="Unidade de medida" valor={unidadeMedida ?? "não informado"} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.6fr", gap: 14 }}>
+            <Coluna label="Responsável pelo pagamento" valor={responsavelPagamentoNome || "não informado"} />
+            <Coluna label="E-mail do responsável" valor={responsavelPagamentoEmail || "não informado"} />
+          </div>
+        </>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.6fr", gap: 14 }}>
-          <Coluna
-            label="Responsável pelo pagamento"
-            valor={responsavelPagamentoNome || "não informado"}
-            acao={
-              <button onClick={abrirEdicaoResponsavelPagamento} style={{ fontSize: 10, padding: "2px 6px" }}>
-                editar
-              </button>
-            }
-          />
-          <Coluna label="E-mail do responsável" valor={responsavelPagamentoEmail || "não informado"} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+          <Campo label="NUP Principal">
+            <input
+              value={valores.nup_principal}
+              onChange={(e) => setValores((v) => ({ ...v, nup_principal: e.target.value }))}
+              style={{ padding: 6 }}
+            />
+          </Campo>
+          <Campo label="NUP Relatório">
+            <input
+              value={valores.nup_relatorio}
+              onChange={(e) => setValores((v) => ({ ...v, nup_relatorio: e.target.value }))}
+              style={{ padding: 6 }}
+            />
+          </Campo>
+          <Campo label="Contratada">
+            <span style={{ fontSize: 12.5, fontWeight: 600, padding: "6px 0" }}>{fornecedorNome || "não informado"}</span>
+          </Campo>
+          <Campo label="CNPJ">
+            <span style={{ fontSize: 12.5, fontWeight: 600, padding: "6px 0" }}>{cnpj || "não informado"}</span>
+          </Campo>
+          <Campo label="Objeto">
+            <input
+              value={valores.objeto}
+              onChange={(e) => setValores((v) => ({ ...v, objeto: e.target.value }))}
+              style={{ padding: 6 }}
+            />
+          </Campo>
+          <Campo label="Unidade de medida">
+            <input
+              value={valores.unidade_medida}
+              onChange={(e) => setValores((v) => ({ ...v, unidade_medida: e.target.value }))}
+              placeholder="ex.: frascos, caixas"
+              style={{ padding: 6 }}
+            />
+          </Campo>
+          <Campo label="Responsável pelo pagamento">
+            <input
+              value={valores.responsavel_pagamento_nome}
+              onChange={(e) => setValores((v) => ({ ...v, responsavel_pagamento_nome: e.target.value }))}
+              placeholder="Nome do responsável"
+              style={{ padding: 6 }}
+            />
+          </Campo>
+          <Campo label="E-mail do responsável">
+            <input
+              value={valores.responsavel_pagamento_email}
+              onChange={(e) => setValores((v) => ({ ...v, responsavel_pagamento_email: e.target.value }))}
+              placeholder="E-mail do responsável"
+              style={{ padding: 6 }}
+            />
+          </Campo>
         </div>
       )}
 
