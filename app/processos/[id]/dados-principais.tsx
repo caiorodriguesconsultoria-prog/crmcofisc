@@ -48,6 +48,8 @@ export default function DadosPrincipais({
   cnpj,
   objeto,
   unidadeMedida,
+  responsavelPagamentoNome,
+  responsavelPagamentoEmail,
 }: {
   processoId: string;
   nupPrincipal: string;
@@ -59,13 +61,18 @@ export default function DadosPrincipais({
   cnpj: string;
   objeto: string;
   unidadeMedida: string | null;
+  responsavelPagamentoNome: string | null;
+  responsavelPagamentoEmail: string | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
-  const [editando, setEditando] = useState<"relatorio" | "unidade" | null>(null);
+  const [editando, setEditando] = useState<"relatorio" | "unidade" | "responsavelPagamento" | null>(null);
   const [valor, setValor] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+
+  const [valorRespNome, setValorRespNome] = useState("");
+  const [valorRespEmail, setValorRespEmail] = useState("");
 
   // Edição de um NUP de parcela (entrega ou pagamento) — identificado pelo
   // id da linha em processo_nups, que já existe desde a criação do par.
@@ -112,6 +119,32 @@ export default function DadosPrincipais({
     const { error } = await supabase
       .from("processos")
       .update({ unidade_medida: valor.trim() || null })
+      .eq("id", processoId);
+    setSalvando(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setEditando(null);
+    router.refresh();
+  }
+
+  function abrirEdicaoResponsavelPagamento() {
+    setEditando("responsavelPagamento");
+    setValorRespNome(responsavelPagamentoNome ?? "");
+    setValorRespEmail(responsavelPagamentoEmail ?? "");
+    setErro(null);
+  }
+
+  async function salvarResponsavelPagamento() {
+    setErro(null);
+    setSalvando(true);
+    const { error } = await supabase
+      .from("processos")
+      .update({
+        responsavel_pagamento_nome: valorRespNome.trim() || null,
+        responsavel_pagamento_email: valorRespEmail.trim() || null,
+      })
       .eq("id", processoId);
     setSalvando(false);
     if (error) {
@@ -247,6 +280,43 @@ export default function DadosPrincipais({
           />
         )}
       </div>
+
+      {editando === "responsavelPagamento" ? (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <input
+            autoFocus
+            value={valorRespNome}
+            onChange={(e) => setValorRespNome(e.target.value)}
+            placeholder="Nome do responsável"
+            style={{ flex: 1, minWidth: 140, padding: 6 }}
+          />
+          <input
+            value={valorRespEmail}
+            onChange={(e) => setValorRespEmail(e.target.value)}
+            placeholder="E-mail do responsável"
+            style={{ flex: 1, minWidth: 180, padding: 6 }}
+          />
+          <button onClick={salvarResponsavelPagamento} disabled={salvando} style={{ fontSize: 11 }}>
+            Salvar
+          </button>
+          <button onClick={() => setEditando(null)} disabled={salvando} style={{ fontSize: 11 }}>
+            X
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.6fr", gap: 14 }}>
+          <Coluna
+            label="Responsável pelo pagamento"
+            valor={responsavelPagamentoNome || "não informado"}
+            acao={
+              <button onClick={abrirEdicaoResponsavelPagamento} style={{ fontSize: 10, padding: "2px 6px" }}>
+                editar
+              </button>
+            }
+          />
+          <Coluna label="E-mail do responsável" valor={responsavelPagamentoEmail || "não informado"} />
+        </div>
+      )}
 
       {/* NUP de Pagamento por parcela — ligado ao cronograma. NUP de Entrega
           fica no Cronograma, um por lançamento (entrega pode ser parcial). */}
