@@ -43,6 +43,8 @@ export default function PautaDistribuicao({
   const [novaExecucaoId, setNovaExecucaoId] = useState("");
 
   const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [edicaoUf, setEdicaoUf] = useState("");
+  const [edicaoQuantidade, setEdicaoQuantidade] = useState("");
   const [edicaoData, setEdicaoData] = useState("");
   const [edicaoExecucaoId, setEdicaoExecucaoId] = useState("");
 
@@ -100,17 +102,25 @@ export default function PautaDistribuicao({
 
   function abrirEdicao(p: Item) {
     setEditandoId(p.id);
+    setEdicaoUf(p.uf);
+    setEdicaoQuantidade(String(p.quantidade));
     setEdicaoData(p.data_entrega ?? "");
     setEdicaoExecucaoId(p.execucao_id ?? "");
     setErro(null);
   }
 
   async function salvarEdicao(id: string) {
+    if (!edicaoUf || !edicaoQuantidade) return;
     setErro(null);
     setCarregando(id);
     const { error } = await supabase
       .from("processo_pauta_distribuicao")
-      .update({ data_entrega: edicaoData || null, execucao_id: edicaoExecucaoId || null })
+      .update({
+        uf: edicaoUf,
+        quantidade: Number(edicaoQuantidade),
+        data_entrega: edicaoData || null,
+        execucao_id: edicaoExecucaoId || null,
+      })
       .eq("id", id);
     setCarregando(null);
     if (error) {
@@ -156,45 +166,61 @@ export default function PautaDistribuicao({
               </tr>
             </thead>
             <tbody>
-              {grupo.itens.map((p) => (
-                <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: 6 }}>{p.uf}</td>
-                  <td style={{ padding: 6 }}>{p.quantidade}</td>
-                  {editandoId === p.id ? (
-                    <>
-                      <td style={{ padding: 6 }}>
-                        <input
-                          type="date"
-                          value={edicaoData}
-                          onChange={(e) => setEdicaoData(e.target.value)}
-                          style={{ padding: 4 }}
-                        />
-                      </td>
-                      <td style={{ padding: 6, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                        <SeletorParcela valor={edicaoExecucaoId} onChange={setEdicaoExecucaoId} />
-                        <button onClick={() => salvarEdicao(p.id)} disabled={carregando === p.id}>
-                          Salvar
-                        </button>
-                        <button onClick={() => setEditandoId(null)} disabled={carregando === p.id}>
-                          Cancelar
-                        </button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td style={{ padding: 6 }}>{formatarData(p.data_entrega)}</td>
-                      <td style={{ padding: 6, display: "flex", gap: 6 }}>
-                        <button onClick={() => abrirEdicao(p)} disabled={carregando === p.id}>
-                          editar
-                        </button>
-                        <button onClick={() => remover(p.id)} disabled={carregando === p.id}>
-                          remover
-                        </button>
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
+              {grupo.itens.map((p) =>
+                editandoId === p.id ? (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: 6 }}>
+                      <select value={edicaoUf} onChange={(e) => setEdicaoUf(e.target.value)} style={{ padding: 4 }}>
+                        {UFS.map((uf) => (
+                          <option key={uf} value={uf}>
+                            {uf}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6 }}>
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={edicaoQuantidade}
+                        onChange={(e) => setEdicaoQuantidade(e.target.value)}
+                        style={{ padding: 4, width: 90 }}
+                      />
+                    </td>
+                    <td style={{ padding: 6 }}>
+                      <input
+                        type="date"
+                        value={edicaoData}
+                        onChange={(e) => setEdicaoData(e.target.value)}
+                        style={{ padding: 4 }}
+                      />
+                    </td>
+                    <td style={{ padding: 6, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <SeletorParcela valor={edicaoExecucaoId} onChange={setEdicaoExecucaoId} />
+                      <button onClick={() => salvarEdicao(p.id)} disabled={carregando === p.id || !edicaoUf || !edicaoQuantidade}>
+                        Salvar
+                      </button>
+                      <button onClick={() => setEditandoId(null)} disabled={carregando === p.id}>
+                        Cancelar
+                      </button>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: 6 }}>{p.uf}</td>
+                    <td style={{ padding: 6 }}>{p.quantidade}</td>
+                    <td style={{ padding: 6 }}>{formatarData(p.data_entrega)}</td>
+                    <td style={{ padding: 6, display: "flex", gap: 6 }}>
+                      <button onClick={() => abrirEdicao(p)} disabled={carregando === p.id}>
+                        editar
+                      </button>
+                      <button onClick={() => remover(p.id)} disabled={carregando === p.id}>
+                        remover
+                      </button>
+                    </td>
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
         </div>
