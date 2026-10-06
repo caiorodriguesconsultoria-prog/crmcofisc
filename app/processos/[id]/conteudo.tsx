@@ -128,7 +128,7 @@ export async function carregarProcesso(id: string) {
     supabase
       .from("processo_execucoes")
       .select(
-        "id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao, processo_entrega_lancamentos(id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega, processo_nups(id, nup))",
+        "id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao, processo_entrega_lancamentos(id, tipo, lancamento_pai_id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega, data_limite, processo_nups(id, tipo, nup))",
       )
       .eq("processo_id", id)
       .order("numero"),
@@ -171,29 +171,6 @@ export async function carregarProcesso(id: string) {
   const nupRelatorio = nupRelatorioRow
     ? { id: nupRelatorioRow.id, tipo: "relatorio" as const, valor: nupRelatorioRow.nup ?? "" }
     : null;
-
-  // NUP de Pagamento por parcela do cronograma — separado do NUP Relatório
-  // geral acima. NUP de Entrega deixou de ser 1-por-parcela: agora é
-  // 1-por-lançamento (ver processo_entrega_lancamentos, editado direto no
-  // Cronograma), então não entra mais nesse resumo.
-  const paresNup = (execucoes ?? [])
-    .map((exec) => {
-      const pagamentoRow = (nups ?? []).find((n) => n.tipo === "pagamento" && n.execucao_id === exec.id);
-      if (!pagamentoRow) return null;
-      return {
-        execucaoId: exec.id,
-        numero: exec.numero,
-        pagamento: { id: pagamentoRow.id, valor: pagamentoRow.nup ?? "" },
-      };
-    })
-    .filter((p): p is NonNullable<typeof p> => !!p)
-    .sort((a, b) => a.numero - b.numero);
-
-  const execucoesSemPar = (execucoes ?? [])
-    .filter((exec) => !paresNup.some((p) => p.execucaoId === exec.id))
-    .map((exec) => ({ id: exec.id, numero: exec.numero }))
-    .sort((a, b) => a.numero - b.numero);
-  const totalExecucoes = (execucoes ?? []).length;
 
   const todosGestores = (papeis ?? [])
     .filter((pp) => pp.papel === "gestor")
@@ -334,9 +311,7 @@ export async function carregarProcesso(id: string) {
         processoId={p.id}
         nupPrincipal={p.nup_principal}
         nupRelatorio={nupRelatorio}
-        paresNup={paresNup}
-        execucoesSemPar={execucoesSemPar}
-        totalExecucoes={totalExecucoes}
+        execucoes={(execucoes ?? []) as any}
         fornecedorNome={p.fornecedores?.nome ?? ""}
         cnpj={p.fornecedores?.cnpj ?? ""}
         objeto={p.objeto}

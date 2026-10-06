@@ -7,12 +7,31 @@ import { card, cor } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
 
 type Nup = { id: string; tipo: "relatorio" | "pagamento"; valor: string };
-type ParNup = {
-  execucaoId: string;
-  numero: number;
-  pagamento: { id: string; valor: string };
+type TipoLancamento = "total" | "parcial" | "avaria";
+type LancamentoEntrega = {
+  id: string;
+  tipo: TipoLancamento;
+  lancamento_pai_id: string | null;
+  quantidade_normal: number;
+  quantidade_avaria: number;
+  quantidade_desvio: number;
+  data_entrega: string | null;
+  data_limite: string | null;
+  processo_nups: { id: string; tipo: "entrega" | "pagamento"; nup: string | null }[];
 };
-type ExecucaoOpcao = { id: string; numero: number };
+type Execucao = {
+  id: string;
+  numero: number;
+  processo_entrega_lancamentos: LancamentoEntrega[];
+};
+
+function formatarData(data: string | null) {
+  return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "—";
+}
+
+function nupPorTipo(nups: LancamentoEntrega["processo_nups"], tipo: "entrega" | "pagamento") {
+  return nups.find((n) => n.tipo === tipo) ?? null;
+}
 
 function Coluna({ label, valor, acao }: { label: string; valor: string; acao?: React.ReactNode }) {
   return (
@@ -52,9 +71,7 @@ export default function DadosPrincipais({
   processoId,
   nupPrincipal,
   nupRelatorio,
-  paresNup,
-  execucoesSemPar,
-  totalExecucoes,
+  execucoes,
   fornecedorNome,
   cnpj,
   objeto,
@@ -65,9 +82,7 @@ export default function DadosPrincipais({
   processoId: string;
   nupPrincipal: string;
   nupRelatorio: Nup | null;
-  paresNup: ParNup[];
-  execucoesSemPar: ExecucaoOpcao[];
-  totalExecucoes: number;
+  execucoes: Execucao[];
   fornecedorNome: string;
   cnpj: string;
   objeto: string;
@@ -99,9 +114,19 @@ export default function DadosPrincipais({
   const [valorNup, setValorNup] = useState("");
   const [salvandoNup, setSalvandoNup] = useState(false);
 
-  const [criandoPar, setCriandoPar] = useState(false);
+  const execucoesOrdenadas = [...execucoes].sort((a, b) => a.numero - b.numero);
+
+  // Criação de um novo lançamento (entrega total/parcial) direto por aqui —
+  // a referência da parcela + o lançamento em si (manual) nascem juntos,
+  // já com os dois NUPs (entrega e pagamento) prontos pra editar na lista.
+  const [criandoLancamento, setCriandoLancamento] = useState(false);
   const [execucaoEscolhida, setExecucaoEscolhida] = useState("");
-  const [salvandoPar, setSalvandoPar] = useState(false);
+  const [novoLancTipo, setNovoLancTipo] = useState<"total" | "parcial">("parcial");
+  const [novoLancData, setNovoLancData] = useState("");
+  const [novoLancNormal, setNovoLancNormal] = useState("");
+  const [novoLancAvaria, setNovoLancAvaria] = useState("");
+  const [novoLancDesvio, setNovoLancDesvio] = useState("");
+  const [salvandoLancamento, setSalvandoLancamento] = useState(false);
 
   function abrirEdicaoTudo() {
     setValores({
@@ -177,23 +202,49 @@ export default function DadosPrincipais({
     router.refresh();
   }
 
-  async function criarPar() {
-    if (!execucaoEscolhida) return;
+  function abrirNovoLancamento() {
+    setCriandoLancamento(true);
+    setExecucaoEscolhida("");
+    setNovoLancTipo("parcial");
+    setNovoLancData("");
+    setNovoLancNormal("");
+    setNovoLancAvaria("");
+    setNovoLancDesvio("");
     setErro(null);
-    setSalvandoPar(true);
-    // NUP de Entrega não entra mais aqui — cada lançamento de entrega no
-    // Cronograma já gera o dele automaticamente (1 por lançamento, não mais
-    // 1 por parcela). Aqui só fica o de Pagamento, que continua 1 por parcela.
-    const { error } = await supabase
-      .from("processo_nups")
-      .insert({ processo_id: processoId, tipo: "pagamento", execucao_id: execucaoEscolhida });
-    setSalvandoPar(false);
-    if (error) {
-      setErro(error.message);
+  }
+
+  // Novo lançamento (a "entrega parcial" manual que o Caio pediu) já nasce
+  // com os dois slots de NUP (entrega + pagamento) — ambos 1-por-lançamento.
+  async function criarLancamento() {
+    const normal = Number(novoLancNormal) || 0;
+    const avaria = Number(novoLancAvaria) || 0;
+    const desvio = Number(novoLancDesvio) || 0;
+    if (!execucaoEscolhida || !novoLancData || normal + avaria + desvio <= 0) return;
+    setErro(null);
+    setSalvandoLancamento(true);
+    const { data: lancamento, error } = await supabase
+      .from("processo_entrega_lancamentos")
+      .insert({
+        execucao_id: execucaoEscolhida,
+        tipo: novoLancTipo,
+        quantidade_normal: normal,
+        quantidade_avaria: avaria,
+        quantidade_desvio: desvio,
+        data_entrega: novoLancData,
+      })
+      .select("id")
+      .single();
+    if (error || !lancamento) {
+      setSalvandoLancamento(false);
+      setErro(error?.message ?? "Não deu pra salvar o lançamento.");
       return;
     }
-    setCriandoPar(false);
-    setExecucaoEscolhida("");
+    await supabase.from("processo_nups").insert([
+      { processo_id: processoId, tipo: "entrega", execucao_id: execucaoEscolhida, lancamento_id: lancamento.id },
+      { processo_id: processoId, tipo: "pagamento", execucao_id: execucaoEscolhida, lancamento_id: lancamento.id },
+    ]);
+    setSalvandoLancamento(false);
+    setCriandoLancamento(false);
     router.refresh();
   }
 
@@ -317,83 +368,164 @@ export default function DadosPrincipais({
         </div>
       )}
 
-      {/* NUP de Pagamento por parcela — ligado ao cronograma. NUP de Entrega
-          fica no Cronograma, um por lançamento (entrega pode ser parcial). */}
-      {paresNup.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4, borderTop: `1px solid ${cor.borda}` }}>
-          {paresNup.map((par) => {
-            const linha = par.pagamento;
-            const rotulo = `NUP Pagamento - ${par.numero}ª Parcela`;
-            return editandoNupId === linha.id ? (
-              <div key={par.execucaoId} style={{ display: "flex", gap: 6 }}>
-                <input
-                  autoFocus
-                  value={valorNup}
-                  onChange={(e) => setValorNup(e.target.value)}
-                  style={{ flex: 1, padding: 6 }}
-                />
-                <button onClick={() => salvarNup(linha.id)} disabled={salvandoNup} style={{ fontSize: 11 }}>
-                  Salvar
-                </button>
-                <button onClick={() => setEditandoNupId(null)} disabled={salvandoNup} style={{ fontSize: 11 }}>
-                  X
-                </button>
-              </div>
-            ) : (
-              <Coluna
-                key={par.execucaoId}
-                label={rotulo}
-                valor={linha.valor || "não informado"}
-                acao={
-                  <button
-                    onClick={() => abrirEdicaoNup(linha.id, linha.valor)}
-                    style={{ fontSize: 10, padding: "2px 6px" }}
-                  >
-                    editar
-                  </button>
-                }
-              />
-            );
-          })}
-        </div>
-      )}
+      {/* NUPs de Entrega e Pagamento, por parcela — um par por lançamento
+          (entrega total ou parcial), já que uma parcela pode ter várias
+          entregas. Reposição de avaria fica aninhada embaixo da entrega que
+          corrige, recuada à direita, sem NUP próprio (reusa o da entrega). */}
+      {execucoesOrdenadas.map((exec) => {
+        const lancamentosTopo = (exec.processo_entrega_lancamentos ?? []).filter((l) => l.tipo !== "avaria");
+        if (lancamentosTopo.length === 0) return null;
+        const avariasDe = (paiId: string) =>
+          (exec.processo_entrega_lancamentos ?? []).filter((l) => l.lancamento_pai_id === paiId);
+        return (
+          <div key={exec.id} style={{ paddingTop: 10, borderTop: `1px solid ${cor.borda}` }}>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>{exec.numero}ª Parcela</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+              {lancamentosTopo.map((l) => {
+                const nupEntrega = nupPorTipo(l.processo_nups, "entrega");
+                const nupPagamento = nupPorTipo(l.processo_nups, "pagamento");
+                const avarias = avariasDe(l.id);
+                return (
+                  <div key={l.id} style={{ marginLeft: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 10.5, color: cor.textoTerciario }}>
+                      {l.tipo === "total" ? "Total" : "Parcial"} · {formatarData(l.data_entrega)}
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+                      {[
+                        { rotulo: "NUP de Entrega", linha: nupEntrega },
+                        { rotulo: "NUP de Pagamento", linha: nupPagamento },
+                      ].map(({ rotulo, linha }) =>
+                        linha && editandoNupId === linha.id ? (
+                          <div key={rotulo} style={{ display: "flex", gap: 6 }}>
+                            <input
+                              autoFocus
+                              value={valorNup}
+                              onChange={(e) => setValorNup(e.target.value)}
+                              style={{ flex: 1, padding: 6 }}
+                            />
+                            <button onClick={() => salvarNup(linha.id)} disabled={salvandoNup} style={{ fontSize: 11 }}>
+                              Salvar
+                            </button>
+                            <button onClick={() => setEditandoNupId(null)} disabled={salvandoNup} style={{ fontSize: 11 }}>
+                              X
+                            </button>
+                          </div>
+                        ) : (
+                          <Coluna
+                            key={rotulo}
+                            label={rotulo}
+                            valor={linha?.nup || "não informado"}
+                            acao={
+                              linha ? (
+                                <button
+                                  onClick={() => abrirEdicaoNup(linha.id, linha.nup ?? "")}
+                                  style={{ fontSize: 10, padding: "2px 6px" }}
+                                >
+                                  editar
+                                </button>
+                              ) : undefined
+                            }
+                          />
+                        ),
+                      )}
+                    </div>
+                    {avarias.length > 0 && (
+                      <div style={{ marginLeft: 16, display: "flex", flexDirection: "column", gap: 3 }}>
+                        {avarias.map((a) => (
+                          <span key={a.id} style={{ fontSize: 11, color: cor.urgente }}>
+                            Avaria — prazo: {formatarData(a.data_limite)} · quantidade: {a.quantidade_normal.toLocaleString("pt-BR")}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
 
       <div>
-        {criandoPar ? (
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-            <select
-              value={execucaoEscolhida}
-              onChange={(e) => setExecucaoEscolhida(e.target.value)}
-              style={{ padding: 6 }}
-            >
+        {criandoLancamento ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <select value={execucaoEscolhida} onChange={(e) => setExecucaoEscolhida(e.target.value)} style={{ padding: 6 }}>
               <option value="">Selecione a parcela</option>
-              {execucoesSemPar.map((e) => (
+              {execucoesOrdenadas.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.numero}ª Parcela
                 </option>
               ))}
             </select>
-            <button onClick={criarPar} disabled={salvandoPar || !execucaoEscolhida} style={{ fontSize: 11 }}>
-              Criar
+            <div style={{ display: "flex", gap: 4 }}>
+              {(["parcial", "total"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setNovoLancTipo(t)}
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                    padding: "6px 9px",
+                    borderRadius: 7,
+                    border: "none",
+                    color: novoLancTipo === t ? cor.destaque : cor.textoTerciario,
+                    background: novoLancTipo === t ? cor.destaqueFundo : "rgba(96,93,93,.10)",
+                  }}
+                >
+                  {t === "total" ? "Total" : "Parcial"}
+                </button>
+              ))}
+            </div>
+            <input type="date" value={novoLancData} onChange={(e) => setNovoLancData(e.target.value)} style={{ padding: 6 }} />
+            <input
+              type="number"
+              step="0.001"
+              placeholder="Normal"
+              value={novoLancNormal}
+              onChange={(e) => setNovoLancNormal(e.target.value)}
+              style={{ padding: 6, width: 90 }}
+            />
+            <input
+              type="number"
+              step="0.001"
+              placeholder="Avaria"
+              value={novoLancAvaria}
+              onChange={(e) => setNovoLancAvaria(e.target.value)}
+              style={{ padding: 6, width: 90 }}
+            />
+            <input
+              type="number"
+              step="0.001"
+              placeholder="Desvio"
+              value={novoLancDesvio}
+              onChange={(e) => setNovoLancDesvio(e.target.value)}
+              style={{ padding: 6, width: 90 }}
+            />
+            <button
+              onClick={criarLancamento}
+              disabled={
+                salvandoLancamento ||
+                !execucaoEscolhida ||
+                !novoLancData ||
+                Number(novoLancNormal || 0) + Number(novoLancAvaria || 0) + Number(novoLancDesvio || 0) <= 0
+              }
+              style={{ fontSize: 11 }}
+            >
+              {salvandoLancamento ? "..." : "Salvar"}
             </button>
-            <button onClick={() => { setCriandoPar(false); setExecucaoEscolhida(""); }} disabled={salvandoPar} style={{ fontSize: 11 }}>
+            <button onClick={() => setCriandoLancamento(false)} disabled={salvandoLancamento} style={{ fontSize: 11 }}>
               Cancelar
             </button>
           </div>
         ) : (
           <button
-            onClick={() => setCriandoPar(true)}
-            disabled={execucoesSemPar.length === 0}
+            onClick={abrirNovoLancamento}
+            disabled={execucoesOrdenadas.length === 0}
             style={{ fontSize: 11.5 }}
-            title={
-              execucoesSemPar.length > 0
-                ? undefined
-                : totalExecucoes === 0
-                  ? "Cadastre uma parcela no Cronograma primeiro"
-                  : "Todas as parcelas já têm NUP de Pagamento"
-            }
+            title={execucoesOrdenadas.length === 0 ? "Cadastre uma parcela no Cronograma primeiro" : undefined}
           >
-            + Criar NUP de Pagamento
+            + Criar NUP de entrega / pagamento
           </button>
         )}
       </div>
