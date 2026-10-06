@@ -282,12 +282,15 @@ export default function Andamentos({
           >
             📎
           </button>
+          {/* "display: none" é conhecido por impedir o seletor de arquivo de
+              abrir no Safari/iOS em modo app instalado (PWA) — escondido só
+              visualmente (fora da tela), continua clicável via .click(). */}
           <input
             ref={fileInputRef}
             type="file"
             multiple
             onChange={(e) => setArquivosNovos(e.target.files)}
-            style={{ display: "none" }}
+            style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", border: 0 }}
           />
         </div>
         {arquivosNovos && arquivosNovos.length > 0 && (
