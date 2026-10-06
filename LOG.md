@@ -515,3 +515,10 @@ Caio pediu um botão de edição pro card "Dados principais" — cada campo (NUP
 
 ## 2026-10-02 · Acerto a repetir — Editar UF e Quantidade na Pauta de distribuição
 Desde a rodada de 30/09 (data de entrega + organização por parcela), a Pauta de distribuição só deixava editar data e parcela de uma linha já criada — UF e Quantidade só podiam ser definidos na criação, sem jeito de corrigir depois sem apagar e recriar a linha. Caio pediu pra incluir os dois na edição. `pauta-distribuicao.tsx`: o "editar" de cada linha agora também abre UF (select) e Quantidade (input) junto com data/parcela, tudo salvo numa passada só.
+
+## 2026-10-06 · Falha corrigida (suspeita) — Anexo de arquivo em andamentos não abrindo no app
+Caio reportou não conseguir anexar arquivo ao criar um andamento. Multi-arquivo já estava implementado no código (`<input type="file" multiple>` + loop no envio, nos dois pontos — composer de andamento novo e modal de andamento já existente) — não era isso que faltava.
+
+Causa mais provável: no composer de andamento novo, o botão de anexar (📎) aciona um `<input type="file">` escondido via `style={{ display: "none" }}`, só pelo clique programático (`.click()`) num ref. `display: none` é um padrão conhecido por falhar nesse cenário no Safari/iOS quando o app está instalado como PWA (tela de início) — o `.click()` não abre o seletor de arquivo, sem erro nenhum aparecendo, porque o elemento nunca chega a dar o evento. Trocado pelo padrão "escondido só visualmente" (`position: absolute` + 1×1px + `clip`), que mantém o elemento fora da tela mas dentro do layout — clicável via `.click()` em qualquer navegador, inclusive PWA no iOS.
+
+O "+ Anexar" de um andamento já existente usa um `<input type="file">` visível dentro de um modal (não passa por `.click()` programático), então não deveria ter esse problema — se Caio confirmar que também falha nesse caminho, a causa é outra (ex.: bucket do Storage ou RLS), e preciso investigar com mais detalhe do que ele vê na tela.
