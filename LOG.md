@@ -538,3 +538,6 @@ Decisões minhas (não especificadas, usando o "aplique a melhor arquitetura" qu
 - `dados-principais.tsx` perdeu o fluxo antigo "+ Criar NUP de Pagamento" (parcela já precisava existir, só 1 por parcela) — agora é "+ Criar NUP de entrega / pagamento", que já cria o lançamento (parcela + tipo + data + quantidades) e os dois NUPs de uma vez.
 
 `app/processos/[id]/conteudo.tsx`: query de `processo_execucoes` passou a trazer `tipo, lancamento_pai_id, data_limite` dos lançamentos e `tipo` dos NUPs aninhados; removido o cálculo de `paresNup`/`execucoesSemPar`/`totalExecucoes` (não existe mais o conceito de "parcela sem par" — isso agora é por lançamento, calculado direto em `dados-principais.tsx`).
+
+## 2026-10-06 · Acerto a repetir — "Eventos ativos" duplicava as pills do topo
+Caio notou que o card "Eventos ativos" (sidebar do processo) mostrava de novo, como chips coloridos, os mesmos eventos (tags) que já aparecem como pills no topo da página, perto do título "CT nº...". `app/processos/[id]/painel.tsx`: removida a listagem de chips de dentro do componente `EventosAtivos` — o card virou só gestão (adicionar via "Selecione um evento"/"+ Novo Evento", remover via um novo seletor "Remover evento..."), sem repetir a lista visual que já existe no topo. Import `corEvento` removido do arquivo por ter ficado sem uso.

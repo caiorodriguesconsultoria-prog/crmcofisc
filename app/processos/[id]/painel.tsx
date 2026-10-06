@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
-import { corEvento } from "@/lib/cores-evento";
 
 type Tag = { id: string; valor: string; cor?: string | null };
 
@@ -125,6 +124,7 @@ export function EventosAtivos({
   const router = useRouter();
   const supabase = createClient();
   const [novaTagId, setNovaTagId] = useState("");
+  const [removerTagId, setRemoverTagId] = useState("");
   const [criandoNovo, setCriandoNovo] = useState(false);
   const [nomeNovoEvento, setNomeNovoEvento] = useState("");
   const [corNovoEvento, setCorNovoEvento] = useState("#2F5FDB");
@@ -196,47 +196,9 @@ export function EventosAtivos({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       <span style={rotuloSecao}>Eventos ativos</span>
-      {tagsAtivas.length === 0 ? (
-        <span style={{ fontSize: 12.5, color: cor.textoTerciario }}>Nenhum</span>
-      ) : (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {tagsAtivas.map((t) => {
-            const c = corEvento(t.id, t.cor);
-            return (
-              <span
-                key={t.id}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  color: c.texto,
-                  background: c.fundo,
-                  borderRadius: 20,
-                  padding: "5px 8px 5px 11px",
-                }}
-              >
-                {t.valor}
-                <button
-                  onClick={() => removerEvento(t.id)}
-                  disabled={carregando}
-                  aria-label={`Remover ${t.valor}`}
-                  style={{
-                    fontSize: 10,
-                    padding: "1px 6px",
-                    border: "none",
-                    background: "rgba(0,0,0,.08)",
-                    color: c.texto,
-                  }}
-                >
-                  ×
-                </button>
-              </span>
-            );
-          })}
-        </div>
-      )}
+      {/* Os eventos ativos já aparecem como pills no topo da página — aqui
+          fica só a gestão (adicionar/remover), sem repetir a mesma lista
+          colorida de novo. */}
       {criandoNovo ? (
         <div style={{ display: "flex", gap: 8 }}>
           <input
@@ -281,6 +243,26 @@ export function EventosAtivos({
             + Novo Evento
           </button>
         </div>
+      )}
+
+      {tagsAtivas.length > 0 && (
+        <select
+          value={removerTagId}
+          disabled={carregando}
+          onChange={(e) => {
+            if (!e.target.value) return;
+            removerEvento(e.target.value);
+            setRemoverTagId("");
+          }}
+          style={{ padding: 8 }}
+        >
+          <option value="">Remover evento...</option>
+          {tagsAtivas.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.valor}
+            </option>
+          ))}
+        </select>
       )}
 
       {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
