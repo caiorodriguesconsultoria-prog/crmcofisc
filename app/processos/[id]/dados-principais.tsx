@@ -388,7 +388,8 @@ export default function DadosPrincipais({
                 return (
                   <div key={l.id} style={{ marginLeft: 16, display: "flex", flexDirection: "column", gap: 6 }}>
                     <span style={{ fontSize: 10.5, color: cor.textoTerciario }}>
-                      {l.tipo === "total" ? "Total" : "Parcial"} · {formatarData(l.data_entrega)}
+                      {l.tipo === "total" ? "Total" : "Parcial"} · {formatarData(l.data_entrega)} ·{" "}
+                      {(l.quantidade_normal + l.quantidade_avaria + l.quantidade_desvio).toLocaleString("pt-BR")} un.
                     </span>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
                       {[

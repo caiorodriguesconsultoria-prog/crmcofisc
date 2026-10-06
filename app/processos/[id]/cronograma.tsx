@@ -63,19 +63,39 @@ function formatarQuantidade(n: number) {
 // lançamento original que eles estão corrigindo; somar de novo contaria em
 // dobro.
 function totalLancado(lancamentos: LancamentoEntrega[]): number {
+  // Number(...) explícito em cada parcela da soma: colunas numeric do
+  // Postgres podem chegar como string via PostgREST — sem isso, "+" em
+  // string vira concatenação de texto em vez de soma, e o total sai
+  // completamente errado sem erro nenhum aparecer.
   return lancamentos
     .filter((l) => l.tipo !== "avaria")
-    .reduce((soma, l) => soma + l.quantidade_normal + l.quantidade_avaria + l.quantidade_desvio, 0);
+    .reduce(
+      (soma, l) => soma + Number(l.quantidade_normal) + Number(l.quantidade_avaria) + Number(l.quantidade_desvio),
+      0,
+    );
 }
 
 function nupPorTipo(nups: LancamentoEntrega["processo_nups"], tipo: "entrega" | "pagamento") {
   return nups.find((n) => n.tipo === tipo) ?? null;
 }
 
+// Data que de fato define se a parcela atrasou ou não: a mais antiga entre
+// as entregas (total/parcial) já lançadas — não o campo manual da parcela
+// (data_entrega em processo_execucoes), que só é preenchido ao clicar
+// "confirmar entrega" e não acompanha entregas parciais lançadas depois.
+// Sem lançamento nenhum, cai no campo manual mesmo (comportamento antigo).
+function dataEntregaEfetiva(e: Execucao): string | null {
+  const datas = (e.processo_entrega_lancamentos ?? [])
+    .filter((l) => l.tipo !== "avaria" && l.data_entrega)
+    .map((l) => l.data_entrega as string)
+    .sort();
+  return datas[0] ?? e.data_entrega;
+}
+
 // "Falta" nunca é digitado — é sempre esperado menos o que já foi lançado.
 // Pode ficar negativo se lançarem mais do que o previsto (excedente).
 function falta(e: Execucao): number {
-  return e.quantidade - totalLancado(e.processo_entrega_lancamentos ?? []);
+  return Number(e.quantidade) - totalLancado(e.processo_entrega_lancamentos ?? []);
 }
 
 const EVENTO_FALTA = "Falta na Entrega";
@@ -112,15 +132,19 @@ function diasEmAtrasoAgora(dataPrevista: string | null, hoje: string) {
   return dias > 0 ? dias : null;
 }
 
-function textoAtraso(e: Execucao, hoje: string): { texto: string; destaque: "urgente" | "positivo" | null } {
-  if (e.data_entrega) {
-    const diff = diferencaDias(e.data_prevista, e.data_entrega);
+function textoAtraso(
+  dataPrevista: string | null,
+  dataEntrega: string | null,
+  hoje: string,
+): { texto: string; destaque: "urgente" | "positivo" | null } {
+  if (dataEntrega) {
+    const diff = diferencaDias(dataPrevista, dataEntrega);
     if (diff === null) return { texto: "—", destaque: null };
     if (diff > 0) return { texto: `${diff} dia${diff > 1 ? "s" : ""} em atraso`, destaque: "urgente" };
     if (diff < 0) return { texto: `${-diff} dia${-diff > 1 ? "s" : ""} de antecedência`, destaque: "positivo" };
     return { texto: "entregue no prazo", destaque: "positivo" };
   }
-  const dias = diasEmAtrasoAgora(e.data_prevista, hoje);
+  const dias = diasEmAtrasoAgora(dataPrevista, hoje);
   if (dias) return { texto: `${dias} dia${dias > 1 ? "s" : ""} em atraso`, destaque: "urgente" };
   return { texto: "—", destaque: null };
 }
@@ -541,7 +565,7 @@ export default function Cronograma({
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
         {execucoesOrdenadas.map((e) => {
           const selecionadaAgora = parcelaSelecionadaId === e.id && !novo;
-          const diasAtraso = !e.data_entrega ? diasEmAtrasoAgora(e.data_prevista, hoje) : null;
+          const diasAtraso = !dataEntregaEfetiva(e) ? diasEmAtrasoAgora(e.data_prevista, hoje) : null;
           return (
             <button
               key={e.id}
@@ -603,7 +627,8 @@ export default function Cronograma({
 
       {selecionada && !novo && (() => {
         const e = selecionada;
-        const atraso = textoAtraso(e, hoje);
+        const dataEntregue = dataEntregaEfetiva(e);
+        const atraso = textoAtraso(e.data_prevista, dataEntregue, hoje);
         const todosLancamentos = e.processo_entrega_lancamentos ?? [];
         // Lançamentos de avaria não aparecem na lista principal — ficam
         // aninhados embaixo do lançamento total/parcial que corrigem.
@@ -650,7 +675,7 @@ export default function Cronograma({
                     {formatarData(e.data_prevista)}
                     {e.periodo ? ` · ${e.periodo === "manha" ? "Manhã" : "Tarde"}` : ""}
                   </Campo>
-                  <Campo label="Data entregue">{formatarData(e.data_entrega)}</Campo>
+                  <Campo label="Data entregue">{formatarData(dataEntregue)}</Campo>
                 </>
               )}
               <Campo label="Total lançado">{formatarQuantidade(lancado)}</Campo>
