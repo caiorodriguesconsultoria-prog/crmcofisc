@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, card, cor } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import Painel from "@/app/_ui/painel";
-import { estaAusente } from "@/lib/ausencia";
+import { estaAusente, periodoAusencia } from "@/lib/ausencia";
 
 type Item = {
   id: string;
@@ -124,7 +124,7 @@ export default function ListaPessoasPapel({
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     {i.nome}
                     <BotaoCopiar texto={i.nome} />
-                    {estaAusente(i.ausenciaInicio, i.ausenciaFim) && (
+                    {estaAusente(i.ausenciaInicio, i.ausenciaFim) && i.ausenciaInicio && (
                       <span
                         style={{
                           fontSize: 10,
@@ -133,9 +133,10 @@ export default function ListaPessoasPapel({
                           borderRadius: 10,
                           color: cor.urgente,
                           background: cor.urgenteFundo,
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        Ausente
+                        Ausente · {periodoAusencia(i.ausenciaInicio, i.ausenciaFim)}
                       </span>
                     )}
                   </div>

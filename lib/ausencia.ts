@@ -12,3 +12,14 @@ export function estaAusente(
   if (ausenciaFim && ausenciaFim < hoje) return false;
   return true;
 }
+
+function formatarDataBR(data: string) {
+  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+}
+
+// Texto curto do período, pra mostrar junto da tag "Ausente".
+export function periodoAusencia(ausenciaInicio: string, ausenciaFim: string | null | undefined): string {
+  return ausenciaFim
+    ? `${formatarDataBR(ausenciaInicio)} a ${formatarDataBR(ausenciaFim)}`
+    : `desde ${formatarDataBR(ausenciaInicio)}`;
+}

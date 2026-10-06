@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, card, cor } from "@/lib/theme";
-import { LinhaChave } from "@/app/_ui/campo";
+import { LinhaChave, BotaoCopiar } from "@/app/_ui/campo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
-import { estaAusente } from "@/lib/ausencia";
+import { estaAusente, periodoAusencia } from "@/lib/ausencia";
 
 type Pessoa = { id: string; nome: string; ausencia_inicio?: string | null; ausencia_fim?: string | null } | null;
 type Opcao = { id: string; nome: string };
 
-function TagAusente() {
+function TagAusente({ inicio, fim }: { inicio: string; fim: string | null | undefined }) {
   return (
     <span
       style={{
@@ -22,9 +22,10 @@ function TagAusente() {
         color: cor.urgente,
         background: cor.urgenteFundo,
         marginLeft: 6,
+        whiteSpace: "nowrap",
       }}
     >
-      Ausente
+      Ausente · {periodoAusencia(inicio, fim)}
     </span>
   );
 }
@@ -84,16 +85,22 @@ export default function GestaoFiscalizacao({
         <LinhaChave label="Gestor substituto" valor={gestorSubstituto?.nome ?? "não informado"} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "7px 0", borderBottom: `1px solid ${cor.borda}`, fontSize: 12.5 }}>
           <span style={{ color: cor.textoTerciario, flex: "none" }}>Fiscal</span>
-          <span style={{ display: "flex", alignItems: "center", fontWeight: 600, textAlign: "right" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, textAlign: "right" }}>
             {fiscal?.nome ?? "não informado"}
-            {estaAusente(fiscal?.ausencia_inicio, fiscal?.ausencia_fim) && <TagAusente />}
+            {fiscal && <BotaoCopiar texto={fiscal.nome} />}
+            {fiscal && estaAusente(fiscal.ausencia_inicio, fiscal.ausencia_fim) && (
+              <TagAusente inicio={fiscal.ausencia_inicio as string} fim={fiscal.ausencia_fim} />
+            )}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "7px 0", borderBottom: `1px solid ${cor.borda}`, fontSize: 12.5 }}>
           <span style={{ color: cor.textoTerciario, flex: "none" }}>Fiscal substituto</span>
-          <span style={{ display: "flex", alignItems: "center", fontWeight: 600, textAlign: "right" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, textAlign: "right" }}>
             {fiscalSubstituto?.nome ?? "não informado"}
-            {estaAusente(fiscalSubstituto?.ausencia_inicio, fiscalSubstituto?.ausencia_fim) && <TagAusente />}
+            {fiscalSubstituto && <BotaoCopiar texto={fiscalSubstituto.nome} />}
+            {fiscalSubstituto && estaAusente(fiscalSubstituto.ausencia_inicio, fiscalSubstituto.ausencia_fim) && (
+              <TagAusente inicio={fiscalSubstituto.ausencia_inicio as string} fim={fiscalSubstituto.ausencia_fim} />
+            )}
           </span>
         </div>
         <button onClick={() => setEditando(true)} style={{ marginTop: 10, fontSize: 11 }}>
