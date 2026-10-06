@@ -7,13 +7,17 @@ import { cor } from "@/lib/theme";
 import { CampoMascarado } from "@/app/_ui/campo";
 
 type Periodo = "manha" | "tarde";
+type TipoLancamento = "total" | "parcial" | "avaria";
 type LancamentoEntrega = {
   id: string;
+  tipo: TipoLancamento;
+  lancamento_pai_id: string | null;
   quantidade_normal: number;
   quantidade_avaria: number;
   quantidade_desvio: number;
-  data_entrega: string;
-  processo_nups: { id: string; nup: string | null }[];
+  data_entrega: string | null;
+  data_limite: string | null;
+  processo_nups: { id: string; tipo: "entrega" | "pagamento"; nup: string | null }[];
 };
 type Execucao = {
   id: string;
@@ -53,13 +57,19 @@ function formatarQuantidade(n: number) {
   return n.toLocaleString("pt-BR");
 }
 
-// Total já lançado numa parcela (soma de todos os lançamentos, cada um
-// podendo ter normal + avaria + desvio no mesmo registro).
+// Total já lançado numa parcela (soma dos lançamentos total/parcial, cada um
+// podendo ter normal + avaria + desvio no mesmo registro). Lançamentos de
+// reposição de avaria NÃO entram aqui — a quantidade já foi contada no
+// lançamento original que eles estão corrigindo; somar de novo contaria em
+// dobro.
 function totalLancado(lancamentos: LancamentoEntrega[]): number {
-  return lancamentos.reduce(
-    (soma, l) => soma + l.quantidade_normal + l.quantidade_avaria + l.quantidade_desvio,
-    0,
-  );
+  return lancamentos
+    .filter((l) => l.tipo !== "avaria")
+    .reduce((soma, l) => soma + l.quantidade_normal + l.quantidade_avaria + l.quantidade_desvio, 0);
+}
+
+function nupPorTipo(nups: LancamentoEntrega["processo_nups"], tipo: "entrega" | "pagamento") {
+  return nups.find((n) => n.tipo === tipo) ?? null;
 }
 
 // "Falta" nunca é digitado — é sempre esperado menos o que já foi lançado.
@@ -205,15 +215,21 @@ export default function Cronograma({
   const selecionada = execucoesOrdenadas.find((e) => e.id === parcelaSelecionadaId) ?? null;
 
   const [criandoLancamento, setCriandoLancamento] = useState(false);
+  const [novoLancTipo, setNovoLancTipo] = useState<"total" | "parcial">("parcial");
   const [novoLancData, setNovoLancData] = useState(hoje);
   const [novoLancNormal, setNovoLancNormal] = useState("");
   const [novoLancAvaria, setNovoLancAvaria] = useState("");
   const [novoLancDesvio, setNovoLancDesvio] = useState("");
   const [salvandoLancamento, setSalvandoLancamento] = useState(false);
   const [removendoLancamentoId, setRemovendoLancamentoId] = useState<string | null>(null);
-  const [editandoNupLancId, setEditandoNupLancId] = useState<string | null>(null);
-  const [valorNupLanc, setValorNupLanc] = useState("");
-  const [salvandoNupLanc, setSalvandoNupLanc] = useState(false);
+
+  // Reposição de avaria: lançamento "filho" de um total/parcial que teve
+  // quantidade avariada — só precisa de prazo + quantidade, nunca tem NUP
+  // próprio (reusa o NUP de entrega/pagamento do lançamento pai).
+  const [lancandoAvariaDeId, setLancandoAvariaDeId] = useState<string | null>(null);
+  const [avariaData, setAvariaData] = useState("");
+  const [avariaQuantidade, setAvariaQuantidade] = useState("");
+  const [salvandoAvaria, setSalvandoAvaria] = useState(false);
 
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [etapaConfirmacao, setEtapaConfirmacao] = useState<"pergunta" | "problemas" | null>(null);
@@ -427,6 +443,7 @@ export default function Cronograma({
 
   function abrirNovoLancamento() {
     setCriandoLancamento(true);
+    setNovoLancTipo("parcial");
     setNovoLancData(hoje);
     setNovoLancNormal("");
     setNovoLancAvaria("");
@@ -434,9 +451,10 @@ export default function Cronograma({
     setErro(null);
   }
 
-  // Cada lançamento de entrega já nasce com o "slot" do NUP de Entrega dele
-  // (1 por lançamento, já que uma parcela pode ter várias entregas parciais)
-  // — o número em si (vem do SEI) é preenchido depois, editando na hora.
+  // Cada lançamento total/parcial já nasce com os dois "slots" de NUP
+  // (Entrega + Pagamento) — ambos 1-por-lançamento agora, já que uma parcela
+  // pode ter várias entregas parciais. O número de cada um (vem do SEI) é
+  // preenchido depois, em Dados principais.
   async function criarLancamento(execucaoId: string) {
     const normal = paraNumero(novoLancNormal);
     const avaria = paraNumero(novoLancAvaria);
@@ -448,6 +466,7 @@ export default function Cronograma({
       .from("processo_entrega_lancamentos")
       .insert({
         execucao_id: execucaoId,
+        tipo: novoLancTipo,
         quantidade_normal: normal,
         quantidade_avaria: avaria,
         quantidade_desvio: desvio,
@@ -460,9 +479,10 @@ export default function Cronograma({
       setErro(error?.message ?? "Não deu pra salvar o lançamento.");
       return;
     }
-    await supabase
-      .from("processo_nups")
-      .insert({ processo_id: processoId, tipo: "entrega", execucao_id: execucaoId, lancamento_id: lancamento.id });
+    await supabase.from("processo_nups").insert([
+      { processo_id: processoId, tipo: "entrega", execucao_id: execucaoId, lancamento_id: lancamento.id },
+      { processo_id: processoId, tipo: "pagamento", execucao_id: execucaoId, lancamento_id: lancamento.id },
+    ]);
     setSalvandoLancamento(false);
     setCriandoLancamento(false);
     router.refresh();
@@ -480,22 +500,33 @@ export default function Cronograma({
     router.refresh();
   }
 
-  function abrirEdicaoNupLanc(nupId: string, valorAtual: string) {
-    setEditandoNupLancId(nupId);
-    setValorNupLanc(valorAtual);
+  function abrirLancamentoAvaria(lancamentoId: string) {
+    setLancandoAvariaDeId(lancamentoId);
+    setAvariaData("");
+    setAvariaQuantidade("");
     setErro(null);
   }
 
-  async function salvarNupLanc(nupId: string) {
+  // Reposição de avaria não tem NUP próprio — é a mesma entrega/pagamento do
+  // lançamento original, só corrigindo a quantidade que veio avariada.
+  async function criarAvaria(execucaoId: string, lancamentoPaiId: string) {
+    const quantidade = paraNumero(avariaQuantidade);
+    if (!avariaData || quantidade <= 0) return;
     setErro(null);
-    setSalvandoNupLanc(true);
-    const { error } = await supabase.from("processo_nups").update({ nup: valorNupLanc.trim() || null }).eq("id", nupId);
-    setSalvandoNupLanc(false);
+    setSalvandoAvaria(true);
+    const { error } = await supabase.from("processo_entrega_lancamentos").insert({
+      execucao_id: execucaoId,
+      tipo: "avaria",
+      lancamento_pai_id: lancamentoPaiId,
+      quantidade_normal: quantidade,
+      data_limite: avariaData,
+    });
+    setSalvandoAvaria(false);
     if (error) {
       setErro(error.message);
       return;
     }
-    setEditandoNupLancId(null);
+    setLancandoAvariaDeId(null);
     router.refresh();
   }
 
@@ -573,10 +604,16 @@ export default function Cronograma({
       {selecionada && !novo && (() => {
         const e = selecionada;
         const atraso = textoAtraso(e, hoje);
-        const lancamentos = [...(e.processo_entrega_lancamentos ?? [])].sort((a, b) =>
-          a.data_entrega < b.data_entrega ? -1 : a.data_entrega > b.data_entrega ? 1 : 0,
-        );
+        const todosLancamentos = e.processo_entrega_lancamentos ?? [];
+        // Lançamentos de avaria não aparecem na lista principal — ficam
+        // aninhados embaixo do lançamento total/parcial que corrigem.
+        const lancamentos = todosLancamentos
+          .filter((l) => l.tipo !== "avaria")
+          .sort((a, b) => (a.data_entrega ?? "").localeCompare(b.data_entrega ?? ""));
+        const avariasDe = (paiId: string) =>
+          todosLancamentos.filter((l) => l.lancamento_pai_id === paiId);
         const faltam = falta(e);
+        const lancado = totalLancado(todosLancamentos);
         return (
           <div style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
@@ -616,6 +653,7 @@ export default function Cronograma({
                   <Campo label="Data entregue">{formatarData(e.data_entrega)}</Campo>
                 </>
               )}
+              <Campo label="Total lançado">{formatarQuantidade(lancado)}</Campo>
               <Campo label="Falta">
                 <span style={{ color: faltam < 0 ? cor.urgente : undefined, fontWeight: faltam < 0 ? 600 : 400 }}>
                   {faltam < 0 ? `excedeu ${formatarQuantidade(-faltam)}` : formatarQuantidade(faltam)}
@@ -770,74 +808,133 @@ export default function Cronograma({
               )}
 
               {lancamentos.map((l) => {
-                const nupEntrega = l.processo_nups[0] ?? null;
+                const nupEntrega = nupPorTipo(l.processo_nups, "entrega");
+                const nupPagamento = nupPorTipo(l.processo_nups, "pagamento");
+                const avarias = avariasDe(l.id);
                 return (
-                  <div
-                    key={l.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      padding: "8px 0",
-                      borderBottom: `1px solid ${cor.borda}`,
-                      fontSize: 12,
-                    }}
-                  >
-                    <span style={{ color: cor.textoTerciario, minWidth: 70 }}>{formatarData(l.data_entrega)}</span>
-                    <span>Normal: <strong>{formatarQuantidade(l.quantidade_normal)}</strong></span>
-                    {l.quantidade_avaria > 0 && (
-                      <span style={{ color: cor.urgente }}>Avaria: <strong>{formatarQuantidade(l.quantidade_avaria)}</strong></span>
-                    )}
-                    {l.quantidade_desvio > 0 && (
-                      <span style={{ color: cor.urgente }}>Desvio: <strong>{formatarQuantidade(l.quantidade_desvio)}</strong></span>
-                    )}
-                    <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-                      {nupEntrega && editandoNupLancId === nupEntrega.id ? (
-                        <>
-                          <input
-                            autoFocus
-                            value={valorNupLanc}
-                            onChange={(ev) => setValorNupLanc(ev.target.value)}
-                            placeholder="NUP de entrega"
-                            style={{ padding: 4, width: 140, fontSize: 11.5 }}
-                          />
-                          <button onClick={() => salvarNupLanc(nupEntrega.id)} disabled={salvandoNupLanc} style={{ fontSize: 10.5 }}>
-                            Salvar
-                          </button>
-                          <button onClick={() => setEditandoNupLancId(null)} disabled={salvandoNupLanc} style={{ fontSize: 10.5 }}>
-                            X
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <span style={{ color: cor.textoTerciario }}>
-                            NUP: {nupEntrega?.nup || "não informado"}
-                          </span>
-                          {nupEntrega && (
-                            <button
-                              onClick={() => abrirEdicaoNupLanc(nupEntrega.id, nupEntrega.nup ?? "")}
-                              style={{ fontSize: 10, padding: "2px 6px" }}
-                            >
-                              editar
-                            </button>
-                          )}
-                        </>
+                  <div key={l.id} style={{ borderBottom: `1px solid ${cor.borda}`, padding: "8px 0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 12 }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: "2px 7px",
+                          borderRadius: 10,
+                          color: cor.destaque,
+                          background: cor.destaqueFundo,
+                        }}
+                      >
+                        {l.tipo === "total" ? "Total" : "Parcial"}
+                      </span>
+                      <span style={{ color: cor.textoTerciario, minWidth: 70 }}>{formatarData(l.data_entrega)}</span>
+                      <span>Normal: <strong>{formatarQuantidade(l.quantidade_normal)}</strong></span>
+                      {l.quantidade_avaria > 0 && (
+                        <span style={{ color: cor.urgente }}>Avaria: <strong>{formatarQuantidade(l.quantidade_avaria)}</strong></span>
+                      )}
+                      {l.quantidade_desvio > 0 && (
+                        <span style={{ color: cor.urgente }}>Desvio: <strong>{formatarQuantidade(l.quantidade_desvio)}</strong></span>
                       )}
                       <button
                         onClick={() => removerLancamento(l.id)}
                         disabled={removendoLancamentoId === l.id}
-                        style={{ fontSize: 10.5 }}
+                        style={{ fontSize: 10.5, marginLeft: "auto" }}
                       >
                         remover
                       </button>
-                    </span>
+                    </div>
+                    {/* NUPs são só leitura aqui — ficam editáveis em Dados principais,
+                        junto da visão por parcela. */}
+                    <div style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 11, color: cor.textoTerciario }}>
+                      <span>NUP entrega: {nupEntrega?.nup || "não informado"}</span>
+                      <span>NUP pagamento: {nupPagamento?.nup || "não informado"}</span>
+                    </div>
+
+                    {avarias.length > 0 && (
+                      <div style={{ marginTop: 6, marginLeft: 22, display: "flex", flexDirection: "column", gap: 4 }}>
+                        {avarias.map((a) => (
+                          <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.5 }}>
+                            <span style={{ color: cor.urgente, fontWeight: 600 }}>Avaria</span>
+                            <span style={{ color: cor.textoTerciario }}>Prazo: {formatarData(a.data_limite)}</span>
+                            <span>Qtd.: <strong>{formatarQuantidade(a.quantidade_normal)}</strong></span>
+                            <button
+                              onClick={() => removerLancamento(a.id)}
+                              disabled={removendoLancamentoId === a.id}
+                              style={{ fontSize: 10 }}
+                            >
+                              remover
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {lancandoAvariaDeId === l.id ? (
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-end", marginTop: 8, marginLeft: 22, flexWrap: "wrap" }}>
+                        <Campo label="Prazo">
+                          <input
+                            type="date"
+                            value={avariaData}
+                            onChange={(ev) => setAvariaData(ev.target.value)}
+                            style={{ padding: 4 }}
+                          />
+                        </Campo>
+                        <Campo label="Quantidade">
+                          <CampoMascarado
+                            valor={avariaQuantidade}
+                            formatar={formatarNumeroBR}
+                            onChange={setAvariaQuantidade}
+                            style={{ width: 90, padding: 4, textAlign: "center" }}
+                          />
+                        </Campo>
+                        <button
+                          onClick={() => criarAvaria(e.id, l.id)}
+                          disabled={salvandoAvaria || !avariaData || paraNumero(avariaQuantidade) <= 0}
+                          style={{ fontSize: 10.5 }}
+                        >
+                          {salvandoAvaria ? "..." : "Salvar"}
+                        </button>
+                        <button onClick={() => setLancandoAvariaDeId(null)} disabled={salvandoAvaria} style={{ fontSize: 10.5 }}>
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      l.quantidade_avaria > 0 && (
+                        <button
+                          onClick={() => abrirLancamentoAvaria(l.id)}
+                          style={{ fontSize: 10.5, marginTop: 6, marginLeft: 22 }}
+                        >
+                          + Lançar reposição de avaria
+                        </button>
+                      )
+                    )}
                   </div>
                 );
               })}
 
               {criandoLancamento ? (
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap", marginTop: 10 }}>
+                  <Campo label="Tipo">
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {(["parcial", "total"] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setNovoLancTipo(t)}
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 600,
+                            padding: "4px 9px",
+                            borderRadius: 7,
+                            border: "none",
+                            color: novoLancTipo === t ? cor.destaque : cor.textoTerciario,
+                            background: novoLancTipo === t ? cor.destaqueFundo : "rgba(96,93,93,.10)",
+                          }}
+                        >
+                          {t === "total" ? "Total" : "Parcial"}
+                        </button>
+                      ))}
+                    </div>
+                  </Campo>
                   <Campo label="Data">
                     <input
                       type="date"
