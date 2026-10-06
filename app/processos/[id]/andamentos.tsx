@@ -44,6 +44,14 @@ function formatarAgendamento(data: string | null, horario: string | null) {
   return horario ? `${dataFmt} ${horario.slice(0, 5)}` : dataFmt;
 }
 
+// Caminho no Storage precisa ser seguro (sem acento/espaço/etc.) — tira os
+// acentos (normaliza e descarta os sinais diacríticos) e troca qualquer
+// caractere fora de letras/números/ponto/traço/underline por "_".
+function sanitizarNomeArquivo(nome: string): string {
+  const semAcento = nome.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return semAcento.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+}
+
 export default function Andamentos({
   processoId,
   autorId,
@@ -169,7 +177,12 @@ export default function Andamentos({
     setErroAnexo(null);
     setEnviandoAnexo(true);
     for (const file of Array.from(files)) {
-      const caminho = `${andamentoId}/${Date.now()}-${file.name}`;
+      // O Storage do Supabase rejeita acento e boa parte dos caracteres
+      // especiais no caminho ("Invalid key") — nome de arquivo em português
+      // quase sempre tem (ex.: "Atualizações"). O nome de verdade continua
+      // salvo em nome_arquivo (coluna separada), só o caminho físico precisa
+      // ser seguro.
+      const caminho = `${andamentoId}/${Date.now()}-${sanitizarNomeArquivo(file.name)}`;
       const { error: erroUpload } = await supabase.storage.from("andamento-anexos").upload(caminho, file);
       if (erroUpload) {
         setErroAnexo(erroUpload.message);
