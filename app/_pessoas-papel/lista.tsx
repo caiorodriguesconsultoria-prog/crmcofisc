@@ -7,8 +7,15 @@ import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, card, cor } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import Painel from "@/app/_ui/painel";
+import { estaAusente } from "@/lib/ausencia";
 
-type Item = { id: string; nome: string; matricula: string | null };
+type Item = {
+  id: string;
+  nome: string;
+  matricula: string | null;
+  ausenciaInicio: string | null;
+  ausenciaFim: string | null;
+};
 
 export default function ListaPessoasPapel({
   titulo,
@@ -31,6 +38,8 @@ export default function ListaPessoasPapel({
   const [editando, setEditando] = useState<Item | null>(null);
   const [nome, setNome] = useState("");
   const [matricula, setMatricula] = useState("");
+  const [ausenciaInicio, setAusenciaInicio] = useState("");
+  const [ausenciaFim, setAusenciaFim] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState<string | null>(null);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
@@ -39,6 +48,8 @@ export default function ListaPessoasPapel({
     setEditando(item);
     setNome(item.nome);
     setMatricula(item.matricula ?? "");
+    setAusenciaInicio(item.ausenciaInicio ?? "");
+    setAusenciaFim(item.ausenciaFim ?? "");
     setErroForm(null);
   }
 
@@ -49,7 +60,12 @@ export default function ListaPessoasPapel({
     setSalvando(true);
     const { error } = await supabase
       .from("pessoas")
-      .update({ nome, matricula })
+      .update({
+        nome,
+        matricula,
+        ausencia_inicio: ausenciaInicio || null,
+        ausencia_fim: ausenciaFim || null,
+      })
       .eq("id", editando.id);
     setSalvando(false);
     if (error) {
@@ -105,9 +121,23 @@ export default function ListaPessoasPapel({
             {itens.map((i) => (
               <tr key={i.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
                 <td style={{ padding: "10px 12px", fontWeight: 600 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     {i.nome}
                     <BotaoCopiar texto={i.nome} />
+                    {estaAusente(i.ausenciaInicio, i.ausenciaFim) && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "2px 7px",
+                          borderRadius: 10,
+                          color: cor.urgente,
+                          background: cor.urgenteFundo,
+                        }}
+                      >
+                        Ausente
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td style={{ padding: "10px 12px" }}>
@@ -234,6 +264,26 @@ export default function ListaPessoasPapel({
                   style={{ display: "block", width: "100%", padding: 8 }}
                 />
               </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <label style={{ flex: 1 }}>
+                  Início da ausência
+                  <input
+                    type="date"
+                    value={ausenciaInicio}
+                    onChange={(e) => setAusenciaInicio(e.target.value)}
+                    style={{ display: "block", width: "100%", padding: 8 }}
+                  />
+                </label>
+                <label style={{ flex: 1 }}>
+                  Fim da ausência
+                  <input
+                    type="date"
+                    value={ausenciaFim}
+                    onChange={(e) => setAusenciaFim(e.target.value)}
+                    style={{ display: "block", width: "100%", padding: 8 }}
+                  />
+                </label>
+              </div>
               {erroForm && <p style={{ color: cor.urgente, margin: 0 }}>{erroForm}</p>}
               <button type="submit" disabled={salvando} style={botaoPrimario}>
                 {salvando ? "Salvando..." : "Salvar"}

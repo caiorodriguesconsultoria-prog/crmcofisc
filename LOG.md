@@ -548,3 +548,10 @@ Três ajustes pedidos pelo Caio depois de ver a tela real com entregas parciais:
 
 ## 2026-10-06 · Acerto a repetir — "Eventos ativos" duplicava as pills do topo
 Caio notou que o card "Eventos ativos" (sidebar do processo) mostrava de novo, como chips coloridos, os mesmos eventos (tags) que já aparecem como pills no topo da página, perto do título "CT nº...". `app/processos/[id]/painel.tsx`: removida a listagem de chips de dentro do componente `EventosAtivos` — o card virou só gestão (adicionar via "Selecione um evento"/"+ Novo Evento", remover via um novo seletor "Remover evento..."), sem repetir a lista visual que já existe no topo. Import `corEvento` removido do arquivo por ter ficado sem uso.
+
+## 2026-10-06 · SQL/Feature — Ausência de fiscal (e gestor), tag vermelha "Ausente"
+Caio pediu um campo de ausência pro fiscal (início + fim), pra não mencioná-lo num documento de assinatura enquanto estiver afastado, com uma tag "Ausente" em vermelho replicada no quadro de Gestão e Fiscalização de cada contrato.
+
+Migração `0039_pessoa_ausencia.sql`: `pessoas` ganha `ausencia_inicio date`, `ausencia_fim date`. Nova função compartilhada `lib/ausencia.ts` (`estaAusente`): considera a pessoa ausente quando hoje cai no intervalo — início é obrigatório, fim em aberto (null) significa ausência por tempo indeterminado.
+
+Decisão minha: como o campo foi adicionado em `pessoas` (não em `pessoa_papeis`), e a tela de cadastro (`app/_pessoas-papel/lista.tsx` + `form.tsx`) já é compartilhada entre `/fiscais` e `/gestores`, o campo de ausência (e a tag na listagem) ficou disponível pros dois papéis, não só fiscal — o mecanismo é idêntico e não fazia sentido duplicar código só pra esconder de gestor. Já a tag replicada no quadro por contrato (`gestao-fiscalizacao.tsx`) ficou só nas linhas de Fiscal/Fiscal substituto, como pedido — não entrou em Gestor/Gestor substituto, por não ter sido pedido (fácil de estender depois se fizer falta). `conteudo.tsx` passou a trazer `ausencia_inicio, ausencia_fim` nos joins de `fiscal`/`fiscal_substituto`.
