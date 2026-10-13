@@ -58,8 +58,8 @@ function Coluna({
       >
         {label}
       </span>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600 }}>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, fontWeight: 600 }}>
+        <span style={{ overflowWrap: "break-word", minWidth: 0 }}>
           {camposPopup ? <PopupNome nome={valor} campos={camposPopup} /> : valor}
         </span>
         <BotaoCopiar texto={valor} />
