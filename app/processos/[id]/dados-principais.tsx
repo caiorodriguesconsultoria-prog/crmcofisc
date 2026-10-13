@@ -43,7 +43,7 @@ function Coluna({
   label: string;
   valor: string;
   acao?: React.ReactNode;
-  camposPopup?: { label: string; valor: string }[];
+  camposPopup?: { label: string; valor: string | string[] }[];
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
@@ -141,7 +141,7 @@ export default function DadosPrincipais({
     { label: "CNPJ", valor: cnpj || "" },
     { label: "Preposto", valor: fornecedorPreposto || "" },
     { label: "Telefone", valor: fornecedorTelefone || "" },
-    { label: "E-mail", valor: fornecedorEmails.join(", ") },
+    { label: "E-mail", valor: fornecedorEmails },
   ];
 
   // Criação de um novo lançamento (entrega total/parcial) direto por aqui —
