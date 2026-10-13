@@ -582,3 +582,8 @@ Novo componente genérico `app/_ui/popup-nome.tsx` (`PopupNome`): recebe o nome 
 - **Gestor/Gestor substituto/Fiscal/Fiscal substituto** (`gestao-fiscalizacao.tsx`): matrícula, e-mail e ramal da pessoa (reaproveitei a listagem que já existia pra mostrar as quatro linhas, numa única função `camposPessoa()`).
 
 `conteudo.tsx` passou a trazer os campos extra nos joins (`coordenacoes(..., telefone, coordenador_nome, coordenador_email)`, `fornecedores(..., preposto, telefone, fornecedor_emails(email, rotulo))`, `email, ramal` em gestor/fiscal) — nenhuma coluna nova, só mais campos nas consultas que já existiam, sem precisar de migração.
+
+## 2026-10-13 · Acerto a repetir — PopupNome: e-mails empilhados e nome com botão de copiar
+Primeiro teste real do popup de contato: um fornecedor com dois e-mails mostrava os dois juntos numa linha só, separados por vírgula, com um único botão de copiar pros dois (copiava "email1, email2" junto, inútil pra colar em algum lugar). Caio pediu pra empilhar, cada e-mail na sua linha com copiar próprio, centralizado.
+
+`PopupNome`: campo `valor` passou a aceitar `string | string[]`. Com mais de um valor, a linha vira uma coluna — label em cima, cada valor centralizado embaixo com seu próprio `BotaoCopiar`, em vez da linha label-esquerda/valor-direita de quando é um só. `dados-principais.tsx` passou o array de e-mails do fornecedor direto pro popup, sem fazer o `.join(", ")` antes. Aproveitei e também acrescentei botão de copiar no nome do cabeçalho do popup (antes só tinha nos campos de baixo, o nome em si não dava pra copiar de dentro da janela).

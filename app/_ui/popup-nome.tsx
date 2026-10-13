@@ -4,7 +4,7 @@ import { useState } from "react";
 import { cor } from "@/lib/theme";
 import { BotaoCopiar } from "./campo";
 
-type Campo = { label: string; valor: string };
+type Campo = { label: string; valor: string | string[] };
 
 // Clicar no nome (coordenação, fornecedor, gestor/fiscal) abre uma janela
 // com os dados de contato pra copiar, em vez de precisar navegar até a
@@ -17,7 +17,9 @@ export default function PopupNome({
   campos: Campo[];
 }) {
   const [aberto, setAberto] = useState(false);
-  const camposPreenchidos = campos.filter((c) => c.valor);
+  const camposPreenchidos = campos
+    .map((c) => ({ label: c.label, valores: (Array.isArray(c.valor) ? c.valor : [c.valor]).filter(Boolean) }))
+    .filter((c) => c.valores.length > 0);
 
   if (!nome || camposPreenchidos.length === 0) {
     return <>{nome || "não informado"}</>;
@@ -72,8 +74,11 @@ export default function PopupNome({
               gap: 10,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <strong style={{ fontSize: 13 }}>{nome}</strong>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                <strong style={{ fontSize: 13 }}>{nome}</strong>
+                <BotaoCopiar texto={nome} />
+              </span>
               <button
                 type="button"
                 onClick={() => setAberto(false)}
@@ -92,26 +97,54 @@ export default function PopupNome({
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {camposPreenchidos.map((c) => (
-                <div
-                  key={c.label}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    padding: "6px 0",
-                    borderBottom: `1px solid ${cor.borda}`,
-                    fontSize: 12.5,
-                  }}
-                >
-                  <span style={{ color: cor.textoTerciario, flex: "none" }}>{c.label}</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, textAlign: "right" }}>
-                    {c.valor}
-                    <BotaoCopiar texto={c.valor} />
-                  </span>
-                </div>
-              ))}
+              {camposPreenchidos.map((c) =>
+                c.valores.length === 1 ? (
+                  <div
+                    key={c.label}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      padding: "6px 0",
+                      borderBottom: `1px solid ${cor.borda}`,
+                      fontSize: 12.5,
+                    }}
+                  >
+                    <span style={{ color: cor.textoTerciario, flex: "none" }}>{c.label}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, textAlign: "right" }}>
+                      {c.valores[0]}
+                      <BotaoCopiar texto={c.valores[0]} />
+                    </span>
+                  </div>
+                ) : (
+                  // Mais de um valor (ex.: vários e-mails) — um embaixo do
+                  // outro, cada um com seu próprio botão de copiar, em vez de
+                  // juntar tudo numa linha só.
+                  <div
+                    key={c.label}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                      padding: "6px 0",
+                      borderBottom: `1px solid ${cor.borda}`,
+                      fontSize: 12.5,
+                    }}
+                  >
+                    <span style={{ color: cor.textoTerciario }}>{c.label}</span>
+                    {c.valores.map((v) => (
+                      <span
+                        key={v}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 600 }}
+                      >
+                        {v}
+                        <BotaoCopiar texto={v} />
+                      </span>
+                    ))}
+                  </div>
+                ),
+              )}
             </div>
           </div>
         </div>
