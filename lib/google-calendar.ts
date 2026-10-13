@@ -35,7 +35,14 @@ async function obterAccessToken(): Promise<string | null> {
       grant_type: "refresh_token",
     }),
   });
-  if (!resposta.ok) return null;
+  if (!resposta.ok) {
+    // Falha aqui é sempre silenciosa pro usuário (sincronização é "a mais",
+    // nunca bloqueia a ação principal) — mas sem logar, uma falha permanente
+    // (ex.: refresh_token morto) nunca aparece em lugar nenhum, só se percebe
+    // quando alguém nota que os eventos pararam de ir pro Google.
+    console.error("Google Calendar: falha ao renovar access_token", resposta.status, await resposta.text());
+    return null;
+  }
   const dados = await resposta.json();
   const expiraEmNovo = new Date(Date.now() + dados.expires_in * 1000).toISOString();
   await supabase
@@ -86,7 +93,10 @@ export async function criarOuAtualizarEventoGoogle(params: {
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!resposta.ok) return null;
+  if (!resposta.ok) {
+    console.error("Google Calendar: falha ao criar/atualizar evento", resposta.status, await resposta.text());
+    return null;
+  }
   const dados = await resposta.json();
   return (dados.id as string) ?? null;
 }
@@ -130,7 +140,10 @@ export async function criarOuAtualizarTarefaGoogle(params: {
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!resposta.ok) return null;
+  if (!resposta.ok) {
+    console.error("Google Tasks: falha ao criar/atualizar tarefa", resposta.status, await resposta.text());
+    return null;
+  }
   const dados = await resposta.json();
   return (dados.id as string) ?? null;
 }
