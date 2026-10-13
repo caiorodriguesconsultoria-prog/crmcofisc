@@ -4,12 +4,30 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, card, cor } from "@/lib/theme";
-import { LinhaChave, BotaoCopiar } from "@/app/_ui/campo";
+import { BotaoCopiar } from "@/app/_ui/campo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
+import PopupNome from "@/app/_ui/popup-nome";
 import { estaAusente, periodoAusencia } from "@/lib/ausencia";
 
-type Pessoa = { id: string; nome: string; ausencia_inicio?: string | null; ausencia_fim?: string | null } | null;
+type Pessoa = {
+  id: string;
+  nome: string;
+  matricula?: string | null;
+  email?: string | null;
+  ramal?: string | null;
+  ausencia_inicio?: string | null;
+  ausencia_fim?: string | null;
+} | null;
 type Opcao = { id: string; nome: string };
+
+function camposPessoa(p: Pessoa) {
+  if (!p) return [];
+  return [
+    { label: "Matrícula", valor: p.matricula || "" },
+    { label: "E-mail", valor: p.email || "" },
+    { label: "Ramal", valor: p.ramal || "" },
+  ];
+}
 
 function TagAusente({ inicio, fim }: { inicio: string; fim: string | null | undefined }) {
   return (
@@ -79,30 +97,39 @@ export default function GestaoFiscalizacao({
   }
 
   if (!editando) {
+    // Tag de ausência só em Fiscal/Fiscal substituto (pedido original do
+    // Caio) — Gestor continua sem, mesmo tendo os mesmos campos no banco.
+    const linhas: { rotulo: string; pessoa: Pessoa; mostraAusencia: boolean }[] = [
+      { rotulo: "Gestor", pessoa: gestor, mostraAusencia: false },
+      { rotulo: "Gestor substituto", pessoa: gestorSubstituto, mostraAusencia: false },
+      { rotulo: "Fiscal", pessoa: fiscal, mostraAusencia: true },
+      { rotulo: "Fiscal substituto", pessoa: fiscalSubstituto, mostraAusencia: true },
+    ];
     return (
       <CartaoColapsavel titulo="Gestão e Fiscalização" abertoInicial={false}>
-        <LinhaChave label="Gestor" valor={gestor?.nome ?? "não informado"} />
-        <LinhaChave label="Gestor substituto" valor={gestorSubstituto?.nome ?? "não informado"} />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "7px 0", borderBottom: `1px solid ${cor.borda}`, fontSize: 12.5 }}>
-          <span style={{ color: cor.textoTerciario, flex: "none" }}>Fiscal</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, textAlign: "right" }}>
-            {fiscal?.nome ?? "não informado"}
-            {fiscal && <BotaoCopiar texto={fiscal.nome} />}
-            {fiscal && estaAusente(fiscal.ausencia_inicio, fiscal.ausencia_fim) && (
-              <TagAusente inicio={fiscal.ausencia_inicio as string} fim={fiscal.ausencia_fim} />
-            )}
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "7px 0", borderBottom: `1px solid ${cor.borda}`, fontSize: 12.5 }}>
-          <span style={{ color: cor.textoTerciario, flex: "none" }}>Fiscal substituto</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, textAlign: "right" }}>
-            {fiscalSubstituto?.nome ?? "não informado"}
-            {fiscalSubstituto && <BotaoCopiar texto={fiscalSubstituto.nome} />}
-            {fiscalSubstituto && estaAusente(fiscalSubstituto.ausencia_inicio, fiscalSubstituto.ausencia_fim) && (
-              <TagAusente inicio={fiscalSubstituto.ausencia_inicio as string} fim={fiscalSubstituto.ausencia_fim} />
-            )}
-          </span>
-        </div>
+        {linhas.map(({ rotulo, pessoa, mostraAusencia }) => (
+          <div
+            key={rotulo}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              padding: "7px 0",
+              borderBottom: `1px solid ${cor.borda}`,
+              fontSize: 12.5,
+            }}
+          >
+            <span style={{ color: cor.textoTerciario, flex: "none" }}>{rotulo}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, textAlign: "right" }}>
+              {pessoa ? <PopupNome nome={pessoa.nome} campos={camposPessoa(pessoa)} /> : "não informado"}
+              {pessoa && <BotaoCopiar texto={pessoa.nome} />}
+              {pessoa && mostraAusencia && estaAusente(pessoa.ausencia_inicio, pessoa.ausencia_fim) && (
+                <TagAusente inicio={pessoa.ausencia_inicio as string} fim={pessoa.ausencia_fim} />
+              )}
+            </span>
+          </div>
+        ))}
         <button onClick={() => setEditando(true)} style={{ marginTop: 10, fontSize: 11 }}>
           Editar
         </button>
