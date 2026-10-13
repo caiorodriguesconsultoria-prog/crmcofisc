@@ -43,7 +43,7 @@ export default async function ProcessosConcluidosPage() {
   const processosSemAgendamento = (processos ?? []).map((p) => ({ ...p, proximoAgendamento: null }));
 
   return (
-    <Painel titulo="Concluídos" subtitulo="Processos" voltarHref="/dashboard" maxWidth={1300}>
+    <Painel titulo="Concluídos" subtitulo="Contratos" voltarHref="/dashboard" maxWidth={1300}>
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
       <ListaProcessos

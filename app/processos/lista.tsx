@@ -325,7 +325,7 @@ export default function ListaProcessos({
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
         <p style={{ margin: 0, color: cor.textoTerciario, fontSize: 12.5 }}>
-          {filtrados.length} de {processos.length} processos
+          {filtrados.length} de {processos.length} contratos
         </p>
         {minhaPessoaId && (
           <div style={{ display: "flex", gap: 12, fontSize: 11, color: cor.textoTerciario }}>
@@ -440,7 +440,7 @@ export default function ListaProcessos({
             {filtrados.length === 0 && (
               <tr>
                 <td colSpan={7} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
-                  Nenhum processo encontrado com esses filtros.
+                  Nenhum contrato encontrado com esses filtros.
                 </td>
               </tr>
             )}

@@ -47,7 +47,7 @@ export default function Abas({
                 boxShadow: aba === a ? "0 1px 2px rgba(0,0,0,.08)" : "none",
               }}
             >
-              {a === "processo" ? "Processo" : "Relatório"}
+              {a === "processo" ? "Contrato" : "Relatório"}
             </button>
           ))}
         </div>

@@ -179,7 +179,7 @@ export default function NovoProcessoForm({
       .single();
 
     if (erroProcesso || !processo) {
-      setErro(erroProcesso?.message ?? "Erro ao criar processo.");
+      setErro(erroProcesso?.message ?? "Erro ao criar contrato.");
       setSalvando(false);
       return;
     }
@@ -508,7 +508,7 @@ export default function NovoProcessoForm({
       </label>
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
       <button type="submit" disabled={salvando} style={{ padding: 10 }}>
-        {salvando ? "Salvando..." : "Criar processo"}
+        {salvando ? "Salvando..." : "Criar contrato"}
       </button>
     </form>
   );

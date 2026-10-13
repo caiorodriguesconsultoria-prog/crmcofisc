@@ -91,12 +91,12 @@ export default async function ProcessosPage({
   }));
 
   const eventoSelecionado = sp.evento ? (eventos ?? []).find((e) => e.id === sp.evento) : null;
-  const titulo = sp.etapa || eventoSelecionado?.valor || "Processos";
+  const titulo = sp.etapa || eventoSelecionado?.valor || "Contratos";
 
   return (
     <Painel
       titulo={titulo}
-      subtitulo={titulo !== "Processos" ? "Processos" : undefined}
+      subtitulo={titulo !== "Contratos" ? "Contratos" : undefined}
       voltarHref="/dashboard"
       maxWidth={1300}
       // <a> normal (não o <Link> do Next) de propósito — /processos/novo tem o
@@ -106,7 +106,7 @@ export default async function ProcessosPage({
       // certo pelo lado do servidor.
       acao={
         <a href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
-          + Novo processo
+          + Novo contrato
         </a>
       }
     >

@@ -51,7 +51,7 @@ export default async function CoordenacoesPage() {
   return (
     <Painel
       titulo="Coordenações"
-      subtitulo="Responsáveis, e-mails e ramais usados nas notificações do processo."
+      subtitulo="Responsáveis, e-mails e ramais usados nas notificações do contrato."
       voltarHref="/dashboard"
       maxWidth={1100}
       acao={

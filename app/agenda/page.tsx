@@ -32,7 +32,7 @@ export default async function AgendaPage({
   const ehAdmin = !!pessoaAtual?.is_admin;
   const conectadoGoogle = await googleConectado();
 
-  const [{ data: processos, error }, { data: agendamentosRaw }, { data: andamentosAgendadosRaw }, { data: execucoesPendentesRaw }] =
+  const [{ data: processos, error }, { data: agendamentosRaw }, { data: andamentosAgendadosRaw }] =
     await Promise.all([
       supabase
         .from("processos")
@@ -50,11 +50,6 @@ export default async function AgendaPage({
         .not("agendamento_data", "is", null)
         .order("agendamento_data")
         .order("agendamento_horario"),
-      supabase
-        .from("processo_execucoes")
-        .select("id, numero, data_prevista, processos(id, numero_contrato)")
-        .is("data_entrega", null)
-        .not("data_prevista", "is", null),
     ]);
 
   const prazos = (processos ?? []).map((p: any) => ({
@@ -87,25 +82,6 @@ export default async function AgendaPage({
         observacao: a.texto as string | null,
       })),
   ];
-
-  // Entrega ainda sem data_entrega e cuja data prevista já passou — mesmo
-  // cálculo do cronograma na página do processo (app/processos/[id]/cronograma.tsx),
-  // só que aqui olhando pra todos os processos de uma vez, pra dar uma
-  // conferida diária num lugar só.
-  const hoje = new Date().toISOString().slice(0, 10);
-  const entregasEmAtraso = (execucoesPendentesRaw ?? [])
-    .filter((e: any) => e.processos && e.data_prevista && e.data_prevista < hoje)
-    .map((e: any) => {
-      const diffMs = new Date(`${hoje}T00:00:00`).getTime() - new Date(`${e.data_prevista}T00:00:00`).getTime();
-      return {
-        id: e.id,
-        processoId: e.processos.id,
-        numeroContrato: numeroContratoSemSei(e.processos.numero_contrato),
-        numeroParcela: e.numero as number,
-        dias: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
-      };
-    })
-    .sort((a, b) => b.dias - a.dias);
 
   const token = process.env.AGENDA_ICS_TOKEN;
   const host = (await headers()).get("host");
@@ -155,25 +131,6 @@ export default async function AgendaPage({
           </p>
         )}
       </div>
-
-      {entregasEmAtraso.length > 0 && (
-        <div style={{ ...card, padding: "10px 14px", marginTop: 10 }}>
-          <p style={{ fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: cor.urgente, margin: "0 0 8px" }}>
-            Entregas em atraso
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {entregasEmAtraso.map((e) => (
-              <a
-                key={e.id}
-                href={`/processos/${e.processoId}`}
-                style={{ fontSize: 12.5, color: cor.urgente, textDecoration: "none" }}
-              >
-                CT {e.numeroContrato} - {e.numeroParcela}ª Parcela — {e.dias} dia{e.dias > 1 ? "s" : ""} em atraso
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
 
       <Calendario prazos={prazos} agendamentos={agendamentos} />
     </Painel>
