@@ -64,6 +64,7 @@ export default function PopupNome({
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
+              position: "relative",
               background: "#fff",
               borderRadius: 16,
               padding: 18,
@@ -77,26 +78,31 @@ export default function PopupNome({
               gap: 10,
             }}
           >
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-              <strong style={{ fontSize: 13, minWidth: 0, overflowWrap: "break-word" }}>{nome}</strong>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "none" }}>
-                <BotaoCopiar texto={nome} />
-                <button
-                  type="button"
-                  onClick={() => setAberto(false)}
-                  aria-label="Fechar"
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: "rgba(32,31,29,.08)",
-                    flex: "none",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
+            {/* "x" sempre no canto, fora do fluxo do texto — antes disputava
+                espaço na mesma linha do nome e ficava espremido contra ele
+                quando o nome era grande. */}
+            <button
+              type="button"
+              onClick={() => setAberto(false)}
+              aria-label="Fechar"
+              style={{
+                position: "absolute",
+                top: 14,
+                right: 14,
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(32,31,29,.08)",
+                flex: "none",
+              }}
+            >
+              ×
+            </button>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingRight: 34 }}>
+              <strong style={{ fontSize: 13, overflowWrap: "break-word" }}>{nome}</strong>
+              <BotaoCopiar texto={nome} rotulo="Copiar nome" />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
