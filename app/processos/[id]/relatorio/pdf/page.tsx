@@ -63,7 +63,7 @@ export default async function RelatorioPdfPage({
   return (
     <main style={{ padding: 32, maxWidth: 900, margin: "0 auto" }}>
       <p className="no-print">
-        <Link href={`/processos/${id}`}>← Voltar ao processo</Link>
+        <Link href={`/processos/${id}`}>← Voltar ao contrato</Link>
       </p>
 
       {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {(error as any).message}</p>}

@@ -111,10 +111,10 @@ export default async function DadosPage() {
         </div>
 
         <div style={card}>
-          <strong style={{ fontSize: 13 }}>% de processos por evento</strong>
+          <strong style={{ fontSize: 13 }}>% de contratos por evento</strong>
           <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
-            De todos os processos, quantos já tiveram cada evento alguma vez — cada evento é
-            um medidor independente (um processo pode ter passado por vários eventos, então
+            De todos os contratos, quantos já tiveram cada evento alguma vez — cada evento é
+            um medidor independente (um contrato pode ter passado por vários eventos, então
             cada um tem seu próprio total, em vez de dividir uma pizza só).
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))", gap: 14 }}>

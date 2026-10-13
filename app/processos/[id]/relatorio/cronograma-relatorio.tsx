@@ -67,7 +67,7 @@ export default function CronogramaRelatorio({ execucoes }: { execucoes: Execucao
         </tbody>
       </table>
       <p style={{ fontSize: 11, color: "#7D7979", marginTop: 4 }}>
-        Editável no painel do processo, seção "Cronograma de entregas".
+        Editável no painel do contrato, seção "Cronograma de entregas".
       </p>
     </div>
   );

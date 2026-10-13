@@ -29,7 +29,7 @@ function Grupo({
   const total = itens.reduce((soma, a) => soma + a.count, 0);
 
   async function removerTag(id: string) {
-    if (!confirm("Apagar este evento? Ele some de todos os processos que o usam.")) return;
+    if (!confirm("Apagar este evento? Ele some de todos os contratos que o usam.")) return;
     setRemovendoId(id);
     await supabase.from("tags").delete().eq("id", id);
     setRemovendoId(null);

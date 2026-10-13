@@ -26,6 +26,7 @@ export default async function DashboardPage() {
     { data: agendamentosHoje },
     { data: andamentosHoje },
     { data: tarefasHoje },
+    { data: execucoesPendentesRaw },
     eventos,
     etapas,
   ] = await Promise.all([
@@ -46,6 +47,11 @@ export default async function DashboardPage() {
       .select("origem_tipo, origem_id, label, periodo")
       .eq("concluida", false)
       .eq("agendamento_data", hoje),
+    supabase
+      .from("processo_execucoes")
+      .select("id, numero, data_prevista, processos(id, numero_contrato)")
+      .is("data_entrega", null)
+      .not("data_prevista", "is", null),
     getTagsEvento(),
     getEtapasKanban(),
   ]);
@@ -135,6 +141,23 @@ export default async function DashboardPage() {
     adicionar(processoId, { rotulo: t.label, horario: null, periodo: t.periodo as "manha" | "tarde" | null });
   }
 
+  // Entrega ainda sem data_entrega e cuja data prevista já passou — mesmo
+  // cálculo que existia na Agenda, transferido pra cá a pedido do Caio, pra
+  // aparecer no Painel assim que a entrega atrasa.
+  const entregasEmAtraso = (execucoesPendentesRaw ?? [])
+    .filter((e: any) => e.processos && e.data_prevista && e.data_prevista < hoje)
+    .map((e: any) => {
+      const diffMs = new Date(`${hoje}T00:00:00`).getTime() - new Date(`${e.data_prevista}T00:00:00`).getTime();
+      return {
+        id: e.id,
+        processoId: e.processos.id,
+        numeroContrato: numeroContratoSemSei(e.processos.numero_contrato),
+        numeroParcela: e.numero as number,
+        dias: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
+      };
+    })
+    .sort((a, b) => b.dias - a.dias);
+
   const processosAtividadeHoje = (processos ?? [])
     .filter((p) => atividadePorProcesso.has(p.id))
     .map((p) => ({
@@ -164,6 +187,7 @@ export default async function DashboardPage() {
         vencendoHoje={vencendoHoje}
         emCoberturaFerias={emCoberturaFerias}
         processosAtividadeHoje={processosAtividadeHoje}
+        entregasEmAtraso={entregasEmAtraso}
         eventos={eventos ?? []}
         etapas={etapas ?? []}
       />

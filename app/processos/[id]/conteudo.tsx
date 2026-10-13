@@ -512,22 +512,28 @@ export async function carregarProcesso(id: string) {
           { id: idProcessoProximo, simbolo: "›", rotulo: "Próximo contrato" },
         ].map(({ id: idDestino, simbolo, rotulo }) => {
           const estiloBotao: React.CSSProperties = {
-            width: 24,
-            height: 24,
+            width: 30,
+            height: 30,
             borderRadius: "50%",
-            background: "rgba(96,93,93,.10)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 13,
+            fontSize: 17,
+            fontWeight: 700,
             textDecoration: "none",
+            lineHeight: 1,
           };
           return idDestino ? (
+            // replace (não push): a seta troca o contrato mostrado no lugar do
+            // atual, sem empilhar no histórico — fechar o modal (que faz
+            // router.back()) volta direto pra lista, não pro contrato anterior
+            // visitado pela seta.
             <Link
               key={rotulo}
               href={`/processos/${idDestino}`}
+              replace
               aria-label={rotulo}
-              style={{ ...estiloBotao, color: cor.textoSecundario }}
+              style={{ ...estiloBotao, background: cor.destaqueFundo, color: cor.destaque }}
             >
               {simbolo}
             </Link>
@@ -535,7 +541,7 @@ export async function carregarProcesso(id: string) {
             <span
               key={rotulo}
               aria-hidden
-              style={{ ...estiloBotao, color: cor.textoTerciario, opacity: 0.4 }}
+              style={{ ...estiloBotao, background: "rgba(96,93,93,.10)", color: cor.textoTerciario, opacity: 0.4 }}
             >
               {simbolo}
             </span>

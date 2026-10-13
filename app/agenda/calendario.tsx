@@ -187,7 +187,7 @@ export default function Calendario({ prazos, agendamentos }: { prazos: Prazo[]; 
 
       {prazos.length === 0 && (
         <p style={{ color: cor.textoTerciario, marginTop: 12, fontSize: 13 }}>
-          Nenhum processo com prazo definido.
+          Nenhum contrato com prazo definido.
         </p>
       )}
     </div>

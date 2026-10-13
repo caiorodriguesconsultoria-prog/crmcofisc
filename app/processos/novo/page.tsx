@@ -46,7 +46,7 @@ export default async function NovoProcessoPage() {
     .map((p: any) => ({ id: p.pessoa_id, nome: p.pessoas?.nome ?? "" }));
 
   return (
-    <Painel titulo="Novo processo" voltarHref="/processos" maxWidth={480}>
+    <Painel titulo="Novo contrato" voltarHref="/processos" maxWidth={480}>
       {erros.length > 0 && (
         <p style={{ color: cor.urgente }}>Erro ao carregar opções — {erros.join("; ")}</p>
       )}

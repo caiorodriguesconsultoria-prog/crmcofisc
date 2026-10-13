@@ -404,7 +404,7 @@ export default function QuadroResumitivo({
       </div>
 
       <p style={{ fontSize: 11, color: "#7D7979", marginTop: 8 }}>
-        Gestor/Fiscal são só leitura aqui — edite na seção "Gestão e Fiscalização" do processo.
+        Gestor/Fiscal são só leitura aqui — edite na seção "Gestão e Fiscalização" do contrato.
       </p>
     </div>
   );

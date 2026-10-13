@@ -8,7 +8,7 @@ import NotificacoesPush from "./notificacoes-push";
 
 const LINKS = [
   { href: "/dashboard", label: "Painel" },
-  { href: "/processos", label: "Processos" },
+  { href: "/processos", label: "Contratos" },
   { href: "/processos/concluidos", label: "Concluídos" },
   { href: "/dados", label: "Dados" },
   { href: "/agenda", label: "Agenda" },

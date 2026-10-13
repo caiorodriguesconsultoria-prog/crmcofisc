@@ -28,6 +28,7 @@ type ProcessoAtividadeHoje = {
 
 type Evento = { id: string; valor: string; cor: string | null };
 type Etapa = { id: string; nome: string };
+type EntregaEmAtraso = { id: string; processoId: string; numeroContrato: string; numeroParcela: number; dias: number };
 
 const grade: React.CSSProperties = {
   display: "grid",
@@ -45,6 +46,7 @@ export default function PainelDashboard({
   vencendoHoje,
   emCoberturaFerias,
   processosAtividadeHoje,
+  entregasEmAtraso,
   eventos,
   etapas,
 }: {
@@ -56,6 +58,7 @@ export default function PainelDashboard({
   vencendoHoje: number;
   emCoberturaFerias: number;
   processosAtividadeHoje: ProcessoAtividadeHoje[];
+  entregasEmAtraso: EntregaEmAtraso[];
   eventos: Evento[];
   etapas: Etapa[];
 }) {
@@ -71,7 +74,7 @@ export default function PainelDashboard({
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         <div style={{ ...card, flex: "1 1 160px" }}>
           <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-            Total de processos
+            Total de contratos
           </span>
           <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0" }}>{processos.length}</p>
         </div>
@@ -104,10 +107,27 @@ export default function PainelDashboard({
         </div>
       </div>
 
+      {entregasEmAtraso.length > 0 && (
+        <div style={{ ...card, border: `1px solid ${cor.urgente}` }}>
+          <strong style={{ fontSize: 13, color: cor.urgente }}>Entregas em atraso</strong>
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            {entregasEmAtraso.map((e) => (
+              <Link
+                key={e.id}
+                href={`/processos/${e.processoId}`}
+                style={{ fontSize: 12.5, color: cor.urgente, textDecoration: "none", fontWeight: 600 }}
+              >
+                CT {e.numeroContrato} - {e.numeroParcela}ª Parcela — {e.dias} dia{e.dias > 1 ? "s" : ""} em atraso
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={card}>
         <strong style={{ fontSize: 13 }}>Atividade de hoje</strong>
         <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
-          Processos com tarefa ou agendamento marcado pra hoje.
+          Contratos com tarefa ou agendamento marcado pra hoje.
         </p>
         {processosAtividadeHoje.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
@@ -199,7 +219,7 @@ export default function PainelDashboard({
 
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <strong style={{ fontSize: 13 }}>Processos parados</strong>
+          <strong style={{ fontSize: 13 }}>Contratos parados</strong>
           <label style={{ marginLeft: "auto", fontSize: 12, color: cor.textoTerciario }}>
             a partir de{" "}
             <input
@@ -215,7 +235,7 @@ export default function PainelDashboard({
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
           {parados.length === 0 && (
             <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>
-              Nenhum processo parado além do limite.
+              Nenhum contrato parado além do limite.
             </p>
           )}
           {parados.map((p) => (
@@ -244,10 +264,10 @@ export default function PainelDashboard({
       </div>
 
       <div style={card}>
-        <strong style={{ fontSize: 13 }}>Processos por etapa e evento</strong>
+        <strong style={{ fontSize: 13 }}>Contratos por etapa e evento</strong>
         <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 12px" }}>
           Cada etapa e cada evento é um medidor à parte, com seu próprio total — um
-          processo está em uma única etapa, mas pode ter vários eventos ao mesmo tempo.
+          contrato está em uma única etapa, mas pode ter vários eventos ao mesmo tempo.
         </p>
 
         <span style={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>

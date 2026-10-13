@@ -245,7 +245,7 @@ export default function Ocorrencias({
       )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
         <p style={{ fontSize: 11, color: cor.textoTerciario, margin: 0 }}>
-          Marcado como "Ocorrência" no painel do processo, seção "Andamento e Tarefas".
+          Marcado como "Ocorrência" no painel do contrato, seção "Andamento e Tarefas".
         </p>
         <div style={{ display: "flex", gap: 8 }}>
           <button
