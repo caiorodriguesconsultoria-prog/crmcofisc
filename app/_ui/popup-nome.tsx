@@ -58,7 +58,7 @@ export default function PopupNome({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 20,
+            padding: 24,
           }}
         >
           <div
@@ -68,32 +68,35 @@ export default function PopupNome({
               borderRadius: 16,
               padding: 18,
               width: "100%",
-              maxWidth: 380,
+              maxWidth: "min(380px, calc(100vw - 48px))",
+              maxHeight: "calc(100vh - 48px)",
+              overflowY: "auto",
+              boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
               gap: 10,
             }}
           >
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                <strong style={{ fontSize: 13 }}>{nome}</strong>
+              <strong style={{ fontSize: 13, minWidth: 0, overflowWrap: "break-word" }}>{nome}</strong>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "none" }}>
                 <BotaoCopiar texto={nome} />
-              </span>
-              <button
-                type="button"
-                onClick={() => setAberto(false)}
-                aria-label="Fechar"
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "rgba(32,31,29,.08)",
-                  flex: "none",
-                }}
-              >
-                ×
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setAberto(false)}
+                  aria-label="Fechar"
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "rgba(32,31,29,.08)",
+                    flex: "none",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -112,15 +115,25 @@ export default function PopupNome({
                     }}
                   >
                     <span style={{ color: cor.textoTerciario, flex: "none" }}>{c.label}</span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, textAlign: "right" }}>
-                      {c.valores[0]}
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontWeight: 600,
+                        textAlign: "right",
+                        minWidth: 0,
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      <span style={{ overflowWrap: "break-word" }}>{c.valores[0]}</span>
                       <BotaoCopiar texto={c.valores[0]} />
                     </span>
                   </div>
                 ) : (
-                  // Mais de um valor (ex.: vários e-mails) — um embaixo do
-                  // outro, cada um com seu próprio botão de copiar, em vez de
-                  // juntar tudo numa linha só.
+                  // Mais de um valor (ex.: vários e-mails) — todos listados,
+                  // mas um único botão copia todos juntos de uma vez (mesmo
+                  // padrão do "Copiar objeto + unidade" em Dados principais).
                   <div
                     key={c.label}
                     style={{
@@ -132,14 +145,13 @@ export default function PopupNome({
                       fontSize: 12.5,
                     }}
                   >
-                    <span style={{ color: cor.textoTerciario }}>{c.label}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ color: cor.textoTerciario }}>{c.label}</span>
+                      <BotaoCopiar texto={c.valores.join("; ")} rotulo={`Copiar ${c.label.toLowerCase()}s`} />
+                    </span>
                     {c.valores.map((v) => (
-                      <span
-                        key={v}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 600 }}
-                      >
+                      <span key={v} style={{ fontWeight: 600, textAlign: "center", overflowWrap: "break-word" }}>
                         {v}
-                        <BotaoCopiar texto={v} />
                       </span>
                     ))}
                   </div>
