@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EtapaAtual, EventosAtivos } from "./painel";
 import Andamentos from "./andamentos";
@@ -104,6 +105,7 @@ export async function carregarProcesso(id: string) {
     { data: kanbanAtivo },
     { data: tagHistoricoAtivo },
     { data: coordenacoesLista },
+    { data: ordemProcessos },
   ] = await Promise.all([
     supabase.from("processo_tags").select("tag_id, tags(id, valor, cor)").eq("processo_id", id),
     getTagsEvento(),
@@ -159,6 +161,10 @@ export async function carregarProcesso(id: string) {
       .eq("processo_id", id)
       .is("fim_em", null),
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
+    // Mesma ordem da listagem padrão de /processos (mais recente primeiro) —
+    // usada só pra saber qual é o contrato anterior/próximo na navegação por
+    // setas no topo da tela.
+    supabase.from("processos").select("id").order("created_at", { ascending: false }),
   ]);
 
   const tagsAtivas = (tagsAtivasRaw ?? []).map((t: any) => ({
@@ -491,8 +497,51 @@ export async function carregarProcesso(id: string) {
     </div>
   );
 
+  const indiceProcesso = (ordemProcessos ?? []).findIndex((o) => o.id === id);
+  const idProcessoAnterior = indiceProcesso > 0 ? ordemProcessos![indiceProcesso - 1].id : null;
+  const idProcessoProximo =
+    indiceProcesso >= 0 && indiceProcesso < (ordemProcessos ?? []).length - 1
+      ? ordemProcessos![indiceProcesso + 1].id
+      : null;
+
   const topo = (
     <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+        {[
+          { id: idProcessoAnterior, simbolo: "‹", rotulo: "Contrato anterior" },
+          { id: idProcessoProximo, simbolo: "›", rotulo: "Próximo contrato" },
+        ].map(({ id: idDestino, simbolo, rotulo }) => {
+          const estiloBotao: React.CSSProperties = {
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: "rgba(96,93,93,.10)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            textDecoration: "none",
+          };
+          return idDestino ? (
+            <Link
+              key={rotulo}
+              href={`/processos/${idDestino}`}
+              aria-label={rotulo}
+              style={{ ...estiloBotao, color: cor.textoSecundario }}
+            >
+              {simbolo}
+            </Link>
+          ) : (
+            <span
+              key={rotulo}
+              aria-hidden
+              style={{ ...estiloBotao, color: cor.textoTerciario, opacity: 0.4 }}
+            >
+              {simbolo}
+            </span>
+          );
+        })}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <TituloDestaque fontSize={19}>CT nº {numeroContratoSemSei(p.numero_contrato)}</TituloDestaque>
         {p.coordenacoes?.sigla && (
