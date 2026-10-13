@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
 import { LinhaChave, CampoMascarado } from "@/app/_ui/campo";
+import PopupNome from "@/app/_ui/popup-nome";
 import { cor } from "@/lib/theme";
 import { formatarMoedaBR, paraNumeroMoeda, moedaParaFormatado } from "@/lib/moeda";
 
@@ -35,6 +36,10 @@ export default function DadosProcesso({
   processoId,
   coordenacaoId,
   coordenacaoSigla,
+  coordenacaoNome,
+  coordenacaoTelefone,
+  coordenadorNome,
+  coordenadorEmail,
   coordenacoes,
   quantidadeContratada,
   numeroExecucoes,
@@ -50,6 +55,10 @@ export default function DadosProcesso({
   processoId: string;
   coordenacaoId: string | null;
   coordenacaoSigla: string;
+  coordenacaoNome: string | null;
+  coordenacaoTelefone: string | null;
+  coordenadorNome: string | null;
+  coordenadorEmail: string | null;
   coordenacoes: Coordenacao[];
   quantidadeContratada: string | null;
   numeroExecucoes: number;
@@ -68,6 +77,14 @@ export default function DadosProcesso({
   const [novaCoordenacaoId, setNovaCoordenacaoId] = useState(coordenacaoId ?? "");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  // Dados de contato da coordenação, pra abrir ao clicar na sigla.
+  const camposCoordenacao = [
+    { label: "Nome", valor: coordenacaoNome || "" },
+    { label: "Telefone", valor: coordenacaoTelefone || "" },
+    { label: "Coordenador", valor: coordenadorNome || "" },
+    { label: "E-mail do coordenador", valor: coordenadorEmail || "" },
+  ];
 
   const [editandoDados, setEditandoDados] = useState(false);
   const [valores, setValores] = useState({
@@ -178,7 +195,7 @@ export default function DadosProcesso({
           </div>
         ) : (
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
-            {coordenacaoSigla || "não informado"}
+            {coordenacaoSigla ? <PopupNome nome={coordenacaoSigla} campos={camposCoordenacao} /> : "não informado"}
             <button onClick={() => setEditando(true)} style={{ fontSize: 10, padding: "2px 6px" }}>
               editar
             </button>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { card, cor } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
+import PopupNome from "@/app/_ui/popup-nome";
 
 type Nup = { id: string; tipo: "relatorio" | "pagamento"; valor: string };
 type TipoLancamento = "total" | "parcial" | "avaria";
@@ -33,7 +34,17 @@ function nupPorTipo(nups: LancamentoEntrega["processo_nups"], tipo: "entrega" | 
   return nups.find((n) => n.tipo === tipo) ?? null;
 }
 
-function Coluna({ label, valor, acao }: { label: string; valor: string; acao?: React.ReactNode }) {
+function Coluna({
+  label,
+  valor,
+  acao,
+  camposPopup,
+}: {
+  label: string;
+  valor: string;
+  acao?: React.ReactNode;
+  camposPopup?: { label: string; valor: string }[];
+}) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
       <span
@@ -48,7 +59,9 @@ function Coluna({ label, valor, acao }: { label: string; valor: string; acao?: R
         {label}
       </span>
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600 }}>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{valor}</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {camposPopup ? <PopupNome nome={valor} campos={camposPopup} /> : valor}
+        </span>
         <BotaoCopiar texto={valor} />
         {acao}
       </div>
@@ -74,6 +87,9 @@ export default function DadosPrincipais({
   execucoes,
   fornecedorNome,
   cnpj,
+  fornecedorPreposto,
+  fornecedorTelefone,
+  fornecedorEmails,
   objeto,
   unidadeMedida,
   responsavelPagamentoNome,
@@ -85,6 +101,9 @@ export default function DadosPrincipais({
   execucoes: Execucao[];
   fornecedorNome: string;
   cnpj: string;
+  fornecedorPreposto: string | null;
+  fornecedorTelefone: string | null;
+  fornecedorEmails: string[];
   objeto: string;
   unidadeMedida: string | null;
   responsavelPagamentoNome: string | null;
@@ -115,6 +134,15 @@ export default function DadosPrincipais({
   const [salvandoNup, setSalvandoNup] = useState(false);
 
   const execucoesOrdenadas = [...execucoes].sort((a, b) => a.numero - b.numero);
+
+  // Dados de contato do fornecedor, pra abrir ao clicar no nome da
+  // Contratada (janela com copiar, em vez de ter que ir até Fornecedores).
+  const camposFornecedor = [
+    { label: "CNPJ", valor: cnpj || "" },
+    { label: "Preposto", valor: fornecedorPreposto || "" },
+    { label: "Telefone", valor: fornecedorTelefone || "" },
+    { label: "E-mail", valor: fornecedorEmails.join(", ") },
+  ];
 
   // Criação de um novo lançamento (entrega total/parcial) direto por aqui —
   // a referência da parcela + o lançamento em si (manual) nascem juntos,
@@ -288,7 +316,7 @@ export default function DadosPrincipais({
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
-            <Coluna label="Contratada" valor={fornecedorNome || "não informado"} />
+            <Coluna label="Contratada" valor={fornecedorNome || "não informado"} camposPopup={fornecedorNome ? camposFornecedor : undefined} />
             <Coluna label="CNPJ" valor={cnpj || "não informado"} />
             <Coluna
               label="Objeto"
