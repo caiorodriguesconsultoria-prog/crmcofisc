@@ -39,7 +39,7 @@ export default async function ProcessosPage({
     supabase
       .from("processos")
       .select(
-        "id, numero_contrato, nup_principal, objeto, etapa_atual, situacao, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, titular_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor))",
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, situacao, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, titular_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor)), relatorio_atualizado_em",
       )
       .order("created_at", { ascending: false }),
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
@@ -110,11 +110,22 @@ export default async function ProcessosPage({
 
   const processosComEntregaAtrasada = new Set((execucoesPendentesRaw ?? []).map((e) => e.processo_id));
 
+  // Relatório "desatualizado" quando nunca foi marcado como atualizado ou
+  // quando a última marcação já passou de 10 dias.
+  const LIMITE_DIAS_RELATORIO = 10;
+  const agora = Date.now();
+  function relatorioDesatualizado(relatorioAtualizadoEm: string | null) {
+    if (!relatorioAtualizadoEm) return true;
+    const dias = (agora - new Date(relatorioAtualizadoEm).getTime()) / (1000 * 60 * 60 * 24);
+    return dias > LIMITE_DIAS_RELATORIO;
+  }
+
   const processosComAgendamento = (processos ?? []).map((p) => ({
     ...p,
     proximoAgendamento: proximoAgendamentoPorProcesso.get(p.id) ?? null,
     ultimoAndamento: ultimoAndamentoPorProcesso.get(p.id) ?? null,
     entregaAtrasada: processosComEntregaAtrasada.has(p.id),
+    relatorioDesatualizado: relatorioDesatualizado(p.relatorio_atualizado_em),
   }));
 
   const eventoSelecionado = sp.evento ? (eventos ?? []).find((e) => e.id === sp.evento) : null;

@@ -26,6 +26,8 @@ export const cor = {
   laranjaFundo: "rgba(200,101,31,.15)",
   urgente: "#B0655C",
   urgenteFundo: "rgba(176,101,92,.14)",
+  vermelhoEscuro: "#7A2E2E",
+  vermelhoEscuroFundo: "rgba(122,46,46,.15)",
   escuro: "#2D2B2B",
 };
 
