@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { card, cor } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
+import { corEtapa } from "@/lib/cor-etapa";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
@@ -49,6 +50,8 @@ type Processo = {
   processo_eletronico_numero: string | null;
   processo_tags: { tags: { id: string; valor: string; cor: string | null } | null }[];
   proximoAgendamento: { data: string; horario: string | null; periodo: "manha" | "tarde" | null } | null;
+  ultimoAndamento: string | null;
+  entregaAtrasada: boolean;
 };
 
 // Cor de fundo da linha só quando o processo está de fato em cobertura de
@@ -353,25 +356,43 @@ export default function ListaProcessos({
               <th style={{ padding: "10px 12px" }}>Fornecedor</th>
               <th style={{ padding: "10px 12px" }}>Etapa</th>
               <th style={{ padding: "10px 12px" }}>Eventos</th>
+              <th style={{ padding: "10px 12px" }}>Último andamento</th>
             </tr>
           </thead>
           <tbody>
             {filtrados.map((p) => (
               <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}`, background: corDeFundoLinha(p, minhaPessoaId) }}>
                 <td style={{ padding: "10px 12px" }}>
-                  <Link
-                    href={`/processos/${p.id}`}
-                    onClick={(e) => abrirComTransicao(e, router, `/processos/${p.id}`)}
-                    style={
-                      {
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        viewTransitionName: `processo-${p.id}`,
-                      } as React.CSSProperties
-                    }
-                  >
-                    {numeroContratoSemSei(p.numero_contrato)}
-                  </Link>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <Link
+                      href={`/processos/${p.id}`}
+                      onClick={(e) => abrirComTransicao(e, router, `/processos/${p.id}`)}
+                      style={
+                        {
+                          fontWeight: 600,
+                          textDecoration: "none",
+                          viewTransitionName: `processo-${p.id}`,
+                        } as React.CSSProperties
+                      }
+                    >
+                      {numeroContratoSemSei(p.numero_contrato)}
+                    </Link>
+                    {p.entregaAtrasada && (
+                      <span
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: 700,
+                          padding: "2px 7px",
+                          borderRadius: 10,
+                          color: cor.urgente,
+                          background: cor.urgenteFundo,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Entrega Atrasada
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td style={{ padding: "10px 12px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -384,18 +405,23 @@ export default function ListaProcessos({
                 <td style={{ padding: "10px 12px" }}>{p.fornecedores?.nome}</td>
                 <td style={{ padding: "10px 12px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: "3px 9px",
-                        borderRadius: 20,
-                        background: cor.destaqueFundo,
-                        color: cor.destaque,
-                      }}
-                    >
-                      {p.etapa_atual}
-                    </span>
+                    {(() => {
+                      const c = corEtapa(p.etapa_atual);
+                      return (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            padding: "3px 9px",
+                            borderRadius: 20,
+                            background: c.fundo,
+                            color: c.texto,
+                          }}
+                        >
+                          {p.etapa_atual}
+                        </span>
+                      );
+                    })()}
                     {p.proximoAgendamento && (
                       <span style={{ fontSize: 11, color: cor.textoTerciario, whiteSpace: "nowrap" }}>
                         {formatarDataAgendamento(p.proximoAgendamento.data)}{" "}
@@ -435,11 +461,14 @@ export default function ListaProcessos({
                       })}
                   </div>
                 </td>
+                <td style={{ padding: "10px 12px", fontSize: 12.5, color: cor.textoSecundario, maxWidth: 220 }}>
+                  {p.ultimoAndamento ?? "—"}
+                </td>
               </tr>
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
+                <td colSpan={8} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
                   Nenhum contrato encontrado com esses filtros.
                 </td>
               </tr>

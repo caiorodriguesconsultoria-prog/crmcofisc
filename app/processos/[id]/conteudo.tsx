@@ -22,6 +22,7 @@ import HistoricoLazy from "./historico-lazy";
 import Ocorrencias from "./relatorio/ocorrencias";
 import { card, cor, pill } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
+import { corEtapa } from "@/lib/cor-etapa";
 import TituloDestaque from "@/app/_ui/titulo";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
@@ -562,7 +563,9 @@ export async function carregarProcesso(id: string) {
             {p.coordenacoes.sigla}
           </span>
         )}
-              <span style={{ ...pill, background: cor.destaqueFundo, color: cor.destaque }}>{p.etapa_atual}</span>
+              <span style={{ ...pill, background: corEtapa(p.etapa_atual).fundo, color: corEtapa(p.etapa_atual).texto }}>
+                {p.etapa_atual}
+              </span>
         {p.situacao === "concluido" ? (
           <span style={{ ...pill, background: cor.positivoFundo, color: cor.positivo }}>Concluído ✓</span>
         ) : (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { card, cor, PALETA_EVENTOS } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
+import { corEtapa } from "@/lib/cor-etapa";
 import MedidorCircular from "@/app/_ui/medidor-circular";
 import { BotaoCopiar } from "@/app/_ui/campo";
 
@@ -166,8 +167,8 @@ export default function PainelDashboard({
                           fontWeight: 600,
                           padding: "3px 9px",
                           borderRadius: 20,
-                          background: cor.destaqueFundo,
-                          color: cor.destaque,
+                          background: corEtapa(p.etapaAtual).fundo,
+                          color: corEtapa(p.etapaAtual).texto,
                         }}
                       >
                         {p.etapaAtual}

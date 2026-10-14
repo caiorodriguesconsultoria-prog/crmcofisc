@@ -33,6 +33,8 @@ export default async function ProcessosPage({
     { data: agendamentosRaw },
     { data: tarefasAgendadasRaw },
     { data: pessoaAtual },
+    { data: andamentosRaw },
+    { data: execucoesPendentesRaw },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -54,6 +56,17 @@ export default async function ProcessosPage({
       .not("agendamento_data", "is", null)
       .gte("agendamento_data", hoje),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
+    supabase
+      .from("andamentos")
+      .select("processo_id, texto, data")
+      .neq("tipo", "Tarefa concluída")
+      .order("data", { ascending: false }),
+    supabase
+      .from("processo_execucoes")
+      .select("processo_id, data_prevista")
+      .is("data_entrega", null)
+      .not("data_prevista", "is", null)
+      .lt("data_prevista", hoje),
   ]);
 
   // Agendamentos de entrega têm horário exato; tarefas só têm período
@@ -85,9 +98,23 @@ export default async function ProcessosPage({
   for (const t of tarefasAgendadasRaw ?? []) {
     considerar(t.processo_id, t.agendamento_data as string, null, t.periodo as "manha" | "tarde" | null);
   }
+  // Último andamento de cada contrato — andamentosRaw já vem ordenado por
+  // data desc, então a primeira ocorrência de cada processo_id é a mais
+  // recente.
+  const ultimoAndamentoPorProcesso = new Map<string, string>();
+  for (const a of andamentosRaw ?? []) {
+    if (!ultimoAndamentoPorProcesso.has(a.processo_id)) {
+      ultimoAndamentoPorProcesso.set(a.processo_id, a.texto);
+    }
+  }
+
+  const processosComEntregaAtrasada = new Set((execucoesPendentesRaw ?? []).map((e) => e.processo_id));
+
   const processosComAgendamento = (processos ?? []).map((p) => ({
     ...p,
     proximoAgendamento: proximoAgendamentoPorProcesso.get(p.id) ?? null,
+    ultimoAndamento: ultimoAndamentoPorProcesso.get(p.id) ?? null,
+    entregaAtrasada: processosComEntregaAtrasada.has(p.id),
   }));
 
   const eventoSelecionado = sp.evento ? (eventos ?? []).find((e) => e.id === sp.evento) : null;
