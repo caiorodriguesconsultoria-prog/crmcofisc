@@ -19,6 +19,12 @@ function horarioBrasilia() {
 export async function notificarErroAdmins(contexto: string, mensagemTecnica: string) {
   try {
     const supabase = createServiceClient();
+
+    // Guarda o aviso mesmo que o push falhe ou ninguém tenha inscrição —
+    // sem isso, perder a notificação (silenciada, sem internet etc.) fazia
+    // o aviso sumir sem deixar rastro nenhum dentro do CRM.
+    await supabase.from("alertas_sistema").insert({ contexto, mensagem: mensagemTecnica });
+
     const { data: admins } = await supabase
       .from("pessoas")
       .select("id, push_subscriptions(endpoint, p256dh, auth)")
