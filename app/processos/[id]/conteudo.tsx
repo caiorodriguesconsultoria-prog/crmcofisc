@@ -290,6 +290,10 @@ export async function carregarProcesso(id: string) {
   const dataExibida = proximasData[0]?.data ?? p.prazo_data;
   const dias = diasRestantes(dataExibida);
   const dot = corPrazo(dias);
+  const hoje = new Date().toISOString().slice(0, 10);
+  const entregaAtrasada = (execucoes ?? []).some(
+    (e: any) => !e.data_entrega && e.data_prevista && e.data_prevista < hoje,
+  );
   const emCobertura = !!p.titular && p.responsavel?.id !== p.titular?.id;
   const formaEntrega = pauta && pauta.length > 1 ? "Descentralizada" : pauta && pauta.length === 1 ? "Centralizada" : "não definida";
 
@@ -445,7 +449,6 @@ export async function carregarProcesso(id: string) {
 
   const conteudoRelatorio = (
     <div>
-      <StatusRelatorio processoId={p.id} relatorioAtualizadoEm={p.relatorio_atualizado_em} />
       <p style={{ margin: "0 0 16px" }}>
         {/* <a> normal de propósito — dentro do modal (pilot), o <Link> do Next
             não escapa direito pra essa rota mais profunda, deixando o modal
@@ -608,7 +611,20 @@ export async function carregarProcesso(id: string) {
     <EventosAtivos processoId={p.id} tagsAtivas={tagsAtivas} tagsDisponiveis={tagsDisponiveis ?? []} />
   );
 
-  const corpo = <Abas processo={conteudoProcesso} relatorio={conteudoRelatorio} eventosAtivos={eventosAtivos} />;
+  const corpo = (
+    <Abas
+      processo={conteudoProcesso}
+      relatorio={conteudoRelatorio}
+      eventosAtivos={eventosAtivos}
+      statusTags={
+        <StatusRelatorio
+          processoId={p.id}
+          relatorioAtualizadoEm={p.relatorio_atualizado_em}
+          entregaAtrasada={entregaAtrasada}
+        />
+      }
+    />
+  );
 
   return { topo, corpo };
 }

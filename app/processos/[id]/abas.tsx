@@ -7,10 +7,12 @@ export default function Abas({
   processo,
   relatorio,
   eventosAtivos,
+  statusTags,
 }: {
   processo: React.ReactNode;
   relatorio: React.ReactNode;
   eventosAtivos?: React.ReactNode;
+  statusTags?: React.ReactNode;
 }) {
   const [aba, setAba] = useState<"processo" | "relatorio">("processo");
   const [relatorioAberto, setRelatorioAberto] = useState(false);
@@ -54,6 +56,8 @@ export default function Abas({
 
         {eventosAtivos && <div style={{ flex: "1 1 260px", maxWidth: 420 }}>{eventosAtivos}</div>}
       </div>
+
+      {statusTags && <div style={{ marginTop: -8, marginBottom: 16 }}>{statusTags}</div>}
 
       <div style={{ display: aba === "processo" ? "block" : "none" }}>{processo}</div>
       {relatorioAberto && (
