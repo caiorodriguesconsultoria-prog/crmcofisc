@@ -24,6 +24,7 @@ export default async function ProcessosConcluidosPage() {
     responsaveis,
     etapas,
     { data: pessoaAtual },
+    { data: andamentosRaw },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -38,9 +39,26 @@ export default async function ProcessosConcluidosPage() {
     getPessoasAtivas(),
     getEtapasKanban(),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
+    supabase
+      .from("andamentos")
+      .select("processo_id, texto, data")
+      .neq("tipo", "Tarefa concluída")
+      .order("data", { ascending: false }),
   ]);
 
-  const processosSemAgendamento = (processos ?? []).map((p) => ({ ...p, proximoAgendamento: null }));
+  const ultimoAndamentoPorProcesso = new Map<string, string>();
+  for (const a of andamentosRaw ?? []) {
+    if (!ultimoAndamentoPorProcesso.has(a.processo_id)) {
+      ultimoAndamentoPorProcesso.set(a.processo_id, a.texto);
+    }
+  }
+
+  const processosSemAgendamento = (processos ?? []).map((p) => ({
+    ...p,
+    proximoAgendamento: null,
+    ultimoAndamento: ultimoAndamentoPorProcesso.get(p.id) ?? null,
+    entregaAtrasada: false,
+  }));
 
   return (
     <Painel titulo="Concluídos" subtitulo="Contratos" voltarHref="/dashboard" maxWidth={1300}>

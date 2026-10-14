@@ -612,3 +612,12 @@ Migração `0040_alertas_sistema.sql`: nova tabela `alertas_sistema` (`contexto`
 `lib/alerta-erro.ts`: `notificarErroAdmins()` agora grava uma linha em `alertas_sistema` antes de tentar o push — guarda o aviso mesmo que ninguém tenha inscrição de push configurada ainda, ou que o envio falhe.
 
 Nova tela `/avisos` (`app/avisos/page.tsx` + `lista.tsx`), link "Avisos" no menu lateral: lista os avisos mais recentes primeiro, destaca os não lidos (borda vermelha + contador no topo) e tem "Marcar como lido" por item. Deliberadamente simples — não é um substituto do Sentry (que tem o stack trace técnico completo), só um histórico em linguagem simples de "o que já avisou" dentro do próprio CRM.
+
+## 2026-10-14 · Feature — Cores por etapa + último andamento + tag de entrega atrasada em /processos
+Caio pediu três ajustes na listagem de contratos: (1) último andamento de cada contrato ao lado de Eventos, (2) cor própria por etapa (hoje todas usavam o mesmo azul claro, difícil de diferenciar à distância) — Aguardando assinatura em amarelo, Aguardando pagamento em verde mais escuro, Aguardando Área Técnica em laranja (bem diferente do amarelo), Aguardando entrega em azul escuro, e (3) um aviso quando a entrega está atrasada.
+
+Pro item 3, a primeira versão trocava a cor/rótulo do badge de etapa pra vermelho "Entrega atrasada" — Caio preferiu diferente: manter o badge de etapa normal e colocar uma tag vermelha "Entrega Atrasada" separada, ao lado do número do contrato (coluna Contrato), não misturada com a etapa.
+
+Novos tokens de cor em `lib/theme.ts` (`amarelo`, `laranja`, `verdeEscuro`, cada um com a variante `Fundo`) e `lib/cor-etapa.ts` (`corEtapa()`) mapeando nome da etapa pra cor — aplicado também na página do contrato (`conteudo.tsx`) e no Painel (`painel-dashboard.tsx`), não só na listagem, pra manter consistente em todo canto que mostra a etapa.
+
+`app/processos/page.tsx`: duas queries novas — `andamentos` (excluindo "Tarefa concluída", igual o padrão já usado na página do contrato) reduzida a um Map de "última ocorrência por processo_id" (a query já vem ordenada por data desc, primeira ocorrência = mais recente); e `processo_execucoes` sem `data_entrega` e com `data_prevista` no passado, virando um Set de ids com entrega atrasada. Mesma lógica replicada em `app/processos/concluidos/page.tsx` (último andamento sim, mas `entregaAtrasada` sempre `false` — contrato concluído não precisa desse aviso).
