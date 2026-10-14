@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/processos", label: "Contratos" },
   { href: "/processos/concluidos", label: "Concluídos" },
   { href: "/dados", label: "Dados" },
+  { href: "/avisos", label: "Avisos" },
   { href: "/agenda", label: "Agenda" },
   { href: "/coordenacoes", label: "Coordenações" },
   { href: "/gestores", label: "Gestores" },

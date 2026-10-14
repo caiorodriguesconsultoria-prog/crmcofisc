@@ -601,3 +601,14 @@ Depois disso, esse padrão de janela foi documentado em `CLAUDE.md`, a pedido do
 Caio reportou uma indisponibilidade real detectada pelo UptimeRobot na madrugada (01:10–01:15, HTTP 500, banco não respondeu) — nenhum deploy nem job agendado rodou nesse horário, então foi uma instabilidade passageira do Supabase ou da Vercel, sem relação com código nosso. Perguntei se o alerta push interno (`notificarErroAdmins`) também tinha disparado — não, só o UptimeRobot.
 
 Isso é esperado, não um bug: `instrumentation.ts`/`onRequestError` (que aciona o alerta interno) só pega **exceção não tratada**, e o `/api/status` trata o erro do Supabase e devolve um 500 controlado de propósito (pra não derrubar nada) — nunca lança exceção, então nunca passava pelo hook. Caio pediu pra alinhar os dois: `app/api/status/route.ts` agora chama `notificarErroAdmins("/api/status", ...)` direto nos dois caminhos de falha real (erro do Supabase e exceção inesperada), então numa indisponibilidade de verdade o admin recebe os dois avisos — o do sistema (mais rápido, não depende do próximo check do UptimeRobot) e o externo. O caminho de teste (`FORCAR_FALHA_STATUS=true`) continua **sem** disparar o push interno de propósito, só o monitor externo — senão todo teste de rotina geraria notificação.
+
+Testado de ponta a ponta: Caio rodou `fetch('/api/erro/notificar', ...)` direto no Console do navegador (logado) — chama a mesma `notificarErroAdmins()`, sem precisar derrubar o banco de verdade pra testar — e confirmou que o push chegou no celular.
+
+## 2026-10-14 · Feature — Tela "Avisos do sistema" (histórico dos alertas internos)
+Depois de confirmar que o push funciona, Caio notou que não existe nenhum lugar dentro do CRM pra ver esses avisos depois — hoje é só a notificação no celular; se perder (silenciada, sem internet etc.), o aviso some sem deixar rastro, só o Sentry guarda o técnico.
+
+Migração `0040_alertas_sistema.sql`: nova tabela `alertas_sistema` (`contexto`, `mensagem`, `created_at`, `lido_em`, `lido_por`) — sem policy de insert (só a service role grava, de dentro de `notificarErroAdmins`, que já ignora RLS); leitura e "marcar como lido" liberados pra qualquer um autenticado (`is_authorized()`), mesmo padrão de Coordenações/Fornecedores — não é dado sensível, só "aconteceu um erro em X às Y".
+
+`lib/alerta-erro.ts`: `notificarErroAdmins()` agora grava uma linha em `alertas_sistema` antes de tentar o push — guarda o aviso mesmo que ninguém tenha inscrição de push configurada ainda, ou que o envio falhe.
+
+Nova tela `/avisos` (`app/avisos/page.tsx` + `lista.tsx`), link "Avisos" no menu lateral: lista os avisos mais recentes primeiro, destaca os não lidos (borda vermelha + contador no topo) e tem "Marcar como lido" por item. Deliberadamente simples — não é um substituto do Sentry (que tem o stack trace técnico completo), só um histórico em linguagem simples de "o que já avisou" dentro do próprio CRM.
