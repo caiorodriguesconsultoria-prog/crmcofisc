@@ -20,6 +20,7 @@ import PautaDistribuicao from "./relatorio/pauta-distribuicao";
 import EntregasLazy from "./entregas-lazy";
 import HistoricoLazy from "./historico-lazy";
 import Ocorrencias from "./relatorio/ocorrencias";
+import StatusRelatorio from "./relatorio/status-relatorio";
 import { card, cor, pill } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { corEtapa } from "@/lib/cor-etapa";
@@ -79,7 +80,7 @@ export async function carregarProcesso(id: string) {
   const { data: processo, error: erroProcesso } = await supabase
     .from("processos")
     .select(
-      "id, numero_contrato, nup_principal, objeto, etapa_atual, situacao, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, unidade_medida, execucao_forma, responsavel_pagamento_nome, responsavel_pagamento_email, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, coordenacoes(sigla, nome, telefone, coordenador_nome, coordenador_email), fornecedores(nome, cnpj, preposto, telefone, fornecedor_emails(email, rotulo)), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula, email, ramal, ausencia_inicio, ausencia_fim), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula, email, ramal, ausencia_inicio, ausencia_fim), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula, email, ramal, ausencia_inicio, ausencia_fim), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula, email, ramal, ausencia_inicio, ausencia_fim)",
+      "id, numero_contrato, nup_principal, objeto, etapa_atual, situacao, motivo_backup, coordenacao_id, prazo_data, quantidade_contratada, data_assinatura, vigencia_inicio, vigencia_fim, processo_eletronico_numero, pregao_eletronico_numero, ata_registro_precos_numero, publicacao_dou, publicacao_pncp, valor_unitario, valor_global, valor_garantia, portaria_designacao_fiscal, nota_empenho_numero, programa_trabalho, natureza_despesa, local_entrega, unidade_medida, execucao_forma, responsavel_pagamento_nome, responsavel_pagamento_email, conclusao_tipo, conclusao_checks, conclusao_texto, conclusao_penalidade, relatorio_atualizado_em, coordenacoes(sigla, nome, telefone, coordenador_nome, coordenador_email), fornecedores(nome, cnpj, preposto, telefone, fornecedor_emails(email, rotulo)), titular:pessoas!processos_titular_id_fkey(id, nome), responsavel:pessoas!processos_responsavel_atual_id_fkey(id, nome), gestor:pessoas!processos_gestor_id_fkey(id, nome, matricula, email, ramal, ausencia_inicio, ausencia_fim), gestor_substituto:pessoas!processos_gestor_substituto_id_fkey(id, nome, matricula, email, ramal, ausencia_inicio, ausencia_fim), fiscal:pessoas!processos_fiscal_id_fkey(id, nome, matricula, email, ramal, ausencia_inicio, ausencia_fim), fiscal_substituto:pessoas!processos_fiscal_substituto_id_fkey(id, nome, matricula, email, ramal, ausencia_inicio, ausencia_fim)",
     )
     .eq("id", id)
     .single();
@@ -444,6 +445,7 @@ export async function carregarProcesso(id: string) {
 
   const conteudoRelatorio = (
     <div>
+      <StatusRelatorio processoId={p.id} relatorioAtualizadoEm={p.relatorio_atualizado_em} />
       <p style={{ margin: "0 0 16px" }}>
         {/* <a> normal de propósito — dentro do modal (pilot), o <Link> do Next
             não escapa direito pra essa rota mais profunda, deixando o modal

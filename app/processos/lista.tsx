@@ -52,6 +52,7 @@ type Processo = {
   proximoAgendamento: { data: string; horario: string | null; periodo: "manha" | "tarde" | null } | null;
   ultimoAndamento: string | null;
   entregaAtrasada: boolean;
+  relatorioDesatualizado: boolean;
 };
 
 // Cor de fundo da linha só quando o processo está de fato em cobertura de
@@ -363,12 +364,13 @@ export default function ListaProcessos({
             {filtrados.map((p) => (
               <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}`, background: corDeFundoLinha(p, minhaPessoaId) }}>
                 <td style={{ padding: "10px 12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
                     <Link
                       href={`/processos/${p.id}`}
                       onClick={(e) => abrirComTransicao(e, router, `/processos/${p.id}`)}
                       style={
                         {
+                          fontSize: 15,
                           fontWeight: 600,
                           textDecoration: "none",
                           viewTransitionName: `processo-${p.id}`,
@@ -377,21 +379,36 @@ export default function ListaProcessos({
                     >
                       {numeroContratoSemSei(p.numero_contrato)}
                     </Link>
-                    {p.entregaAtrasada && (
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {p.entregaAtrasada && (
+                        <span
+                          style={{
+                            fontSize: 9.5,
+                            fontWeight: 700,
+                            padding: "2px 7px",
+                            borderRadius: 10,
+                            color: cor.urgente,
+                            background: cor.urgenteFundo,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Entrega Atrasada
+                        </span>
+                      )}
                       <span
                         style={{
                           fontSize: 9.5,
                           fontWeight: 700,
                           padding: "2px 7px",
                           borderRadius: 10,
-                          color: cor.urgente,
-                          background: cor.urgenteFundo,
+                          color: p.relatorioDesatualizado ? cor.vermelhoEscuro : cor.verdeEscuro,
+                          background: p.relatorioDesatualizado ? cor.vermelhoEscuroFundo : cor.verdeEscuroFundo,
                           whiteSpace: "nowrap",
                         }}
                       >
-                        Entrega Atrasada
+                        {p.relatorioDesatualizado ? "Relatório Desatualizado" : "Relatório Atualizado"}
                       </span>
-                    )}
+                    </div>
                   </div>
                 </td>
                 <td style={{ padding: "10px 12px" }}>

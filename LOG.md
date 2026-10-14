@@ -621,3 +621,14 @@ Pro item 3, a primeira versão trocava a cor/rótulo do badge de etapa pra verme
 Novos tokens de cor em `lib/theme.ts` (`amarelo`, `laranja`, `verdeEscuro`, cada um com a variante `Fundo`) e `lib/cor-etapa.ts` (`corEtapa()`) mapeando nome da etapa pra cor — aplicado também na página do contrato (`conteudo.tsx`) e no Painel (`painel-dashboard.tsx`), não só na listagem, pra manter consistente em todo canto que mostra a etapa.
 
 `app/processos/page.tsx`: duas queries novas — `andamentos` (excluindo "Tarefa concluída", igual o padrão já usado na página do contrato) reduzida a um Map de "última ocorrência por processo_id" (a query já vem ordenada por data desc, primeira ocorrência = mais recente); e `processo_execucoes` sem `data_entrega` e com `data_prevista` no passado, virando um Set de ids com entrega atrasada. Mesma lógica replicada em `app/processos/concluidos/page.tsx` (último andamento sim, mas `entregaAtrasada` sempre `false` — contrato concluído não precisa desse aviso).
+
+## 2026-10-14 · Feature — Fonte maior nos números de contrato + alerta de relatório desatualizado
+Caio pediu dois ajustes na listagem de contratos: aumentar a fonte do número do contrato, e um alerta mostrando se "o relatório" do contrato está atualizado ou não — vermelho depois de 10 dias sem atualização.
+
+Não existia nenhum campo rastreando quando o relatório de um contrato foi revisado por último (só uma tarefa de checklist chamada "Atualizar relatório", sem relação direta). Perguntei ao Caio onde mostrar e o que deveria marcar a atualização — ele respondeu: tag embaixo do número do contrato, no mesmo padrão visual da "Entrega Atrasada" já existente, com vermelho mais escuro (desatualizado) e verde escuro (atualizado).
+
+Migração `0041_processos_relatorio_atualizado.sql`: nova coluna `processos.relatorio_atualizado_em` (timestamptz, nullable). Marcação é manual — botão "Marcar relatório como atualizado" na própria aba Relatório do contrato (`app/processos/[id]/relatorio/status-relatorio.tsx`, novo componente cliente), que grava `now()` nesse campo. Sem essa marcação (ou se já passou de 10 dias), o relatório conta como desatualizado.
+
+Novos tokens de cor em `lib/theme.ts`: `vermelhoEscuro`/`vermelhoEscuroFundo` (mais escuro que o `urgente` já usado em "Entrega Atrasada", pra não confundir as duas tags) — reaproveitei `verdeEscuro` (já existente) pro estado "atualizado".
+
+`app/processos/page.tsx` calcula `relatorioDesatualizado` por contrato (nulo ou mais de 10 dias) e `app/processos/lista.tsx` mostra a tag numa linha própria abaixo do número do contrato (junto com "Entrega Atrasada", quando houver). Em `app/processos/concluidos/page.tsx`, sempre `false` — contrato concluído não precisa desse aviso, mesmo padrão já usado pra `entregaAtrasada`. Número do contrato na listagem também ganhou `fontSize: 15` (era o tamanho padrão da tabela, ~13px).

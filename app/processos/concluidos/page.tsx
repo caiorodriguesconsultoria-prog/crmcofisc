@@ -58,6 +58,7 @@ export default async function ProcessosConcluidosPage() {
     proximoAgendamento: null,
     ultimoAndamento: ultimoAndamentoPorProcesso.get(p.id) ?? null,
     entregaAtrasada: false,
+    relatorioDesatualizado: false,
   }));
 
   return (
