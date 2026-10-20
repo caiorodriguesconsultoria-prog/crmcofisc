@@ -678,3 +678,10 @@ Nova rota `app/api/processos/extrair-pdf/route.ts`: recebe o PDF do contrato (up
 `app/processos/novo/form.tsx`: ao extrair um PDF, as parcelas de cada item ficam guardadas (sem UI de edição nessa tela, mesmo padrão já usado pros campos "extras" do Quadro Resumitivo) e são criadas em `processo_execucoes` junto com os itens, no mesmo envio do formulário. Cada item com parcelas extraídas mostra uma notinha "N parcelas extraídas do PDF — confira/ajuste depois no Cronograma de entregas", pra deixar claro o que vai ser criado antes do Caio clicar em "Criar contrato". Itens cadastrados manualmente (sem PDF) continuam nascendo sem parcelas, como já era.
 
 Com isso, fecham as 5 fases da reestruturação por itens: (1) schema + Cronograma por item, (2) Quadro Resumitivo/Dados principais refletindo itens, (3) cadastro de itens na criação, (4) extração de PDF preenchendo dados+itens, (5) extração de PDF preenchendo também as parcelas.
+
+## 2026-10-20 · Ajuste — Extração por imagem + anexo também em contratos já criados
+Depois de testar a Fase 4/5, Caio pediu dois ajustes: (1) aceitar foto/imagem além de PDF (ele quer poder fotografar a tabela de itens, não só anexar o PDF inteiro) e (2) ter esse mesmo botão num contrato que já existe, não só na criação — pra adicionar itens/entregas depois.
+
+`app/api/processos/extrair-pdf/route.ts`: agora aceita `image/png`, `image/jpeg` e `image/webp` além de `application/pdf` (bloco de conteúdo vira `document` ou `image` conforme o tipo). O prompt passou a prever que o anexo pode ser só uma foto da tabela de itens/cronograma (sem o contrato inteiro) — nesse caso os campos fora da tabela ficam `null`, sem ser tratado como erro.
+
+`app/processos/[id]/cronograma.tsx` ganhou "+ Itens por anexo (PDF/foto)" ao lado de "+ Novo item" — mesma extração, mas pro contrato que já está aberto: cria os itens extraídos (e as parcelas de cada um, se o anexo trouxer cronograma de entrega) a partir do próximo número de item disponível, sem mexer nos itens já cadastrados. Útil pra contratos que já existem sem itens ainda, ou pra completar itens que faltaram.

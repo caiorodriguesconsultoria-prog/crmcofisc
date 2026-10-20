@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const SISTEMA = `Você extrai dados estruturados de contratos administrativos do Ministério da Saúde (Brasil), publicados no SEI, pro Quadro Resumitivo de um sistema de gestão de contratos (COFISC/DAF/SCTIE).
 
-Leia o PDF do contrato e devolva APENAS um JSON válido (sem markdown, sem comentário, sem texto antes ou depois), exatamente neste formato:
+Leia o documento do contrato (pode ser o PDF inteiro, ou uma foto/imagem só da tabela de itens e/ou do cronograma de entrega) e devolva APENAS um JSON válido (sem markdown, sem comentário, sem texto antes ou depois), exatamente neste formato:
 
 {
   "numero_contrato": string ou null,
@@ -54,7 +54,15 @@ Regras:
 - "itens" é a tabela de itens do contrato (coluna ITEM/DESCRIÇÃO/CATMAT/UNIDADE/QUANTIDADE/VALOR UNITÁRIO) — um item por linha dessa tabela. Se o contrato tiver só um item, devolva mesmo assim como lista com 1 elemento.
 - "parcelas" vem do cronograma de entrega de cada item (tabela PARCELAS/QUANTITATIVO/PRAZO MÁXIMO DE ENTREGA, numerada "1ª", "2ª" etc. — use só o número, sem o "ª"). Se o prazo for descrito como "N dias após a assinatura do contrato" (ou "da assinatura", "contados da assinatura" etc.) E você já souber "data_assinatura", calcule "data_prevista" somando N dias corridos a essa data e devolva no formato AAAA-MM-DD. Se "data_assinatura" for null, ou o prazo não for relativo à assinatura, ou você não tiver certeza da conta, devolva "data_prevista": null — nunca adivinhe uma data.
 - Se um item não tiver tabela de cronograma de entrega visível, devolva "parcelas": [] pra ele.
+- Se a imagem/PDF mostrar só a tabela de itens e/ou de cronograma (sem o texto do contrato inteiro), preencha só o que der pra ler dessa tabela e devolva null nos demais campos — não é erro, é esperado.
 - Se não encontrar a informação de algum campo, use null — nunca omita a chave.`;
+
+const TIPOS_ACEITOS: Record<string, string> = {
+  "application/pdf": "document",
+  "image/png": "image",
+  "image/jpeg": "image",
+  "image/webp": "image",
+};
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -74,14 +82,15 @@ export async function POST(request: NextRequest) {
   if (!(arquivo instanceof File)) {
     return NextResponse.json({ error: "arquivo não enviado" }, { status: 400 });
   }
-  if (arquivo.type !== "application/pdf") {
-    return NextResponse.json({ error: "envie um arquivo PDF" }, { status: 400 });
+  const tipoBloco = TIPOS_ACEITOS[arquivo.type];
+  if (!tipoBloco) {
+    return NextResponse.json({ error: "envie um PDF ou uma imagem (JPG, PNG ou WEBP)" }, { status: 400 });
   }
   // Limite conservador — funções serverless da Vercel têm um teto de
   // tamanho de corpo da requisição bem menor que o da API da Anthropic.
   const TAMANHO_MAXIMO_BYTES = 4 * 1024 * 1024;
   if (arquivo.size > TAMANHO_MAXIMO_BYTES) {
-    return NextResponse.json({ error: "PDF muito grande (máximo 4MB)" }, { status: 400 });
+    return NextResponse.json({ error: "Arquivo muito grande (máximo 4MB)" }, { status: 400 });
   }
 
   const base64 = Buffer.from(await arquivo.arrayBuffer()).toString("base64");
@@ -96,7 +105,10 @@ export async function POST(request: NextRequest) {
         {
           role: "user",
           content: [
-            { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+            {
+              type: tipoBloco,
+              source: { type: "base64", media_type: arquivo.type, data: base64 },
+            } as Anthropic.Messages.ContentBlockParam,
             { type: "text", text: "Extraia os dados desse contrato conforme as instruções." },
           ],
         },
