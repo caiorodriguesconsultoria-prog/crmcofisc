@@ -337,7 +337,7 @@ export async function carregarProcesso(id: string) {
         processoId={p.id}
         nupPrincipal={p.nup_principal}
         nupRelatorio={nupRelatorio}
-        execucoes={(execucoes ?? []) as any}
+        itens={itensComExecucoes as any}
         fornecedorNome={p.fornecedores?.nome ?? ""}
         cnpj={p.fornecedores?.cnpj ?? ""}
         fornecedorPreposto={p.fornecedores?.preposto ?? null}
@@ -473,7 +473,7 @@ export async function carregarProcesso(id: string) {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={card}>
           <span style={rotuloSecao}>1. Quadro resumitivo</span>
-          <QuadroResumitivo processoId={id} processo={p} />
+          <QuadroResumitivo processoId={id} processo={p} itens={(itens ?? []) as any} />
         </div>
 
         <div style={card}>
