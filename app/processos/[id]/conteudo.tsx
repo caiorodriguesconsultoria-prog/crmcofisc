@@ -101,6 +101,7 @@ export async function carregarProcesso(id: string) {
     papeis,
     { data: nups },
     { data: execucoes },
+    { data: itens },
     { data: pauta },
     { data: agendamentos },
     { data: kanbanHistoricoTodos },
@@ -132,8 +133,13 @@ export async function carregarProcesso(id: string) {
     supabase
       .from("processo_execucoes")
       .select(
-        "id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao, processo_entrega_lancamentos(id, tipo, lancamento_pai_id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega, data_limite, processo_nups(id, tipo, nup))",
+        "id, item_id, numero, quantidade, unidade, data_prevista, periodo, data_entrega, situacao, processo_entrega_lancamentos(id, tipo, lancamento_pai_id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega, data_limite, processo_nups(id, tipo, nup))",
       )
+      .eq("processo_id", id)
+      .order("numero"),
+    supabase
+      .from("processo_itens")
+      .select("id, numero, descricao, catmat, unidade_medida, quantidade, valor_unitario")
       .eq("processo_id", id)
       .order("numero"),
     supabase
@@ -297,6 +303,14 @@ export async function carregarProcesso(id: string) {
   const emCobertura = !!p.titular && p.responsavel?.id !== p.titular?.id;
   const formaEntrega = pauta && pauta.length > 1 ? "Descentralizada" : pauta && pauta.length === 1 ? "Centralizada" : "não definida";
 
+  // Itens do contrato (migração 0042) — cada item tem seu próprio cronograma
+  // de parcelas (processo_execucoes agora pertence a um item, não mais
+  // direto ao contrato).
+  const itensComExecucoes = (itens ?? []).map((item) => ({
+    ...item,
+    execucoes: (execucoes ?? []).filter((e: any) => e.item_id === item.id),
+  }));
+
   const andamentosMapeados = (andamentosRaw ?? []).map((a: any) => ({
     id: a.id,
     tipo: a.tipo,
@@ -339,7 +353,7 @@ export async function carregarProcesso(id: string) {
       <div style={secao}>
         <span style={rotuloSecao}>Cronograma de entregas</span>
         <div style={{ marginTop: 10 }}>
-          <Cronograma processoId={p.id} execucoes={(execucoes ?? []) as any} tagsDisponiveis={tagsDisponiveis ?? []} />
+          <Cronograma processoId={p.id} itens={itensComExecucoes as any} tagsDisponiveis={tagsDisponiveis ?? []} />
         </div>
       </div>
 
