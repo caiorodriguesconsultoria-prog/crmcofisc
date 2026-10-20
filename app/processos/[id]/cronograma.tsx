@@ -30,6 +30,17 @@ type Execucao = {
   processo_entrega_lancamentos: LancamentoEntrega[];
 };
 
+type Item = {
+  id: string;
+  numero: number;
+  descricao: string;
+  catmat: string | null;
+  unidade_medida: string | null;
+  quantidade: number | null;
+  valor_unitario: number | null;
+  execucoes: Execucao[];
+};
+
 type Tag = { id: string; valor: string };
 
 const SITUACOES = ["pendente", "em_transito", "entregue", "atrasada"];
@@ -55,6 +66,10 @@ function paraNumero(valorFormatado: string): number {
 
 function formatarQuantidade(n: number) {
   return n.toLocaleString("pt-BR");
+}
+
+function formatarMoeda(n: number) {
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 // Total já lançado numa parcela (soma dos lançamentos total/parcial, cada um
@@ -208,17 +223,35 @@ function SeletorPeriodo({ valor, onChange }: { valor: Periodo | ""; onChange: (p
 
 export default function Cronograma({
   processoId,
-  execucoes,
+  itens,
   tagsDisponiveis,
 }: {
   processoId: string;
-  execucoes: Execucao[];
+  itens: Item[];
   tagsDisponiveis: Tag[];
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState<string | null>(null);
+
+  const itensOrdenados = [...itens].sort((a, b) => a.numero - b.numero);
+  const [itemSelecionadoId, setItemSelecionadoId] = useState<string | null>(itensOrdenados[0]?.id ?? null);
+  const itemSelecionado = itensOrdenados.find((i) => i.id === itemSelecionadoId) ?? null;
+
+  const [novoItem, setNovoItem] = useState(false);
+  const [editandoItem, setEditandoItem] = useState(false);
+  const [itemForm, setItemForm] = useState({
+    descricao: "",
+    catmat: "",
+    unidade_medida: "",
+    quantidade: "",
+    valor_unitario: "",
+  });
+  const [salvandoItem, setSalvandoItem] = useState(false);
+
+  const execucoes = itemSelecionado?.execucoes ?? [];
+
   const [editando, setEditando] = useState(false);
   const [edicao, setEdicao] = useState<{
     quantidade: string;
@@ -259,6 +292,107 @@ export default function Cronograma({
   const [etapaConfirmacao, setEtapaConfirmacao] = useState<"pergunta" | "problemas" | null>(null);
   const [problemasMarcados, setProblemasMarcados] = useState<string[]>([]);
   const [processandoConfirmacao, setProcessandoConfirmacao] = useState(false);
+
+  function selecionarItem(id: string) {
+    setItemSelecionadoId(id);
+    setNovoItem(false);
+    setEditandoItem(false);
+    setNovo(false);
+    setEditando(false);
+    fecharConfirmacao();
+    const doItem = itensOrdenados.find((i) => i.id === id);
+    setParcelaSelecionadaId([...(doItem?.execucoes ?? [])].sort((a, b) => a.numero - b.numero)[0]?.id ?? null);
+  }
+
+  function abrirNovoItem() {
+    setNovoItem(true);
+    setEditandoItem(false);
+    setItemForm({ descricao: "", catmat: "", unidade_medida: "", quantidade: "", valor_unitario: "" });
+  }
+
+  function abrirEdicaoItem() {
+    if (!itemSelecionado) return;
+    setEditandoItem(true);
+    setNovoItem(false);
+    setItemForm({
+      descricao: itemSelecionado.descricao,
+      catmat: itemSelecionado.catmat ?? "",
+      unidade_medida: itemSelecionado.unidade_medida ?? "",
+      quantidade: itemSelecionado.quantidade != null ? formatarQuantidade(itemSelecionado.quantidade) : "",
+      valor_unitario: itemSelecionado.valor_unitario != null ? String(itemSelecionado.valor_unitario) : "",
+    });
+  }
+
+  const proximoNumeroItem = itens.length > 0 ? Math.max(...itens.map((i) => i.numero)) + 1 : 1;
+
+  async function salvarNovoItem() {
+    if (!itemForm.descricao.trim()) return;
+    setErro(null);
+    setSalvandoItem(true);
+    const { data: criado, error } = await supabase
+      .from("processo_itens")
+      .insert({
+        processo_id: processoId,
+        numero: proximoNumeroItem,
+        descricao: itemForm.descricao.trim(),
+        catmat: itemForm.catmat.trim() || null,
+        unidade_medida: itemForm.unidade_medida.trim() || null,
+        quantidade: itemForm.quantidade ? paraNumero(itemForm.quantidade) : null,
+        valor_unitario: itemForm.valor_unitario ? Number(itemForm.valor_unitario.replace(",", ".")) : null,
+      })
+      .select("id")
+      .single();
+    setSalvandoItem(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setNovoItem(false);
+    if (criado) setItemSelecionadoId(criado.id);
+    router.refresh();
+  }
+
+  async function salvarEdicaoItem() {
+    if (!itemSelecionado || !itemForm.descricao.trim()) return;
+    setErro(null);
+    setSalvandoItem(true);
+    const { error } = await supabase
+      .from("processo_itens")
+      .update({
+        descricao: itemForm.descricao.trim(),
+        catmat: itemForm.catmat.trim() || null,
+        unidade_medida: itemForm.unidade_medida.trim() || null,
+        quantidade: itemForm.quantidade ? paraNumero(itemForm.quantidade) : null,
+        valor_unitario: itemForm.valor_unitario ? Number(itemForm.valor_unitario.replace(",", ".")) : null,
+      })
+      .eq("id", itemSelecionado.id);
+    setSalvandoItem(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setEditandoItem(false);
+    router.refresh();
+  }
+
+  async function removerItem() {
+    if (!itemSelecionado) return;
+    if (itens.length <= 1) {
+      setErro("O contrato precisa ter pelo menos um item.");
+      return;
+    }
+    if (!confirm(`Remover "${itemSelecionado.descricao}" e todas as suas parcelas/entregas lançadas?`)) return;
+    setErro(null);
+    setSalvandoItem(true);
+    const { error } = await supabase.from("processo_itens").delete().eq("id", itemSelecionado.id);
+    setSalvandoItem(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setItemSelecionadoId(null);
+    router.refresh();
+  }
 
   function fecharConfirmacao() {
     setConfirmandoId(null);
@@ -438,13 +572,14 @@ export default function Cronograma({
   }
 
   async function adicionar() {
-    if (!novaQuantidade) return;
+    if (!novaQuantidade || !itemSelecionado) return;
     setErro(null);
     setCarregando("novo");
     const { data: criada, error } = await supabase
       .from("processo_execucoes")
       .insert({
         processo_id: processoId,
+        item_id: itemSelecionado.id,
         numero: proximoNumero,
         quantidade: paraNumero(novaQuantidade),
         data_prevista: novaData || null,
@@ -558,44 +693,30 @@ export default function Cronograma({
     <section>
       {erro && <p style={{ color: cor.urgente }}>{erro}</p>}
 
-      {execucoes.length === 0 && !novo && (
-        <p style={{ color: cor.textoTerciario, fontSize: 13 }}>Nenhuma entrega cadastrada.</p>
+      {itens.length === 0 && !novoItem && (
+        <p style={{ color: cor.textoTerciario, fontSize: 13 }}>Nenhum item cadastrado.</p>
       )}
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-        {execucoesOrdenadas.map((e) => {
-          const selecionadaAgora = parcelaSelecionadaId === e.id && !novo;
-          const diasAtraso = !dataEntregaEfetiva(e) ? diasEmAtrasoAgora(e.data_prevista, hoje) : null;
-          return (
-            <button
-              key={e.id}
-              onClick={() => {
-                setParcelaSelecionadaId(e.id);
-                setNovo(false);
-                setEditando(false);
-                fecharConfirmacao();
-              }}
-              style={{
-                fontSize: 11.5,
-                fontWeight: 600,
-                padding: "5px 12px",
-                borderRadius: 20,
-                border: "none",
-                color: selecionadaAgora ? "#fff" : diasAtraso ? cor.urgente : cor.textoSecundario,
-                background: selecionadaAgora ? (diasAtraso ? cor.urgente : cor.destaque) : diasAtraso ? cor.urgenteFundo : "rgba(96,93,93,.10)",
-              }}
-            >
-              {ordinal(e.numero)}
-              {(e.processo_entrega_lancamentos?.length ?? 0) > 1 ? " · Parcial" : ""}
-              {diasAtraso ? ` · ${diasAtraso}d atraso` : ""}
-            </button>
-          );
-        })}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+        {itensOrdenados.map((i) => (
+          <button
+            key={i.id}
+            onClick={() => selecionarItem(i.id)}
+            style={{
+              fontSize: 11.5,
+              fontWeight: 600,
+              padding: "5px 12px",
+              borderRadius: 20,
+              border: "none",
+              color: itemSelecionadoId === i.id && !novoItem ? "#fff" : cor.textoSecundario,
+              background: itemSelecionadoId === i.id && !novoItem ? cor.destaque : "rgba(96,93,93,.10)",
+            }}
+          >
+            Item {i.numero} · {i.descricao.length > 28 ? `${i.descricao.slice(0, 28)}…` : i.descricao}
+          </button>
+        ))}
         <button
-          onClick={() => {
-            setNovo(true);
-            setParcelaSelecionadaId(null);
-          }}
+          onClick={abrirNovoItem}
           style={{
             fontSize: 11.5,
             fontWeight: 600,
@@ -603,412 +724,561 @@ export default function Cronograma({
             borderRadius: 20,
             border: `1.5px dashed ${cor.borda}`,
             color: cor.textoTerciario,
-            background: novo ? cor.destaqueFundo : "transparent",
+            background: novoItem ? cor.destaqueFundo : "transparent",
           }}
         >
-          + Criar
+          + Novo item
         </button>
       </div>
 
-      {novo && (
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, color: cor.textoTerciario, paddingTop: 6 }}>{ordinal(proximoNumero)}</span>
-          <CampoQuantidade valor={novaQuantidade} onChange={setNovaQuantidade} />
-          <input type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} style={{ padding: 6 }} />
-          <SeletorPeriodo valor={novoPeriodo} onChange={setNovoPeriodo} />
-          <button onClick={adicionar} disabled={carregando === "novo" || !novaQuantidade}>
-            Salvar
+      {(novoItem || editandoItem) && (
+        <div
+          style={{
+            border: `1px solid ${cor.borda}`,
+            borderRadius: 12,
+            padding: 10,
+            marginBottom: 12,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+            alignItems: "flex-end",
+          }}
+        >
+          <Campo label="Descrição">
+            <input
+              value={itemForm.descricao}
+              onChange={(ev) => setItemForm({ ...itemForm, descricao: ev.target.value })}
+              style={{ padding: 4, width: 220 }}
+              placeholder="Ex.: INSULINA HUMANA REGULAR 100 U/ML"
+            />
+          </Campo>
+          <Campo label="CATMAT">
+            <input
+              value={itemForm.catmat}
+              onChange={(ev) => setItemForm({ ...itemForm, catmat: ev.target.value })}
+              style={{ padding: 4, width: 90 }}
+            />
+          </Campo>
+          <Campo label="Unidade">
+            <input
+              value={itemForm.unidade_medida}
+              onChange={(ev) => setItemForm({ ...itemForm, unidade_medida: ev.target.value })}
+              style={{ padding: 4, width: 100 }}
+              placeholder="Ex.: Tubete 3 ml"
+            />
+          </Campo>
+          <CampoQuantidade
+            valor={itemForm.quantidade}
+            onChange={(v) => setItemForm({ ...itemForm, quantidade: v })}
+          />
+          <Campo label="Valor unitário (R$)">
+            <input
+              value={itemForm.valor_unitario}
+              onChange={(ev) => setItemForm({ ...itemForm, valor_unitario: ev.target.value })}
+              style={{ padding: 4, width: 90 }}
+              placeholder="0,00"
+            />
+          </Campo>
+          <button
+            onClick={novoItem ? salvarNovoItem : salvarEdicaoItem}
+            disabled={salvandoItem || !itemForm.descricao.trim()}
+            style={{ fontSize: 11 }}
+          >
+            {salvandoItem ? "..." : "Salvar"}
           </button>
-          <button onClick={() => setNovo(false)} disabled={carregando === "novo"}>
+          <button
+            onClick={() => {
+              setNovoItem(false);
+              setEditandoItem(false);
+            }}
+            disabled={salvandoItem}
+            style={{ fontSize: 11 }}
+          >
             Cancelar
           </button>
         </div>
       )}
 
-      {selecionada && !novo && (() => {
-        const e = selecionada;
-        const dataEntregue = dataEntregaEfetiva(e);
-        const atraso = textoAtraso(e.data_prevista, dataEntregue, hoje);
-        const todosLancamentos = e.processo_entrega_lancamentos ?? [];
-        // Lançamentos de avaria não aparecem na lista principal — ficam
-        // aninhados embaixo do lançamento total/parcial que corrigem.
-        const lancamentos = todosLancamentos
-          .filter((l) => l.tipo !== "avaria")
-          .sort((a, b) => (a.data_entrega ?? "").localeCompare(b.data_entrega ?? ""));
-        const avariasDe = (paiId: string) =>
-          todosLancamentos.filter((l) => l.lancamento_pai_id === paiId);
-        const faltam = falta(e);
-        const lancado = totalLancado(todosLancamentos);
-        return (
-          <div style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 10 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
-              {editando && edicao ? (
-                <>
-                  <CampoQuantidade
-                    valor={edicao.quantidade}
-                    onChange={(v) => setEdicao({ ...edicao, quantidade: v })}
-                  />
-                  <Campo label="Data prevista">
-                    <input
-                      type="date"
-                      value={edicao.data_prevista}
-                      onChange={(ev) => setEdicao({ ...edicao, data_prevista: ev.target.value })}
-                      style={{ padding: 4 }}
-                    />
-                  </Campo>
-                  <Campo label="Período">
-                    <SeletorPeriodo valor={edicao.periodo} onChange={(p) => setEdicao({ ...edicao, periodo: p })} />
-                  </Campo>
-                  <Campo label="Data entregue">
-                    <input
-                      type="date"
-                      value={edicao.data_entrega}
-                      onChange={(ev) => setEdicao({ ...edicao, data_entrega: ev.target.value })}
-                      style={{ padding: 4 }}
-                    />
-                  </Campo>
-                </>
-              ) : (
-                <>
-                  <Campo label="Quantidade">{formatarQuantidade(e.quantidade)}</Campo>
-                  <Campo label="Data prevista">
-                    {formatarData(e.data_prevista)}
-                    {e.periodo ? ` · ${e.periodo === "manha" ? "Manhã" : "Tarde"}` : ""}
-                  </Campo>
-                  <Campo label="Data entregue">{formatarData(dataEntregue)}</Campo>
-                </>
-              )}
-              <Campo label="Total lançado">{formatarQuantidade(lancado)}</Campo>
-              <Campo label="Falta">
-                <span style={{ color: faltam < 0 ? cor.urgente : undefined, fontWeight: faltam < 0 ? 600 : 400 }}>
-                  {faltam < 0 ? `excedeu ${formatarQuantidade(-faltam)}` : formatarQuantidade(faltam)}
-                </span>
-              </Campo>
-              <Campo label="Prazo">
-                <span style={{ color: atraso.destaque === "urgente" ? cor.urgente : atraso.destaque === "positivo" ? cor.positivo : undefined, fontWeight: atraso.destaque ? 600 : 400 }}>
-                  {atraso.texto}
-                </span>
-              </Campo>
-              <Campo label="Situação">
-                <select
-                  value={e.situacao}
-                  onChange={(ev) => atualizarSituacao(e.id, ev.target.value)}
-                  disabled={carregando === e.id}
+      {itemSelecionado && !novoItem && !editandoItem && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+            fontSize: 11.5,
+            color: cor.textoTerciario,
+            marginBottom: 10,
+          }}
+        >
+          {itemSelecionado.catmat && <span>CATMAT {itemSelecionado.catmat}</span>}
+          {itemSelecionado.unidade_medida && <span>{itemSelecionado.unidade_medida}</span>}
+          {itemSelecionado.quantidade != null && <span>Qtd. contratada: {formatarQuantidade(itemSelecionado.quantidade)}</span>}
+          {itemSelecionado.valor_unitario != null && <span>Unit.: {formatarMoeda(itemSelecionado.valor_unitario)}</span>}
+          <button onClick={abrirEdicaoItem} style={{ fontSize: 10.5 }}>
+            editar item
+          </button>
+          <button onClick={removerItem} disabled={salvandoItem} style={{ fontSize: 10.5 }}>
+            remover item
+          </button>
+        </div>
+      )}
+
+      {itemSelecionado && (
+        <>
+          {execucoes.length === 0 && !novo && (
+            <p style={{ color: cor.textoTerciario, fontSize: 13 }}>Nenhuma entrega cadastrada neste item.</p>
+          )}
+
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            {execucoesOrdenadas.map((e) => {
+              const selecionadaAgora = parcelaSelecionadaId === e.id && !novo;
+              const diasAtraso = !dataEntregaEfetiva(e) ? diasEmAtrasoAgora(e.data_prevista, hoje) : null;
+              return (
+                <button
+                  key={e.id}
+                  onClick={() => {
+                    setParcelaSelecionadaId(e.id);
+                    setNovo(false);
+                    setEditando(false);
+                    fecharConfirmacao();
+                  }}
                   style={{
-                    padding: "3px 7px",
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    padding: "5px 12px",
                     borderRadius: 20,
                     border: "none",
-                    fontWeight: 600,
-                    fontSize: 10.5,
-                    color: SITUACAO_COR[e.situacao]?.fg,
-                    background: SITUACAO_COR[e.situacao]?.bg,
+                    color: selecionadaAgora ? "#fff" : diasAtraso ? cor.urgente : cor.textoSecundario,
+                    background: selecionadaAgora ? (diasAtraso ? cor.urgente : cor.destaque) : diasAtraso ? cor.urgenteFundo : "rgba(96,93,93,.10)",
                   }}
                 >
-                  {SITUACOES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </Campo>
-            </div>
+                  {ordinal(e.numero)}
+                  {(e.processo_entrega_lancamentos?.length ?? 0) > 1 ? " · Parcial" : ""}
+                  {diasAtraso ? ` · ${diasAtraso}d atraso` : ""}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => {
+                setNovo(true);
+                setParcelaSelecionadaId(null);
+              }}
+              style={{
+                fontSize: 11.5,
+                fontWeight: 600,
+                padding: "5px 12px",
+                borderRadius: 20,
+                border: `1.5px dashed ${cor.borda}`,
+                color: cor.textoTerciario,
+                background: novo ? cor.destaqueFundo : "transparent",
+              }}
+            >
+              + Criar
+            </button>
+          </div>
 
-            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 10 }}>
-              {editando ? (
-                <>
-                  <button onClick={() => salvarEdicao(e.id)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
-                    Salvar
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditando(false);
-                      setEdicao(null);
-                    }}
-                    disabled={carregando === e.id}
-                    style={{ fontSize: 11 }}
-                  >
-                    Cancelar
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => abrirEdicao(e)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
-                    editar
-                  </button>
-                  <button onClick={() => remover(e.id)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
-                    remover
-                  </button>
-                  {confirmandoId !== e.id && (
-                    <button
-                      onClick={() => { setConfirmandoId(e.id); setEtapaConfirmacao("pergunta"); setProblemasMarcados([]); }}
-                      style={{ fontSize: 11 }}
-                    >
-                      confirmar entrega
-                    </button>
+          {novo && (
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: cor.textoTerciario, paddingTop: 6 }}>{ordinal(proximoNumero)}</span>
+              <CampoQuantidade valor={novaQuantidade} onChange={setNovaQuantidade} />
+              <input type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} style={{ padding: 6 }} />
+              <SeletorPeriodo valor={novoPeriodo} onChange={setNovoPeriodo} />
+              <button onClick={adicionar} disabled={carregando === "novo" || !novaQuantidade}>
+                Salvar
+              </button>
+              <button onClick={() => setNovo(false)} disabled={carregando === "novo"}>
+                Cancelar
+              </button>
+            </div>
+          )}
+
+          {selecionada && !novo && (() => {
+            const e = selecionada;
+            const dataEntregue = dataEntregaEfetiva(e);
+            const atraso = textoAtraso(e.data_prevista, dataEntregue, hoje);
+            const todosLancamentos = e.processo_entrega_lancamentos ?? [];
+            // Lançamentos de avaria não aparecem na lista principal — ficam
+            // aninhados embaixo do lançamento total/parcial que corrigem.
+            const lancamentos = todosLancamentos
+              .filter((l) => l.tipo !== "avaria")
+              .sort((a, b) => (a.data_entrega ?? "").localeCompare(b.data_entrega ?? ""));
+            const avariasDe = (paiId: string) =>
+              todosLancamentos.filter((l) => l.lancamento_pai_id === paiId);
+            const faltam = falta(e);
+            const lancado = totalLancado(todosLancamentos);
+            return (
+              <div style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
+                  {editando && edicao ? (
+                    <>
+                      <CampoQuantidade
+                        valor={edicao.quantidade}
+                        onChange={(v) => setEdicao({ ...edicao, quantidade: v })}
+                      />
+                      <Campo label="Data prevista">
+                        <input
+                          type="date"
+                          value={edicao.data_prevista}
+                          onChange={(ev) => setEdicao({ ...edicao, data_prevista: ev.target.value })}
+                          style={{ padding: 4 }}
+                        />
+                      </Campo>
+                      <Campo label="Período">
+                        <SeletorPeriodo valor={edicao.periodo} onChange={(p) => setEdicao({ ...edicao, periodo: p })} />
+                      </Campo>
+                      <Campo label="Data entregue">
+                        <input
+                          type="date"
+                          value={edicao.data_entrega}
+                          onChange={(ev) => setEdicao({ ...edicao, data_entrega: ev.target.value })}
+                          style={{ padding: 4 }}
+                        />
+                      </Campo>
+                    </>
+                  ) : (
+                    <>
+                      <Campo label="Quantidade">{formatarQuantidade(e.quantidade)}</Campo>
+                      <Campo label="Data prevista">
+                        {formatarData(e.data_prevista)}
+                        {e.periodo ? ` · ${e.periodo === "manha" ? "Manhã" : "Tarde"}` : ""}
+                      </Campo>
+                      <Campo label="Data entregue">{formatarData(dataEntregue)}</Campo>
+                    </>
                   )}
-                </>
-              )}
-            </div>
-
-            {confirmandoId === e.id && (
-              <div
-                style={{
-                  marginTop: 10,
-                  padding: 10,
-                  borderRadius: 10,
-                  background: cor.fundo,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                  alignItems: "center",
-                }}
-              >
-                {etapaConfirmacao === "pergunta" && (
-                  <>
-                    <span style={{ fontSize: 12.5, fontWeight: 600 }}>A entrega ocorreu?</span>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => setEtapaConfirmacao("problemas")}
-                        disabled={processandoConfirmacao}
-                        style={{ fontSize: 11.5 }}
-                      >
-                        Sim
-                      </button>
-                      <button
-                        onClick={() => confirmarEntregaNaoOcorreu(e.id)}
-                        disabled={processandoConfirmacao}
-                        style={{ fontSize: 11.5 }}
-                      >
-                        {processandoConfirmacao ? "..." : "Não"}
-                      </button>
-                      <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
-                        Cancelar
-                      </button>
-                    </div>
-                  </>
-                )}
-                {etapaConfirmacao === "problemas" && (
-                  <>
-                    <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-                      Ocorreu algum desses problemas na entrega?
+                  <Campo label="Total lançado">{formatarQuantidade(lancado)}</Campo>
+                  <Campo label="Falta">
+                    <span style={{ color: faltam < 0 ? cor.urgente : undefined, fontWeight: faltam < 0 ? 600 : 400 }}>
+                      {faltam < 0 ? `excedeu ${formatarQuantidade(-faltam)}` : formatarQuantidade(faltam)}
                     </span>
-                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-                      {PROBLEMAS_ENTREGA.map((valor) => (
-                        <label key={valor} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-                          <input
-                            type="checkbox"
-                            checked={problemasMarcados.includes(valor)}
-                            onChange={() => alternarProblema(valor)}
-                          />
-                          {valor}
-                        </label>
+                  </Campo>
+                  <Campo label="Prazo">
+                    <span style={{ color: atraso.destaque === "urgente" ? cor.urgente : atraso.destaque === "positivo" ? cor.positivo : undefined, fontWeight: atraso.destaque ? 600 : 400 }}>
+                      {atraso.texto}
+                    </span>
+                  </Campo>
+                  <Campo label="Situação">
+                    <select
+                      value={e.situacao}
+                      onChange={(ev) => atualizarSituacao(e.id, ev.target.value)}
+                      disabled={carregando === e.id}
+                      style={{
+                        padding: "3px 7px",
+                        borderRadius: 20,
+                        border: "none",
+                        fontWeight: 600,
+                        fontSize: 10.5,
+                        color: SITUACAO_COR[e.situacao]?.fg,
+                        background: SITUACAO_COR[e.situacao]?.bg,
+                      }}
+                    >
+                      {SITUACOES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
                       ))}
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => confirmarEntregaOcorreu(e.id)}
-                        disabled={processandoConfirmacao}
-                        style={{ fontSize: 11.5 }}
-                      >
-                        {processandoConfirmacao ? "..." : "Confirmar"}
+                    </select>
+                  </Campo>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 10 }}>
+                  {editando ? (
+                    <>
+                      <button onClick={() => salvarEdicao(e.id)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
+                        Salvar
                       </button>
-                      <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
+                      <button
+                        onClick={() => {
+                          setEditando(false);
+                          setEdicao(null);
+                        }}
+                        disabled={carregando === e.id}
+                        style={{ fontSize: 11 }}
+                      >
                         Cancelar
                       </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${cor.borda}` }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.6 }}>
-                Entregas lançadas
-              </span>
-
-              {lancamentos.length === 0 && (
-                <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "6px 0 0" }}>
-                  Nenhuma entrega lançada ainda.
-                </p>
-              )}
-
-              {lancamentos.map((l) => {
-                const nupEntrega = nupPorTipo(l.processo_nups, "entrega");
-                const nupPagamento = nupPorTipo(l.processo_nups, "pagamento");
-                const avarias = avariasDe(l.id);
-                return (
-                  <div key={l.id} style={{ borderBottom: `1px solid ${cor.borda}`, padding: "8px 0" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 12 }}>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          padding: "2px 7px",
-                          borderRadius: 10,
-                          color: cor.destaque,
-                          background: cor.destaqueFundo,
-                        }}
-                      >
-                        {l.tipo === "total" ? "Total" : "Parcial"}
-                      </span>
-                      <span style={{ color: cor.textoTerciario, minWidth: 70 }}>{formatarData(l.data_entrega)}</span>
-                      <span>Normal: <strong>{formatarQuantidade(l.quantidade_normal)}</strong></span>
-                      {l.quantidade_avaria > 0 && (
-                        <span style={{ color: cor.urgente }}>Avaria: <strong>{formatarQuantidade(l.quantidade_avaria)}</strong></span>
-                      )}
-                      {l.quantidade_desvio > 0 && (
-                        <span style={{ color: cor.urgente }}>Desvio: <strong>{formatarQuantidade(l.quantidade_desvio)}</strong></span>
-                      )}
-                      <button
-                        onClick={() => removerLancamento(l.id)}
-                        disabled={removendoLancamentoId === l.id}
-                        style={{ fontSize: 10.5, marginLeft: "auto" }}
-                      >
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => abrirEdicao(e)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
+                        editar
+                      </button>
+                      <button onClick={() => remover(e.id)} disabled={carregando === e.id} style={{ fontSize: 11 }}>
                         remover
                       </button>
-                    </div>
-                    {/* NUPs são só leitura aqui — ficam editáveis em Dados principais,
-                        junto da visão por parcela. */}
-                    <div style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 11, color: cor.textoTerciario }}>
-                      <span>NUP entrega: {nupEntrega?.nup || "não informado"}</span>
-                      <span>NUP pagamento: {nupPagamento?.nup || "não informado"}</span>
-                    </div>
+                      {confirmandoId !== e.id && (
+                        <button
+                          onClick={() => { setConfirmandoId(e.id); setEtapaConfirmacao("pergunta"); setProblemasMarcados([]); }}
+                          style={{ fontSize: 11 }}
+                        >
+                          confirmar entrega
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
 
-                    {avarias.length > 0 && (
-                      <div style={{ marginTop: 6, marginLeft: 22, display: "flex", flexDirection: "column", gap: 4 }}>
-                        {avarias.map((a) => (
-                          <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.5 }}>
-                            <span style={{ color: cor.urgente, fontWeight: 600 }}>Avaria</span>
-                            <span style={{ color: cor.textoTerciario }}>Prazo: {formatarData(a.data_limite)}</span>
-                            <span>Qtd.: <strong>{formatarQuantidade(a.quantidade_normal)}</strong></span>
-                            <button
-                              onClick={() => removerLancamento(a.id)}
-                              disabled={removendoLancamentoId === a.id}
-                              style={{ fontSize: 10 }}
-                            >
-                              remover
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                {confirmandoId === e.id && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      padding: 10,
+                      borderRadius: 10,
+                      background: cor.fundo,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      alignItems: "center",
+                    }}
+                  >
+                    {etapaConfirmacao === "pergunta" && (
+                      <>
+                        <span style={{ fontSize: 12.5, fontWeight: 600 }}>A entrega ocorreu?</span>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => setEtapaConfirmacao("problemas")}
+                            disabled={processandoConfirmacao}
+                            style={{ fontSize: 11.5 }}
+                          >
+                            Sim
+                          </button>
+                          <button
+                            onClick={() => confirmarEntregaNaoOcorreu(e.id)}
+                            disabled={processandoConfirmacao}
+                            style={{ fontSize: 11.5 }}
+                          >
+                            {processandoConfirmacao ? "..." : "Não"}
+                          </button>
+                          <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </>
                     )}
-
-                    {lancandoAvariaDeId === l.id ? (
-                      <div style={{ display: "flex", gap: 10, alignItems: "flex-end", marginTop: 8, marginLeft: 22, flexWrap: "wrap" }}>
-                        <Campo label="Prazo">
-                          <input
-                            type="date"
-                            value={avariaData}
-                            onChange={(ev) => setAvariaData(ev.target.value)}
-                            style={{ padding: 4 }}
-                          />
-                        </Campo>
-                        <Campo label="Quantidade">
-                          <CampoMascarado
-                            valor={avariaQuantidade}
-                            formatar={formatarNumeroBR}
-                            onChange={setAvariaQuantidade}
-                            style={{ width: 90, padding: 4, textAlign: "center" }}
-                          />
-                        </Campo>
-                        <button
-                          onClick={() => criarAvaria(e.id, l.id)}
-                          disabled={salvandoAvaria || !avariaData || paraNumero(avariaQuantidade) <= 0}
-                          style={{ fontSize: 10.5 }}
-                        >
-                          {salvandoAvaria ? "..." : "Salvar"}
-                        </button>
-                        <button onClick={() => setLancandoAvariaDeId(null)} disabled={salvandoAvaria} style={{ fontSize: 10.5 }}>
-                          Cancelar
-                        </button>
-                      </div>
-                    ) : (
-                      l.quantidade_avaria > 0 && (
-                        <button
-                          onClick={() => abrirLancamentoAvaria(l.id)}
-                          style={{ fontSize: 10.5, marginTop: 6, marginLeft: 22 }}
-                        >
-                          + Lançar reposição de avaria
-                        </button>
-                      )
+                    {etapaConfirmacao === "problemas" && (
+                      <>
+                        <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                          Ocorreu algum desses problemas na entrega?
+                        </span>
+                        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                          {PROBLEMAS_ENTREGA.map((valor) => (
+                            <label key={valor} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                              <input
+                                type="checkbox"
+                                checked={problemasMarcados.includes(valor)}
+                                onChange={() => alternarProblema(valor)}
+                              />
+                              {valor}
+                            </label>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => confirmarEntregaOcorreu(e.id)}
+                            disabled={processandoConfirmacao}
+                            style={{ fontSize: 11.5 }}
+                          >
+                            {processandoConfirmacao ? "..." : "Confirmar"}
+                          </button>
+                          <button onClick={fecharConfirmacao} disabled={processandoConfirmacao} style={{ fontSize: 11.5 }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
-                );
-              })}
+                )}
 
-              {criandoLancamento ? (
-                <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap", marginTop: 10 }}>
-                  <Campo label="Tipo">
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {(["parcial", "total"] as const).map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setNovoLancTipo(t)}
-                          style={{
-                            fontSize: 10.5,
-                            fontWeight: 600,
-                            padding: "4px 9px",
-                            borderRadius: 7,
-                            border: "none",
-                            color: novoLancTipo === t ? cor.destaque : cor.textoTerciario,
-                            background: novoLancTipo === t ? cor.destaqueFundo : "rgba(96,93,93,.10)",
-                          }}
-                        >
-                          {t === "total" ? "Total" : "Parcial"}
-                        </button>
-                      ))}
+                <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${cor.borda}` }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                    Entregas lançadas
+                  </span>
+
+                  {lancamentos.length === 0 && (
+                    <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "6px 0 0" }}>
+                      Nenhuma entrega lançada ainda.
+                    </p>
+                  )}
+
+                  {lancamentos.map((l) => {
+                    const nupEntrega = nupPorTipo(l.processo_nups, "entrega");
+                    const nupPagamento = nupPorTipo(l.processo_nups, "pagamento");
+                    const avarias = avariasDe(l.id);
+                    return (
+                      <div key={l.id} style={{ borderBottom: `1px solid ${cor.borda}`, padding: "8px 0" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 12 }}>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: "2px 7px",
+                              borderRadius: 10,
+                              color: cor.destaque,
+                              background: cor.destaqueFundo,
+                            }}
+                          >
+                            {l.tipo === "total" ? "Total" : "Parcial"}
+                          </span>
+                          <span style={{ color: cor.textoTerciario, minWidth: 70 }}>{formatarData(l.data_entrega)}</span>
+                          <span>Normal: <strong>{formatarQuantidade(l.quantidade_normal)}</strong></span>
+                          {l.quantidade_avaria > 0 && (
+                            <span style={{ color: cor.urgente }}>Avaria: <strong>{formatarQuantidade(l.quantidade_avaria)}</strong></span>
+                          )}
+                          {l.quantidade_desvio > 0 && (
+                            <span style={{ color: cor.urgente }}>Desvio: <strong>{formatarQuantidade(l.quantidade_desvio)}</strong></span>
+                          )}
+                          <button
+                            onClick={() => removerLancamento(l.id)}
+                            disabled={removendoLancamentoId === l.id}
+                            style={{ fontSize: 10.5, marginLeft: "auto" }}
+                          >
+                            remover
+                          </button>
+                        </div>
+                        {/* NUPs são só leitura aqui — ficam editáveis em Dados principais,
+                            junto da visão por parcela. */}
+                        <div style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 11, color: cor.textoTerciario }}>
+                          <span>NUP entrega: {nupEntrega?.nup || "não informado"}</span>
+                          <span>NUP pagamento: {nupPagamento?.nup || "não informado"}</span>
+                        </div>
+
+                        {avarias.length > 0 && (
+                          <div style={{ marginTop: 6, marginLeft: 22, display: "flex", flexDirection: "column", gap: 4 }}>
+                            {avarias.map((a) => (
+                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.5 }}>
+                                <span style={{ color: cor.urgente, fontWeight: 600 }}>Avaria</span>
+                                <span style={{ color: cor.textoTerciario }}>Prazo: {formatarData(a.data_limite)}</span>
+                                <span>Qtd.: <strong>{formatarQuantidade(a.quantidade_normal)}</strong></span>
+                                <button
+                                  onClick={() => removerLancamento(a.id)}
+                                  disabled={removendoLancamentoId === a.id}
+                                  style={{ fontSize: 10 }}
+                                >
+                                  remover
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {lancandoAvariaDeId === l.id ? (
+                          <div style={{ display: "flex", gap: 10, alignItems: "flex-end", marginTop: 8, marginLeft: 22, flexWrap: "wrap" }}>
+                            <Campo label="Prazo">
+                              <input
+                                type="date"
+                                value={avariaData}
+                                onChange={(ev) => setAvariaData(ev.target.value)}
+                                style={{ padding: 4 }}
+                              />
+                            </Campo>
+                            <Campo label="Quantidade">
+                              <CampoMascarado
+                                valor={avariaQuantidade}
+                                formatar={formatarNumeroBR}
+                                onChange={setAvariaQuantidade}
+                                style={{ width: 90, padding: 4, textAlign: "center" }}
+                              />
+                            </Campo>
+                            <button
+                              onClick={() => criarAvaria(e.id, l.id)}
+                              disabled={salvandoAvaria || !avariaData || paraNumero(avariaQuantidade) <= 0}
+                              style={{ fontSize: 10.5 }}
+                            >
+                              {salvandoAvaria ? "..." : "Salvar"}
+                            </button>
+                            <button onClick={() => setLancandoAvariaDeId(null)} disabled={salvandoAvaria} style={{ fontSize: 10.5 }}>
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          l.quantidade_avaria > 0 && (
+                            <button
+                              onClick={() => abrirLancamentoAvaria(l.id)}
+                              style={{ fontSize: 10.5, marginTop: 6, marginLeft: 22 }}
+                            >
+                              + Lançar reposição de avaria
+                            </button>
+                          )
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {criandoLancamento ? (
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap", marginTop: 10 }}>
+                      <Campo label="Tipo">
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {(["parcial", "total"] as const).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setNovoLancTipo(t)}
+                              style={{
+                                fontSize: 10.5,
+                                fontWeight: 600,
+                                padding: "4px 9px",
+                                borderRadius: 7,
+                                border: "none",
+                                color: novoLancTipo === t ? cor.destaque : cor.textoTerciario,
+                                background: novoLancTipo === t ? cor.destaqueFundo : "rgba(96,93,93,.10)",
+                              }}
+                            >
+                              {t === "total" ? "Total" : "Parcial"}
+                            </button>
+                          ))}
+                        </div>
+                      </Campo>
+                      <Campo label="Data">
+                        <input
+                          type="date"
+                          value={novoLancData}
+                          onChange={(ev) => setNovoLancData(ev.target.value)}
+                          style={{ padding: 4 }}
+                        />
+                      </Campo>
+                      <CampoQuantidade valor={novoLancNormal} onChange={setNovoLancNormal} />
+                      <Campo label="Avaria">
+                        <CampoMascarado
+                          valor={novoLancAvaria}
+                          formatar={formatarNumeroBR}
+                          onChange={setNovoLancAvaria}
+                          style={{ width: 90, padding: 4, textAlign: "center" }}
+                        />
+                      </Campo>
+                      <Campo label="Desvio">
+                        <CampoMascarado
+                          valor={novoLancDesvio}
+                          formatar={formatarNumeroBR}
+                          onChange={setNovoLancDesvio}
+                          style={{ width: 90, padding: 4, textAlign: "center" }}
+                        />
+                      </Campo>
+                      <button
+                        onClick={() => criarLancamento(e.id)}
+                        disabled={
+                          salvandoLancamento ||
+                          !novoLancData ||
+                          paraNumero(novoLancNormal) + paraNumero(novoLancAvaria) + paraNumero(novoLancDesvio) <= 0
+                        }
+                        style={{ fontSize: 11 }}
+                      >
+                        {salvandoLancamento ? "..." : "Salvar"}
+                      </button>
+                      <button onClick={() => setCriandoLancamento(false)} disabled={salvandoLancamento} style={{ fontSize: 11 }}>
+                        Cancelar
+                      </button>
                     </div>
-                  </Campo>
-                  <Campo label="Data">
-                    <input
-                      type="date"
-                      value={novoLancData}
-                      onChange={(ev) => setNovoLancData(ev.target.value)}
-                      style={{ padding: 4 }}
-                    />
-                  </Campo>
-                  <CampoQuantidade valor={novoLancNormal} onChange={setNovoLancNormal} />
-                  <Campo label="Avaria">
-                    <CampoMascarado
-                      valor={novoLancAvaria}
-                      formatar={formatarNumeroBR}
-                      onChange={setNovoLancAvaria}
-                      style={{ width: 90, padding: 4, textAlign: "center" }}
-                    />
-                  </Campo>
-                  <Campo label="Desvio">
-                    <CampoMascarado
-                      valor={novoLancDesvio}
-                      formatar={formatarNumeroBR}
-                      onChange={setNovoLancDesvio}
-                      style={{ width: 90, padding: 4, textAlign: "center" }}
-                    />
-                  </Campo>
-                  <button
-                    onClick={() => criarLancamento(e.id)}
-                    disabled={
-                      salvandoLancamento ||
-                      !novoLancData ||
-                      paraNumero(novoLancNormal) + paraNumero(novoLancAvaria) + paraNumero(novoLancDesvio) <= 0
-                    }
-                    style={{ fontSize: 11 }}
-                  >
-                    {salvandoLancamento ? "..." : "Salvar"}
-                  </button>
-                  <button onClick={() => setCriandoLancamento(false)} disabled={salvandoLancamento} style={{ fontSize: 11 }}>
-                    Cancelar
-                  </button>
+                  ) : (
+                    <button onClick={abrirNovoLancamento} style={{ fontSize: 11, marginTop: 10 }}>
+                      + Lançar entrega
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button onClick={abrirNovoLancamento} style={{ fontSize: 11, marginTop: 10 }}>
-                  + Lançar entrega
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })()}
+              </div>
+            );
+          })()}
+        </>
+      )}
     </section>
   );
 }
