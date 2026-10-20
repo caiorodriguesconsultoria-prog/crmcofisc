@@ -25,6 +25,12 @@ type Execucao = {
   numero: number;
   processo_entrega_lancamentos: LancamentoEntrega[];
 };
+type Item = {
+  id: string;
+  numero: number;
+  descricao: string;
+  execucoes: Execucao[];
+};
 
 function formatarData(data: string | null) {
   return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "—";
@@ -84,7 +90,7 @@ export default function DadosPrincipais({
   processoId,
   nupPrincipal,
   nupRelatorio,
-  execucoes,
+  itens,
   fornecedorNome,
   cnpj,
   fornecedorPreposto,
@@ -98,7 +104,7 @@ export default function DadosPrincipais({
   processoId: string;
   nupPrincipal: string;
   nupRelatorio: Nup | null;
-  execucoes: Execucao[];
+  itens: Item[];
   fornecedorNome: string;
   cnpj: string;
   fornecedorPreposto: string | null;
@@ -133,7 +139,15 @@ export default function DadosPrincipais({
   const [valorNup, setValorNup] = useState("");
   const [salvandoNup, setSalvandoNup] = useState(false);
 
-  const execucoesOrdenadas = [...execucoes].sort((a, b) => a.numero - b.numero);
+  const itensOrdenados = [...itens].sort((a, b) => a.numero - b.numero);
+  // Lista achatada de todas as parcelas (com referência ao item), usada no
+  // seletor "+ Criar NUP" — precisa saber de qual item cada parcela é, já
+  // que a numeração (1ª, 2ª...) agora se repete entre itens diferentes.
+  const todasExecucoes = itensOrdenados.flatMap((item) =>
+    [...item.execucoes]
+      .sort((a, b) => a.numero - b.numero)
+      .map((e) => ({ ...e, itemDescricao: item.descricao, itemNumero: item.numero })),
+  );
 
   // Dados de contato do fornecedor, pra abrir ao clicar no nome da
   // Contratada (janela com copiar, em vez de ter que ir até Fornecedores).
@@ -400,15 +414,26 @@ export default function DadosPrincipais({
           (entrega total ou parcial), já que uma parcela pode ter várias
           entregas. Reposição de avaria fica aninhada embaixo da entrega que
           corrige, recuada à direita, sem NUP próprio (reusa o da entrega). */}
-      {execucoesOrdenadas.map((exec) => {
-        const lancamentosTopo = (exec.processo_entrega_lancamentos ?? []).filter((l) => l.tipo !== "avaria");
-        if (lancamentosTopo.length === 0) return null;
-        const avariasDe = (paiId: string) =>
-          (exec.processo_entrega_lancamentos ?? []).filter((l) => l.lancamento_pai_id === paiId);
+      {itensOrdenados.map((item) => {
+        const execucoesDoItem = [...item.execucoes].sort((a, b) => a.numero - b.numero);
+        const temLancamento = execucoesDoItem.some(
+          (exec) => (exec.processo_entrega_lancamentos ?? []).some((l) => l.tipo !== "avaria"),
+        );
+        if (!temLancamento) return null;
         return (
-          <div key={exec.id} style={{ paddingTop: 10, borderTop: `1px solid ${cor.borda}` }}>
-            <span style={{ fontSize: 12, fontWeight: 600 }}>{exec.numero}ª Parcela</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+          <div key={item.id} style={{ paddingTop: 10, borderTop: `1px solid ${cor.borda}` }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: cor.destaque, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Item {item.numero} · {item.descricao}
+            </span>
+            {execucoesDoItem.map((exec) => {
+              const lancamentosTopo = (exec.processo_entrega_lancamentos ?? []).filter((l) => l.tipo !== "avaria");
+              if (lancamentosTopo.length === 0) return null;
+              const avariasDe = (paiId: string) =>
+                (exec.processo_entrega_lancamentos ?? []).filter((l) => l.lancamento_pai_id === paiId);
+              return (
+                <div key={exec.id} style={{ marginTop: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>{exec.numero}ª Parcela</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
               {lancamentosTopo.map((l) => {
                 const nupEntrega = nupPorTipo(l.processo_nups, "entrega");
                 const nupPagamento = nupPorTipo(l.processo_nups, "pagamento");
@@ -470,7 +495,10 @@ export default function DadosPrincipais({
                   </div>
                 );
               })}
-            </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         );
       })}
@@ -480,10 +508,16 @@ export default function DadosPrincipais({
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
             <select value={execucaoEscolhida} onChange={(e) => setExecucaoEscolhida(e.target.value)} style={{ padding: 6 }}>
               <option value="">Selecione a parcela</option>
-              {execucoesOrdenadas.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.numero}ª Parcela
-                </option>
+              {itensOrdenados.map((item) => (
+                <optgroup key={item.id} label={`Item ${item.numero} · ${item.descricao}`}>
+                  {[...item.execucoes]
+                    .sort((a, b) => a.numero - b.numero)
+                    .map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.numero}ª Parcela
+                      </option>
+                    ))}
+                </optgroup>
               ))}
             </select>
             <div style={{ display: "flex", gap: 4 }}>
@@ -550,9 +584,9 @@ export default function DadosPrincipais({
         ) : (
           <button
             onClick={abrirNovoLancamento}
-            disabled={execucoesOrdenadas.length === 0}
+            disabled={todasExecucoes.length === 0}
             style={{ fontSize: 11.5 }}
-            title={execucoesOrdenadas.length === 0 ? "Cadastre uma parcela no Cronograma primeiro" : undefined}
+            title={todasExecucoes.length === 0 ? "Cadastre uma parcela no Cronograma primeiro" : undefined}
           >
             + Criar NUP de entrega / pagamento
           </button>

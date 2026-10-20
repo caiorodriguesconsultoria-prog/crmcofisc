@@ -9,6 +9,16 @@ import { BotaoCopiar, CampoMascarado } from "@/app/_ui/campo";
 
 type Pessoa = { nome: string; matricula: string | null } | null;
 
+type Item = {
+  id: string;
+  numero: number;
+  descricao: string;
+  catmat: string | null;
+  unidade_medida: string | null;
+  quantidade: number | null;
+  valor_unitario: number | null;
+};
+
 type Processo = {
   id: string;
   numero_contrato: string;
@@ -80,7 +90,6 @@ const CAMPOS: CampoTexto[] = [
   { chave: "ata_registro_precos_numero", label: "Ata de Registro de Preços nº" },
   { chave: "numero_contrato", label: "Contrato nº" },
   { chave: "objeto", label: "Objeto", span: true, tipo: "textarea" },
-  { chave: "quantidade_contratada", label: "Quantidade Contratada" },
   { chave: "data_assinatura", label: "Data da Assinatura", tipo: "data" },
   { chave: "publicacao_dou", label: "Publicação D.O.U" },
   { chave: "publicacao_pncp", label: "Publicação PNCP" },
@@ -94,9 +103,11 @@ const CAMPOS: CampoTexto[] = [
 export default function QuadroResumitivo({
   processoId,
   processo,
+  itens,
 }: {
   processoId: string;
   processo: Processo;
+  itens: Item[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -111,7 +122,6 @@ export default function QuadroResumitivo({
     }
     iniciais.vigencia_inicio = processo.vigencia_inicio ?? "";
     iniciais.vigencia_fim = processo.vigencia_fim ?? "";
-    iniciais.valor_unitario = moedaParaFormatado(processo.valor_unitario);
     iniciais.valor_global = moedaParaFormatado(processo.valor_global);
     iniciais.valor_garantia = moedaParaFormatado(processo.valor_garantia);
     return iniciais;
@@ -132,13 +142,11 @@ export default function QuadroResumitivo({
         ata_registro_precos_numero: valores.ata_registro_precos_numero || null,
         numero_contrato: valores.numero_contrato,
         objeto: valores.objeto,
-        quantidade_contratada: valores.quantidade_contratada || null,
         data_assinatura: valores.data_assinatura || null,
         vigencia_inicio: valores.vigencia_inicio || null,
         vigencia_fim: valores.vigencia_fim || null,
         publicacao_dou: valores.publicacao_dou || null,
         publicacao_pncp: valores.publicacao_pncp || null,
-        valor_unitario: paraNumeroMoeda(valores.valor_unitario),
         valor_global: paraNumeroMoeda(valores.valor_global),
         valor_garantia: paraNumeroMoeda(valores.valor_garantia),
         portaria_designacao_fiscal: valores.portaria_designacao_fiscal || null,
@@ -289,32 +297,6 @@ export default function QuadroResumitivo({
 
         <div>
           <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Valor Unitário
-          </div>
-          <div style={{ marginTop: 2 }}>
-            {editando ? (
-              <CampoMascarado
-                valor={valores.valor_unitario}
-                formatar={formatarMoedaBR}
-                onChange={(v) => atualizar("valor_unitario", v)}
-                style={{ width: "100%", padding: 6 }}
-              />
-            ) : (
-              <>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  {formatarMoeda(processo.valor_unitario) ?? "não informado"}
-                  {formatarMoeda(processo.valor_unitario) && <BotaoCopiar texto={formatarMoeda(processo.valor_unitario)!} />}
-                </span>
-                {extensoMoeda(processo.valor_unitario) && (
-                  <div style={{ fontSize: 11, color: "#7D7979" }}>{extensoMoeda(processo.valor_unitario)}</div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
             Valor Global do Contrato
           </div>
           <div style={{ marginTop: 2 }}>
@@ -401,6 +383,41 @@ export default function QuadroResumitivo({
             {processo.fiscal_substituto && <BotaoCopiar texto={formatarPessoa(processo.fiscal_substituto)} />}
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5, marginBottom: 6 }}>
+          Itens do contrato
+        </div>
+        {itens.length === 0 ? (
+          <p style={{ fontSize: 12.5, color: "#7D7979", margin: 0 }}>Nenhum item cadastrado.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {[...itens]
+              .sort((a, b) => a.numero - b.numero)
+              .map((item) => (
+                <div
+                  key={item.id}
+                  style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", fontSize: 12.5 }}
+                >
+                  <span style={{ fontWeight: 600 }}>Item {item.numero}</span>
+                  <span>{item.descricao}</span>
+                  {item.catmat && <span style={{ color: "#7D7979" }}>CATMAT {item.catmat}</span>}
+                  {item.quantidade != null && (
+                    <span style={{ color: "#7D7979" }}>
+                      {item.quantidade.toLocaleString("pt-BR")} {item.unidade_medida ?? ""}
+                    </span>
+                  )}
+                  {item.valor_unitario != null && (
+                    <span style={{ color: "#7D7979" }}>{formatarMoeda(item.valor_unitario)}</span>
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
+        <p style={{ fontSize: 11, color: "#7D7979", marginTop: 6 }}>
+          Itens são só leitura aqui — cadastre/edite na seção "Cronograma de entregas" do contrato.
+        </p>
       </div>
 
       <p style={{ fontSize: 11, color: "#7D7979", marginTop: 8 }}>
