@@ -352,6 +352,81 @@ export default function Cronograma({
     router.refresh();
   }
 
+  // Anexar o contrato (PDF) ou uma foto/imagem da tabela de itens/cronograma
+  // já cadastra os itens extraídos (e as parcelas de cada um, se o anexo
+  // trouxer o cronograma de entrega) — útil pra contratos que já existem no
+  // sistema sem itens ainda, ou pra acrescentar itens que faltaram. Nunca
+  // mexe nos itens já cadastrados, só adiciona novos a partir do que a IA
+  // conseguiu ler.
+  const [extraindoAnexo, setExtraindoAnexo] = useState(false);
+  const [erroAnexo, setErroAnexo] = useState<string | null>(null);
+
+  async function processarAnexo(arquivo: File) {
+    setErroAnexo(null);
+    setExtraindoAnexo(true);
+    try {
+      const formData = new FormData();
+      formData.append("arquivo", arquivo);
+      const resp = await fetch("/api/processos/extrair-pdf", { method: "POST", body: formData });
+      const corpo = await resp.json();
+      if (!resp.ok) {
+        setErroAnexo(corpo.error ?? "Não deu pra extrair os dados do anexo.");
+        return;
+      }
+      const dadosItens = Array.isArray(corpo.dados?.itens) ? corpo.dados.itens : [];
+      if (dadosItens.length === 0) {
+        setErroAnexo("Não encontrei nenhum item nesse anexo.");
+        return;
+      }
+
+      let proximoNumero = proximoNumeroItem;
+      let primeiroItemId: string | null = null;
+      for (const it of dadosItens) {
+        const { data: itemCriado, error: erroItem } = await supabase
+          .from("processo_itens")
+          .insert({
+            processo_id: processoId,
+            numero: proximoNumero,
+            descricao: it.descricao || `Item ${proximoNumero}`,
+            catmat: it.catmat || null,
+            unidade_medida: it.unidade_medida || null,
+            quantidade: it.quantidade ?? null,
+            valor_unitario: it.valor_unitario ?? null,
+          })
+          .select("id")
+          .single();
+        if (erroItem || !itemCriado) {
+          setErroAnexo(erroItem?.message ?? "Erro ao criar item extraído.");
+          break;
+        }
+        if (!primeiroItemId) primeiroItemId = itemCriado.id;
+
+        const parcelas = Array.isArray(it.parcelas) ? it.parcelas : [];
+        if (parcelas.length > 0) {
+          await supabase.from("processo_execucoes").insert(
+            parcelas
+              .filter((p: any) => p.numero != null && p.quantidade != null)
+              .map((p: any) => ({
+                processo_id: processoId,
+                item_id: itemCriado.id,
+                numero: p.numero,
+                quantidade: p.quantidade,
+                data_prevista: p.data_prevista ?? null,
+              })),
+          );
+        }
+        proximoNumero++;
+      }
+
+      if (primeiroItemId) setItemSelecionadoId(primeiroItemId);
+      router.refresh();
+    } catch {
+      setErroAnexo("Não deu pra extrair os dados do anexo.");
+    } finally {
+      setExtraindoAnexo(false);
+    }
+  }
+
   async function salvarEdicaoItem() {
     if (!itemSelecionado || !itemForm.descricao.trim()) return;
     setErro(null);
@@ -729,7 +804,34 @@ export default function Cronograma({
         >
           + Novo item
         </button>
+        <label
+          style={{
+            fontSize: 11.5,
+            fontWeight: 600,
+            padding: "5px 12px",
+            borderRadius: 20,
+            border: `1.5px dashed ${cor.borda}`,
+            color: cor.textoTerciario,
+            background: "transparent",
+            cursor: extraindoAnexo ? "default" : "pointer",
+            opacity: extraindoAnexo ? 0.6 : 1,
+          }}
+        >
+          {extraindoAnexo ? "Lendo anexo..." : "+ Itens por anexo (PDF/foto)"}
+          <input
+            type="file"
+            accept="application/pdf,image/png,image/jpeg,image/webp"
+            disabled={extraindoAnexo}
+            onChange={(e) => {
+              const arquivo = e.target.files?.[0];
+              if (arquivo) processarAnexo(arquivo);
+              e.target.value = "";
+            }}
+            style={{ display: "none" }}
+          />
+        </label>
       </div>
+      {erroAnexo && <p style={{ color: cor.urgente, fontSize: 12, marginTop: -4 }}>{erroAnexo}</p>}
 
       {(novoItem || editandoItem) && (
         <div

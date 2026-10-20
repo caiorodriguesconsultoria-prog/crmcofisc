@@ -375,11 +375,11 @@ export default function NovoProcessoForm({
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ border: "1px dashed #ccc", borderRadius: 8, padding: 12 }}>
         <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-          Anexar contrato (PDF) — preenche os campos automaticamente
+          Anexar contrato (PDF ou foto/imagem) — preenche os campos automaticamente
         </label>
         <input
           type="file"
-          accept="application/pdf"
+          accept="application/pdf,image/png,image/jpeg,image/webp"
           disabled={extraindoPdf}
           onChange={(e) => {
             const arquivo = e.target.files?.[0];
