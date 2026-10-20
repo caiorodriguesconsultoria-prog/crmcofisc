@@ -172,6 +172,63 @@ export default function NovoProcessoForm({
     return Number.isFinite(n) ? n : null;
   }
 
+  // Extração automática via upload do PDF do contrato (API do Claude) — só
+  // pré-preenche; o Caio confere tudo antes de salvar. Campos do Quadro
+  // Resumitivo que não têm input visível aqui (Processo Eletrônico, Pregão,
+  // vigência, valores, etc.) ficam guardados em `extraExtraido` e são
+  // gravados junto na criação do contrato, mesmo sem campo próprio nesta
+  // tela — dá pra conferir/editar depois na aba Relatório do contrato.
+  const [extraindoPdf, setExtraindoPdf] = useState(false);
+  const [erroPdf, setErroPdf] = useState<string | null>(null);
+  const [extraExtraido, setExtraExtraido] = useState<Record<string, unknown> | null>(null);
+
+  async function processarPdf(arquivo: File) {
+    setErroPdf(null);
+    setExtraindoPdf(true);
+    try {
+      const formData = new FormData();
+      formData.append("arquivo", arquivo);
+      const resp = await fetch("/api/processos/extrair-pdf", { method: "POST", body: formData });
+      const corpo = await resp.json();
+      if (!resp.ok) {
+        setErroPdf(corpo.error ?? "Não deu pra extrair os dados do PDF.");
+        return;
+      }
+      const dados = corpo.dados as Record<string, any>;
+
+      if (dados.numero_contrato) setNumeroContrato(dados.numero_contrato);
+      if (dados.nup_principal) setNup(dados.nup_principal);
+      if (dados.objeto) setObjeto(dados.objeto);
+      if (dados.unidade_medida) setUnidadeMedida(dados.unidade_medida);
+
+      if (Array.isArray(dados.itens) && dados.itens.length > 0) {
+        setItens(
+          dados.itens.map((it: any) => ({
+            descricao: it.descricao ?? "",
+            catmat: it.catmat ?? "",
+            unidade_medida: it.unidade_medida ?? "",
+            quantidade: it.quantidade != null ? String(it.quantidade) : "",
+            valor_unitario: it.valor_unitario != null ? String(it.valor_unitario) : "",
+          })),
+        );
+      }
+
+      const {
+        numero_contrato: _nc,
+        nup_principal: _np,
+        objeto: _ob,
+        unidade_medida: _um,
+        itens: _it,
+        ...resto
+      } = dados;
+      setExtraExtraido(resto);
+    } catch {
+      setErroPdf("Não deu pra extrair os dados do PDF.");
+    } finally {
+      setExtraindoPdf(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
@@ -186,6 +243,7 @@ export default function NovoProcessoForm({
     const { data: processo, error: erroProcesso } = await supabase
       .from("processos")
       .insert({
+        ...(extraExtraido ?? {}),
         numero_contrato: numeroContrato,
         nup_principal: nup,
         objeto,
@@ -237,8 +295,60 @@ export default function NovoProcessoForm({
     router.refresh();
   }
 
+  const ROTULOS_EXTRAIDOS: Record<string, string> = {
+    processo_eletronico_numero: "Processo Eletrônico nº",
+    pregao_eletronico_numero: "Pregão Eletrônico nº",
+    ata_registro_precos_numero: "Ata de Registro de Preços nº",
+    data_assinatura: "Data da Assinatura",
+    vigencia_inicio: "Vigência (início)",
+    vigencia_fim: "Vigência (fim)",
+    publicacao_dou: "Publicação D.O.U",
+    publicacao_pncp: "Publicação PNCP",
+    valor_global: "Valor Global do Contrato",
+    valor_garantia: "Valor da Garantia",
+    portaria_designacao_fiscal: "Portaria Designação de Fiscal",
+    nota_empenho_numero: "Nota de Empenho nº",
+    programa_trabalho: "Programa de Trabalho",
+    natureza_despesa: "Natureza de Despesa",
+    local_entrega: "Local de Entrega",
+  };
+  const extraidosPreenchidos = extraExtraido
+    ? Object.entries(extraExtraido).filter(([, v]) => v !== null && v !== undefined && v !== "")
+    : [];
+
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ border: "1px dashed #ccc", borderRadius: 8, padding: 12 }}>
+        <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
+          Anexar contrato (PDF) — preenche os campos automaticamente
+        </label>
+        <input
+          type="file"
+          accept="application/pdf"
+          disabled={extraindoPdf}
+          onChange={(e) => {
+            const arquivo = e.target.files?.[0];
+            if (arquivo) processarPdf(arquivo);
+            e.target.value = "";
+          }}
+        />
+        {extraindoPdf && <p style={{ fontSize: 12.5, color: "#605D5D", margin: "6px 0 0" }}>Lendo o PDF, aguarde...</p>}
+        {erroPdf && <p style={{ fontSize: 12.5, color: "#B0655C", margin: "6px 0 0" }}>{erroPdf}</p>}
+        {extraidosPreenchidos.length > 0 && (
+          <div style={{ marginTop: 8, fontSize: 12.5 }}>
+            <p style={{ margin: "0 0 4px", color: "#605D5D" }}>
+              Também extraído (sem campo aqui — confira depois na aba Relatório do contrato):
+            </p>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {extraidosPreenchidos.map(([chave, valor]) => (
+                <li key={chave}>
+                  {ROTULOS_EXTRAIDOS[chave] ?? chave}: <strong>{String(valor)}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
       <label>
         Nº do contrato
         <input
