@@ -1,0 +1,113 @@
+import { NextResponse, type NextRequest } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
+
+const SISTEMA = `Você extrai dados estruturados de contratos administrativos do Ministério da Saúde (Brasil), publicados no SEI, pro Quadro Resumitivo de um sistema de gestão de contratos (COFISC/DAF/SCTIE).
+
+Leia o PDF do contrato e devolva APENAS um JSON válido (sem markdown, sem comentário, sem texto antes ou depois), exatamente neste formato:
+
+{
+  "numero_contrato": string ou null,
+  "nup_principal": string ou null,
+  "objeto": string ou null,
+  "unidade_medida": string ou null,
+  "processo_eletronico_numero": string ou null,
+  "pregao_eletronico_numero": string ou null,
+  "ata_registro_precos_numero": string ou null,
+  "data_assinatura": "AAAA-MM-DD" ou null,
+  "vigencia_inicio": "AAAA-MM-DD" ou null,
+  "vigencia_fim": "AAAA-MM-DD" ou null,
+  "publicacao_dou": string ou null,
+  "publicacao_pncp": string ou null,
+  "valor_global": number ou null,
+  "valor_garantia": number ou null,
+  "portaria_designacao_fiscal": string ou null,
+  "nota_empenho_numero": string ou null,
+  "programa_trabalho": string ou null,
+  "natureza_despesa": string ou null,
+  "local_entrega": string ou null,
+  "itens": [
+    {
+      "numero": number,
+      "descricao": string,
+      "catmat": string ou null,
+      "unidade_medida": string ou null,
+      "quantidade": number ou null,
+      "valor_unitario": number ou null
+    }
+  ]
+}
+
+Regras:
+- Nunca invente um valor que não está no documento — use null.
+- "numero_contrato" no formato "255/2026" (sem o número do processo SEI junto).
+- "nup_principal" é o número do Processo SEI (ex.: "25000.054774/2024-67"), não o número do documento SEI do contrato em si.
+- Datas sempre no formato AAAA-MM-DD.
+- Valores monetários como número puro (sem "R$", sem separador de milhar) — use o valor em reais (R$), mesmo quando o contrato também tiver valores em moeda estrangeira.
+- "itens" é a tabela de itens do contrato (coluna ITEM/DESCRIÇÃO/CATMAT/UNIDADE/QUANTIDADE/VALOR UNITÁRIO) — um item por linha dessa tabela. Se o contrato tiver só um item, devolva mesmo assim como lista com 1 elemento.
+- Se não encontrar a informação de algum campo, use null — nunca omita a chave.`;
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json({ error: "IA não configurada" }, { status: 503 });
+  }
+
+  const formData = await request.formData();
+  const arquivo = formData.get("arquivo");
+  if (!(arquivo instanceof File)) {
+    return NextResponse.json({ error: "arquivo não enviado" }, { status: 400 });
+  }
+  if (arquivo.type !== "application/pdf") {
+    return NextResponse.json({ error: "envie um arquivo PDF" }, { status: 400 });
+  }
+  // Limite conservador — funções serverless da Vercel têm um teto de
+  // tamanho de corpo da requisição bem menor que o da API da Anthropic.
+  const TAMANHO_MAXIMO_BYTES = 4 * 1024 * 1024;
+  if (arquivo.size > TAMANHO_MAXIMO_BYTES) {
+    return NextResponse.json({ error: "PDF muito grande (máximo 4MB)" }, { status: 400 });
+  }
+
+  const base64 = Buffer.from(await arquivo.arrayBuffer()).toString("base64");
+
+  try {
+    const anthropic = new Anthropic();
+    const resposta = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      system: SISTEMA,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+            { type: "text", text: "Extraia os dados desse contrato conforme as instruções." },
+          ],
+        },
+      ],
+    });
+
+    const bloco = resposta.content.find((b) => b.type === "text");
+    if (!bloco || bloco.type !== "text") {
+      return NextResponse.json({ error: "sem resposta da IA" }, { status: 502 });
+    }
+
+    // A IA pode devolver o JSON dentro de um bloco ```json ... ``` apesar da
+    // instrução de não fazer isso — removido com segurança se aparecer.
+    const textoLimpo = bloco.text.trim().replace(/^```json\s*|```\s*$/g, "").trim();
+    const dados = JSON.parse(textoLimpo);
+    return NextResponse.json({ dados });
+  } catch (erro) {
+    return NextResponse.json(
+      { error: erro instanceof Error ? erro.message : "falha ao processar o PDF" },
+      { status: 502 },
+    );
+  }
+}
