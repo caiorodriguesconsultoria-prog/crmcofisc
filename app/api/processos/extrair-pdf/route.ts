@@ -33,7 +33,14 @@ Leia o PDF do contrato e devolva APENAS um JSON válido (sem markdown, sem comen
       "catmat": string ou null,
       "unidade_medida": string ou null,
       "quantidade": number ou null,
-      "valor_unitario": number ou null
+      "valor_unitario": number ou null,
+      "parcelas": [
+        {
+          "numero": number,
+          "quantidade": number,
+          "data_prevista": "AAAA-MM-DD" ou null
+        }
+      ]
     }
   ]
 }
@@ -45,6 +52,8 @@ Regras:
 - Datas sempre no formato AAAA-MM-DD.
 - Valores monetários como número puro (sem "R$", sem separador de milhar) — use o valor em reais (R$), mesmo quando o contrato também tiver valores em moeda estrangeira.
 - "itens" é a tabela de itens do contrato (coluna ITEM/DESCRIÇÃO/CATMAT/UNIDADE/QUANTIDADE/VALOR UNITÁRIO) — um item por linha dessa tabela. Se o contrato tiver só um item, devolva mesmo assim como lista com 1 elemento.
+- "parcelas" vem do cronograma de entrega de cada item (tabela PARCELAS/QUANTITATIVO/PRAZO MÁXIMO DE ENTREGA, numerada "1ª", "2ª" etc. — use só o número, sem o "ª"). Se o prazo for descrito como "N dias após a assinatura do contrato" (ou "da assinatura", "contados da assinatura" etc.) E você já souber "data_assinatura", calcule "data_prevista" somando N dias corridos a essa data e devolva no formato AAAA-MM-DD. Se "data_assinatura" for null, ou o prazo não for relativo à assinatura, ou você não tiver certeza da conta, devolva "data_prevista": null — nunca adivinhe uma data.
+- Se um item não tiver tabela de cronograma de entrega visível, devolva "parcelas": [] pra ele.
 - Se não encontrar a informação de algum campo, use null — nunca omita a chave.`;
 
 export async function POST(request: NextRequest) {
@@ -81,7 +90,7 @@ export async function POST(request: NextRequest) {
     const anthropic = new Anthropic();
     const resposta = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 4096,
+      max_tokens: 6144,
       system: SISTEMA,
       messages: [
         {

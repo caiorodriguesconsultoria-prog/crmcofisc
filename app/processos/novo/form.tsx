@@ -151,8 +151,26 @@ export default function NovoProcessoForm({
   // cronograma de entrega). Parcelas de cada item são cadastradas depois,
   // na tela do contrato (Cronograma de entregas) — aqui só o essencial pra
   // já nascer com os itens certos.
-  type ItemForm = { descricao: string; catmat: string; unidade_medida: string; quantidade: string; valor_unitario: string };
-  const itemVazio = (): ItemForm => ({ descricao: "", catmat: "", unidade_medida: "", quantidade: "", valor_unitario: "" });
+  type ParcelaForm = { numero: number; quantidade: number; data_prevista: string | null };
+  type ItemForm = {
+    descricao: string;
+    catmat: string;
+    unidade_medida: string;
+    quantidade: string;
+    valor_unitario: string;
+    // Só preenchido pela extração de PDF — sem campo de edição nesta tela
+    // (mesmo padrão dos itens: parcelas se conferem/ajustam depois, no
+    // Cronograma de entregas do contrato).
+    parcelas: ParcelaForm[];
+  };
+  const itemVazio = (): ItemForm => ({
+    descricao: "",
+    catmat: "",
+    unidade_medida: "",
+    quantidade: "",
+    valor_unitario: "",
+    parcelas: [],
+  });
   const [itens, setItens] = useState<ItemForm[]>([itemVazio()]);
 
   function atualizarItem(indice: number, campo: keyof ItemForm, valor: string) {
@@ -209,6 +227,15 @@ export default function NovoProcessoForm({
             unidade_medida: it.unidade_medida ?? "",
             quantidade: it.quantidade != null ? String(it.quantidade) : "",
             valor_unitario: it.valor_unitario != null ? String(it.valor_unitario) : "",
+            parcelas: Array.isArray(it.parcelas)
+              ? it.parcelas
+                  .filter((p: any) => p.numero != null && p.quantidade != null)
+                  .map((p: any) => ({
+                    numero: Number(p.numero),
+                    quantidade: Number(p.quantidade),
+                    data_prevista: p.data_prevista ?? null,
+                  }))
+              : [],
           })),
         );
       }
@@ -274,21 +301,49 @@ export default function NovoProcessoForm({
     const itensPreenchidos = itens.filter((it) => it.descricao.trim());
     const itensParaSalvar = itensPreenchidos.length > 0 ? itensPreenchidos : [{ ...itemVazio(), descricao: objeto }];
 
-    const { error: erroItens } = await supabase.from("processo_itens").insert(
-      itensParaSalvar.map((it, i) => ({
-        processo_id: processo.id,
-        numero: i + 1,
-        descricao: it.descricao.trim() || objeto,
-        catmat: it.catmat.trim() || null,
-        unidade_medida: it.unidade_medida.trim() || null,
-        quantidade: paraNumeroOuNull(it.quantidade),
-        valor_unitario: paraNumeroOuNull(it.valor_unitario),
-      })),
-    );
-    if (erroItens) {
-      setErro(erroItens.message);
+    const { data: itensCriados, error: erroItens } = await supabase
+      .from("processo_itens")
+      .insert(
+        itensParaSalvar.map((it, i) => ({
+          processo_id: processo.id,
+          numero: i + 1,
+          descricao: it.descricao.trim() || objeto,
+          catmat: it.catmat.trim() || null,
+          unidade_medida: it.unidade_medida.trim() || null,
+          quantidade: paraNumeroOuNull(it.quantidade),
+          valor_unitario: paraNumeroOuNull(it.valor_unitario),
+        })),
+      )
+      .select("id, numero");
+    if (erroItens || !itensCriados) {
+      setErro(erroItens?.message ?? "Erro ao criar itens do contrato.");
       setSalvando(false);
       return;
+    }
+
+    // Parcelas extraídas do PDF (cronograma de entrega) — opcional, só
+    // existe quando a extração conseguiu ler a tabela de parcelas de algum
+    // item. Itens criados manualmente (sem PDF) não têm parcelas aqui; elas
+    // são cadastradas depois, no Cronograma de entregas do contrato.
+    const idPorNumeroItem = new Map(itensCriados.map((i) => [i.numero, i.id]));
+    const parcelasParaSalvar = itensParaSalvar.flatMap((it, i) => {
+      const itemId = idPorNumeroItem.get(i + 1);
+      if (!itemId) return [];
+      return it.parcelas.map((p) => ({
+        processo_id: processo.id,
+        item_id: itemId,
+        numero: p.numero,
+        quantidade: p.quantidade,
+        data_prevista: p.data_prevista,
+      }));
+    });
+    if (parcelasParaSalvar.length > 0) {
+      const { error: erroParcelas } = await supabase.from("processo_execucoes").insert(parcelasParaSalvar);
+      if (erroParcelas) {
+        setErro(erroParcelas.message);
+        setSalvando(false);
+        return;
+      }
     }
 
     router.push("/processos");
@@ -724,6 +779,13 @@ export default function NovoProcessoForm({
                 <button type="button" onClick={() => removerItem(i)} style={{ padding: 8 }}>
                   remover
                 </button>
+              )}
+              {item.parcelas.length > 0 && (
+                <p style={{ flexBasis: "100%", fontSize: 11.5, color: "#7D7979", margin: "4px 0 0" }}>
+                  {item.parcelas.length} parcela{item.parcelas.length > 1 ? "s" : ""} extraída
+                  {item.parcelas.length > 1 ? "s" : ""} do PDF — confira/ajuste depois no Cronograma de entregas do
+                  contrato.
+                </p>
               )}
             </div>
           ))}
