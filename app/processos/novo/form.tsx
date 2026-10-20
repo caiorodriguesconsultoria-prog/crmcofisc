@@ -146,6 +146,32 @@ export default function NovoProcessoForm({
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
+  // Itens do contrato — um contrato pode ter vários (ex.: dois tipos de
+  // insumo no mesmo contrato, cada um com sua própria quantidade/valor e
+  // cronograma de entrega). Parcelas de cada item são cadastradas depois,
+  // na tela do contrato (Cronograma de entregas) — aqui só o essencial pra
+  // já nascer com os itens certos.
+  type ItemForm = { descricao: string; catmat: string; unidade_medida: string; quantidade: string; valor_unitario: string };
+  const itemVazio = (): ItemForm => ({ descricao: "", catmat: "", unidade_medida: "", quantidade: "", valor_unitario: "" });
+  const [itens, setItens] = useState<ItemForm[]>([itemVazio()]);
+
+  function atualizarItem(indice: number, campo: keyof ItemForm, valor: string) {
+    setItens((atual) => atual.map((it, i) => (i === indice ? { ...it, [campo]: valor } : it)));
+  }
+  function adicionarItem() {
+    setItens((atual) => [...atual, itemVazio()]);
+  }
+  function removerItem(indice: number) {
+    setItens((atual) => atual.filter((_, i) => i !== indice));
+  }
+
+  function paraNumeroOuNull(v: string): number | null {
+    const normalizado = v.trim().replace(/\./g, "").replace(",", ".");
+    if (!normalizado) return null;
+    const n = Number(normalizado);
+    return Number.isFinite(n) ? n : null;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
@@ -180,6 +206,29 @@ export default function NovoProcessoForm({
 
     if (erroProcesso || !processo) {
       setErro(erroProcesso?.message ?? "Erro ao criar contrato.");
+      setSalvando(false);
+      return;
+    }
+
+    // Todo contrato precisa nascer com pelo menos 1 item — se a seção de
+    // itens ficou toda em branco, cai num único item usando o Objeto já
+    // digitado (mesmo padrão da migração que converteu os contratos antigos).
+    const itensPreenchidos = itens.filter((it) => it.descricao.trim());
+    const itensParaSalvar = itensPreenchidos.length > 0 ? itensPreenchidos : [{ ...itemVazio(), descricao: objeto }];
+
+    const { error: erroItens } = await supabase.from("processo_itens").insert(
+      itensParaSalvar.map((it, i) => ({
+        processo_id: processo.id,
+        numero: i + 1,
+        descricao: it.descricao.trim() || objeto,
+        catmat: it.catmat.trim() || null,
+        unidade_medida: it.unidade_medida.trim() || null,
+        quantidade: paraNumeroOuNull(it.quantidade),
+        valor_unitario: paraNumeroOuNull(it.valor_unitario),
+      })),
+    );
+    if (erroItens) {
+      setErro(erroItens.message);
       setSalvando(false);
       return;
     }
@@ -506,6 +555,74 @@ export default function NovoProcessoForm({
           ))}
         </select>
       </label>
+      <div>
+        <span style={{ fontWeight: 600 }}>Itens do contrato</span>
+        <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
+          Opcional — se deixar em branco, nasce com 1 item usando o Objeto acima. As parcelas de cada item são
+          cadastradas depois, na tela do contrato.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {itens.map((item, i) => (
+            <div
+              key={i}
+              style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end", border: "1px solid #eee", borderRadius: 8, padding: 10 }}
+            >
+              <label style={{ flex: "2 1 220px", minWidth: 0 }}>
+                Descrição
+                <input
+                  value={item.descricao}
+                  onChange={(e) => atualizarItem(i, "descricao", e.target.value)}
+                  placeholder={`Ex.: item ${i + 1}`}
+                  style={{ display: "block", width: "100%", padding: 8 }}
+                />
+              </label>
+              <label style={{ flex: "1 1 100px", minWidth: 0 }}>
+                CATMAT
+                <input
+                  value={item.catmat}
+                  onChange={(e) => atualizarItem(i, "catmat", e.target.value)}
+                  style={{ display: "block", width: "100%", padding: 8 }}
+                />
+              </label>
+              <label style={{ flex: "1 1 120px", minWidth: 0 }}>
+                Unidade
+                <input
+                  value={item.unidade_medida}
+                  onChange={(e) => atualizarItem(i, "unidade_medida", e.target.value)}
+                  placeholder="ex.: tubete 3 ml"
+                  style={{ display: "block", width: "100%", padding: 8 }}
+                />
+              </label>
+              <label style={{ flex: "1 1 110px", minWidth: 0 }}>
+                Quantidade
+                <input
+                  value={item.quantidade}
+                  onChange={(e) => atualizarItem(i, "quantidade", e.target.value)}
+                  style={{ display: "block", width: "100%", padding: 8 }}
+                />
+              </label>
+              <label style={{ flex: "1 1 110px", minWidth: 0 }}>
+                Valor unitário (R$)
+                <input
+                  value={item.valor_unitario}
+                  onChange={(e) => atualizarItem(i, "valor_unitario", e.target.value)}
+                  placeholder="0,00"
+                  style={{ display: "block", width: "100%", padding: 8 }}
+                />
+              </label>
+              {itens.length > 1 && (
+                <button type="button" onClick={() => removerItem(i)} style={{ padding: 8 }}>
+                  remover
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={adicionarItem} style={{ marginTop: 8 }}>
+          + Adicionar item
+        </button>
+      </div>
+
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
       <button type="submit" disabled={salvando} style={{ padding: 10 }}>
         {salvando ? "Salvando..." : "Criar contrato"}
