@@ -702,3 +702,10 @@ Caio reportou que tarefas agendadas não aparecem nem no Google Calendar nem na 
 Corrigido: `app/agenda/page.tsx` e `app/api/agenda.ics/route.ts` passam a consultar `processo_tarefas` (não concluídas, com `agendamento_data`) e juntam na mesma lista de agendamentos — período (manhã/tarde) vira um horário fictício (08:00/14:00) só pra ordenar/exibir, mesmo padrão já usado em `/processos`.
 
 Também aproveitei pra fechar uma lacuna de visibilidade: `lib/google-calendar.ts` agora chama `notificarErroAdmins` quando a renovação do token OAuth falha (token morto/revogado) — antes só ia pro `console.error`, silencioso, e uma quebra permanente só era percebida quando alguém notava "faz tempo que não vai nada pro Google". Não adicionei alerta nas chamadas de Tasks/Events em si (criar/atualizar evento ou tarefa) — isso roda a cada ação do usuário, e com a Tasks API desabilitada geraria um push a cada tarefa salva; a renovação de token já cobre o caso de quebra permanente sem ser barulhento.
+
+## 2026-10-23 · Correção — Vulnerabilidades de dependências
+Caio pediu pra corrigir as vulnerabilidades que o GitHub vinha sinalizando a cada push desde a Fase 1 da reestruturação por itens.
+
+`next` atualizado de 15.5.24 para 15.5.28 — corrige uma vulnerabilidade **crítica** (RCE não-autenticado na API de otimização de imagem via SVG), uma alta (DoS em Server Actions) e duas médias (cache poisoning / bypass de dynamicParams), conforme o changelog oficial do Next.js. Esse era o PR que o Dependabot já tinha aberto (#24); apliquei direto no `package.json` em vez de mergear o branch dele, pra manter o fluxo de um branch só.
+
+Depois disso, `npm audit` revelou um conjunto diferente (mais atual que o que o GitHub tinha sinalizado antes): `@sentry/nextjs` (crítica — bypass de middleware via tunnel route), `brace-expansion`, `sharp` e `source-map-js` (altas) e `fast-uri` (moderada) — todas em dependências transitivas, sem precisar mudar código nosso. Resolvidas com `npm audit fix` (atualiza só o lockfile, dentro das faixas de versão já aceitas no `package.json`). `npm audit` final: 0 vulnerabilidades. `tsc`/build confirmados limpos com as versões novas.
