@@ -100,6 +100,8 @@ export default function ListaProcessos({
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
   const [busca, setBusca] = useState("");
   const [aba, setAba] = useState<"ativos" | "concluidos">("ativos");
+  const [somenteAtrasados, setSomenteAtrasados] = useState(false);
+  const [somenteDesatualizados, setSomenteDesatualizados] = useState(false);
 
   const [etapasState, setEtapasState] = useState(etapas);
   const [eventosState, setEventosState] = useState(eventos);
@@ -169,6 +171,8 @@ export default function ListaProcessos({
       if (eventoId && !p.processo_tags.some((pt) => pt.tags?.id === eventoId)) return false;
       if (responsavelId && p.responsavel_atual_id !== responsavelId) return false;
       if (etapa && p.etapa_atual !== etapa) return false;
+      if (somenteAtrasados && !p.entregaAtrasada) return false;
+      if (somenteDesatualizados && !p.relatorioDesatualizado) return false;
       if (
         termo &&
         !p.numero_contrato.toLowerCase().includes(termo) &&
@@ -178,10 +182,21 @@ export default function ListaProcessos({
         return false;
       return true;
     });
-  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, busca, aba]);
+  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, somenteAtrasados, somenteDesatualizados, busca, aba]);
 
   const totalConcluidos = useMemo(() => processos.filter((p) => p.situacao === "concluido").length, [processos]);
   const totalAtivos = processos.length - totalConcluidos;
+  // Contagens pros chips de filtro rápido (mesmo padrão "Meus Contratos 9"
+  // visto no GEFISC) — sempre dentro do escopo de contratos ativos, já que
+  // concluídos nunca têm essas duas flags em true.
+  const totalEntregaAtrasada = useMemo(
+    () => processos.filter((p) => p.situacao !== "concluido" && p.entregaAtrasada).length,
+    [processos],
+  );
+  const totalRelatorioDesatualizado = useMemo(
+    () => processos.filter((p) => p.situacao !== "concluido" && p.relatorioDesatualizado).length,
+    [processos],
+  );
 
   return (
     <div>
@@ -216,6 +231,40 @@ export default function ListaProcessos({
         >
           Concluídos ({totalConcluidos})
         </button>
+        {aba === "ativos" && totalEntregaAtrasada > 0 && (
+          <button
+            type="button"
+            onClick={() => setSomenteAtrasados((v) => !v)}
+            style={{
+              fontSize: 12.5,
+              fontWeight: 600,
+              padding: "7px 16px",
+              borderRadius: 20,
+              border: "none",
+              color: somenteAtrasados ? "#fff" : cor.urgente,
+              background: somenteAtrasados ? cor.urgente : cor.urgenteFundo,
+            }}
+          >
+            Entrega Atrasada ({totalEntregaAtrasada})
+          </button>
+        )}
+        {aba === "ativos" && totalRelatorioDesatualizado > 0 && (
+          <button
+            type="button"
+            onClick={() => setSomenteDesatualizados((v) => !v)}
+            style={{
+              fontSize: 12.5,
+              fontWeight: 600,
+              padding: "7px 16px",
+              borderRadius: 20,
+              border: "none",
+              color: somenteDesatualizados ? "#fff" : cor.vermelhoEscuro,
+              background: somenteDesatualizados ? cor.vermelhoEscuro : cor.vermelhoEscuroFundo,
+            }}
+          >
+            Relatório Desatualizado ({totalRelatorioDesatualizado})
+          </button>
+        )}
       </div>
 
       <input
