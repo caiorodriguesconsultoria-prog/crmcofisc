@@ -70,47 +70,55 @@ export default function PainelDashboard({
     .sort((a, b) => (b.diasParado ?? 0) - (a.diasParado ?? 0));
 
 
+  // Cada tile de resumo ganha a cor do que representa, em vez do mesmo
+  // branco neutro pros quatro — sensação mais "viva", cor como linguagem
+  // (azul = neutro/informativo, verde = bom, laranja/vermelho = atenção),
+  // não só decoração.
+  function tile(rotulo: string, valor: number, corTexto: string, corFundo: string) {
+    return (
+      <div
+        style={{
+          ...card,
+          flex: "1 1 160px",
+          background: corFundo,
+          border: "none",
+          borderTop: `3px solid ${corTexto}`,
+        }}
+      >
+        <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoSecundario, letterSpacing: 0.5, fontWeight: 600 }}>
+          {rotulo}
+        </span>
+        <p style={{ fontSize: 30, fontWeight: 800, margin: "4px 0 0", color: corTexto }}>{valor}</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <div style={{ ...card, flex: "1 1 160px" }}>
-          <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-            Total de contratos
-          </span>
-          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0" }}>{processos.length}</p>
-        </div>
-        <div style={{ ...card, flex: "1 1 160px" }}>
-          <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-            Ativos
-          </span>
-          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0" }}>{ativos}</p>
-        </div>
+        {tile("Total de contratos", processos.length, cor.azulEscuro, cor.azulFundo)}
+        {tile("Ativos", ativos, cor.verdeEscuro, cor.verdeEscuroFundo)}
         {/* <a> normal de propósito — /processos/concluidos tem o mesmo formato de
         URL que a rota interceptada do modal /processos/[id], e navegação
         client-side (<Link>) acaba caindo no modal tratando "concluidos" como
         id. Um <a> força navegação completa, que resolve certo pelo servidor. */}
         <a
           href="/processos/concluidos"
-          style={{ ...card, flex: "1 1 160px", textDecoration: "none", color: "inherit", display: "block" }}
+          style={{ textDecoration: "none", color: "inherit", display: "block", flex: "1 1 160px" }}
         >
-          <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-            Concluídos
-          </span>
-          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0", color: cor.positivo }}>{concluidos}</p>
+          {tile("Concluídos", concluidos, cor.positivo, cor.positivoFundo)}
         </a>
-        <div style={{ ...card, flex: "1 1 160px" }}>
-          <span style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5 }}>
-            Vencendo hoje
-          </span>
-          <p style={{ fontSize: 28, fontWeight: 700, margin: "4px 0 0", color: vencendoHoje > 0 ? cor.urgente : cor.texto }}>
-            {vencendoHoje}
-          </p>
-        </div>
+        {tile(
+          "Vencendo hoje",
+          vencendoHoje,
+          vencendoHoje > 0 ? cor.urgente : cor.textoSecundario,
+          vencendoHoje > 0 ? cor.urgenteFundo : cor.fundo,
+        )}
       </div>
 
       {entregasEmAtraso.length > 0 && (
-        <div style={{ ...card, border: `1px solid ${cor.urgente}` }}>
-          <strong style={{ fontSize: 13, color: cor.urgente }}>Entregas em atraso</strong>
+        <div style={{ ...card, background: cor.urgenteFundo, border: "none", borderLeft: `4px solid ${cor.urgente}` }}>
+          <strong style={{ fontSize: 13, color: cor.urgente }}>⚠ Entregas em atraso</strong>
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
             {entregasEmAtraso.map((e) => (
               <Link
@@ -126,7 +134,10 @@ export default function PainelDashboard({
       )}
 
       <div style={card}>
-        <strong style={{ fontSize: 13 }}>Atividade de hoje</strong>
+        <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 7 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.azul }} />
+          Atividade de hoje
+        </strong>
         <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
           Contratos com tarefa ou agendamento marcado pra hoje.
         </p>
@@ -220,7 +231,10 @@ export default function PainelDashboard({
 
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <strong style={{ fontSize: 13 }}>Contratos parados</strong>
+          <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 7 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.atencao }} />
+            Contratos parados
+          </strong>
           <label style={{ marginLeft: "auto", fontSize: 12, color: cor.textoTerciario }}>
             a partir de{" "}
             <input
@@ -249,7 +263,7 @@ export default function PainelDashboard({
                 gap: 10,
                 padding: "9px 11px",
                 borderRadius: 12,
-                background: cor.fundo,
+                background: cor.atencaoFundo,
                 textDecoration: "none",
                 color: cor.texto,
                 fontSize: 12.5,
@@ -265,7 +279,10 @@ export default function PainelDashboard({
       </div>
 
       <div style={card}>
-        <strong style={{ fontSize: 13 }}>Contratos por etapa e evento</strong>
+        <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 7 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.laranja }} />
+          Contratos por etapa e evento
+        </strong>
         <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 12px" }}>
           Cada etapa e cada evento é um medidor à parte, com seu próprio total — um
           contrato está em uma única etapa, mas pode ter vários eventos ao mesmo tempo.

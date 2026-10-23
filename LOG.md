@@ -729,3 +729,10 @@ Aplicando os elementos de design identificados na análise do GEFISC (feita em 2
 `app/avisos/lista.tsx`: lista dos avisos virou um mural — cards em grid com leve rotação (determinística por índice, não aleatória, pra não divergir entre servidor e cliente), fundo amarelo pros não lidos e um "pino" no topo de cada nota, lembrando post-it. Lidos ficam acinzentados e mais discretos. Mesma lógica de "marcar como lido" de antes, só o visual mudou.
 
 Ainda não aplicados (ficam pra depois, se o Caio quiser): badges combinados tipo "Incompleto + Regular" (não tem equivalente direto no nosso modelo de dados) e uma timeline de prazos mais elaborada (o Dashboard já cobre isso de forma mais simples).
+
+## 2026-10-23 · Protótipo — Paleta mais viva no Dashboard
+Caio achou o sistema "morto" visualmente — identificou a paleta pálida/monocromática como o principal motivo (cores já existiam, mas só apareciam em badges pequenos, tudo o resto era branco/cinza neutro). Pediu pra prototipar numa tela só antes de espalhar; escolhi o Dashboard por ser a porta de entrada do sistema.
+
+`app/dashboard/painel-dashboard.tsx`: os 4 cards de resumo no topo (Total/Ativos/Concluídos/Vencendo hoje) ganharam cor própria — fundo levemente tingido na cor do que representam (azul/verde/verde-claro/laranja-vermelho) e uma borda superior colorida, em vez do branco neutro igual pros quatro. "Entregas em atraso" virou um card com fundo vermelho-claro de verdade (antes só tinha uma borda fina vermelha). Cada título de seção (Atividade de hoje, Contratos parados, Contratos por etapa e evento) ganhou uma bolinha colorida antes do texto, pra quebrar a repetição visual de "texto preto em negrito" toda vez. Contratos parados na lista agora têm fundo laranja-claro (antes era cinza neutro). Sem mudança de dados/lógica, só visual — nenhum token novo em `lib/theme.ts`, reaproveitando as cores que já existiam.
+
+Ainda não espalhado pro resto do sistema — aguardando aprovação do Caio sobre o estilo antes de replicar.
