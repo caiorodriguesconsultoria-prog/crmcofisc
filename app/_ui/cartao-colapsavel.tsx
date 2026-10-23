@@ -20,7 +20,10 @@ export default function CartaoColapsavel({
         onClick={() => setAberto((a) => !a)}
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
       >
-        <strong style={{ fontSize: 12.5 }}>{titulo}</strong>
+        <strong style={{ fontSize: 12.5, display: "flex", alignItems: "center", gap: 7 }}>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: cor.destaque, flex: "none" }} />
+          {titulo}
+        </strong>
         <span style={{ color: cor.textoTerciario, fontSize: 11 }}>{aberto ? "▾" : "▸"}</span>
       </div>
       {aberto && <div style={{ marginTop: 10 }}>{children}</div>}

@@ -83,21 +83,34 @@ export default async function DadosPage() {
       <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           {[
-            { rotulo: "Tempo médio aguardando assinatura", valor: formatarDias(mediaAssinatura) },
-            { rotulo: "Tempo médio de conclusão", valor: formatarDias(mediaConclusao) },
+            { rotulo: "Tempo médio aguardando assinatura", valor: formatarDias(mediaAssinatura), cor: cor.amarelo, fundo: cor.amareloFundo },
+            { rotulo: "Tempo médio de conclusão", valor: formatarDias(mediaConclusao), cor: cor.positivo, fundo: cor.positivoFundo },
             {
               rotulo: "Contratos entregues com atraso",
               valor: String(processosComAtraso),
-              cor: processosComAtraso > 0 ? cor.urgente : undefined,
+              cor: processosComAtraso > 0 ? cor.urgente : cor.textoSecundario,
+              fundo: processosComAtraso > 0 ? cor.urgenteFundo : cor.fundo,
             },
-            { rotulo: "Tempo médio de atraso (dos que atrasaram)", valor: formatarDias(mediaAtraso) },
+            { rotulo: "Tempo médio de atraso (dos que atrasaram)", valor: formatarDias(mediaAtraso), cor: cor.laranja, fundo: cor.laranjaFundo },
           ].map((kpi) => (
-            <div key={kpi.rotulo} style={{ ...card, flex: "1 1 220px", display: "flex", flexDirection: "column" }}>
+            <div
+              key={kpi.rotulo}
+              style={{
+                ...card,
+                flex: "1 1 220px",
+                display: "flex",
+                flexDirection: "column",
+                background: kpi.fundo,
+                border: "none",
+                borderTop: `3px solid ${kpi.cor}`,
+              }}
+            >
               <span
                 style={{
                   fontSize: 10.5,
                   textTransform: "uppercase",
-                  color: cor.textoTerciario,
+                  color: cor.textoSecundario,
+                  fontWeight: 600,
                   letterSpacing: 0.5,
                   minHeight: 28,
                   display: "block",
@@ -111,7 +124,10 @@ export default async function DadosPage() {
         </div>
 
         <div style={card}>
-          <strong style={{ fontSize: 13 }}>% de contratos por evento</strong>
+          <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 7 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.destaque }} />
+            % de contratos por evento
+          </strong>
           <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 10px" }}>
             De todos os contratos, quantos já tiveram cada evento alguma vez — cada evento é
             um medidor independente (um contrato pode ter passado por vários eventos, então

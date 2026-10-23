@@ -96,9 +96,9 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
           (pathname.startsWith(l.href + "/") &&
             !(l.href === "/processos" && pathname.startsWith("/processos/concluidos")));
         const estilo: React.CSSProperties = {
-          fontSize: 13,
+          fontSize: 15,
           fontWeight: 600,
-          padding: "9px 12px",
+          padding: "10px 12px",
           borderRadius: 10,
           color: ativo ? "#fff" : cor.textoSecundario,
           background: ativo ? "linear-gradient(180deg,#4A4645,#2D2B2B)" : "transparent",

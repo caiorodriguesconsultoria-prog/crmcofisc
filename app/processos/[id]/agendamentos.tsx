@@ -106,7 +106,10 @@ export default function Agendamentos({
 
   return (
     <div>
-      <strong style={{ fontSize: 13 }}>Agendamentos de entrega</strong>
+      <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 7 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.azul }} />
+        Agendamentos de entrega
+      </strong>
       <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 8px" }}>
         Data e horário aparecem na lista de Contratos e na Agenda.
       </p>
