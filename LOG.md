@@ -718,3 +718,14 @@ Atualizados sem problema: `@types/node` (20→26, só tipos, sem risco em runtim
 **`next` 15→16 (PR #20) não entrou** — testei à parte e achei problema real: a versão alvo do PR (16.3.4) tem uma vulnerabilidade crítica própria (RCE em `next/og`), só corrigida na 16.4.3. Mesmo testando com a 16.4.3 (0 vulnerabilidades), o build já mostra sinais de que não é um bump de rotina: `tsconfig.json` é alterado automaticamente (`jsx: preserve` → `jsx: react-jsx`, mudança de runtime do React), o arquivo `middleware.ts` passa a aparecer como convenção "deprecated" (substituída por `proxy.ts` — ainda funciona, mas sinaliza migração futura), e o React 18 (ainda usado aqui) também é avisado como deprecated no Next 16. Decidi não aplicar essa major sem decisão explícita do Caio, dado o tamanho do app e a ausência de ambiente de staging — fica como item separado, não "rotina".
 
 `tsc`/build confirmados limpos com o conjunto final (next continua em 15.5.28).
+
+## 2026-10-23 · Feature — Elementos de design inspirados no GEFISC
+Aplicando os elementos de design identificados na análise do GEFISC (feita em 2026-10-14, adiada até agora pra priorizar a reestruturação por itens). Sem migração.
+
+`app/processos/[id]/cronograma.tsx`: cada item ganhou uma barra de progresso de 4 cores (entregue/em trânsito/pendente/atrasada), logo acima das abas de parcela — proporção calculada pela quantidade total de cada situação entre as parcelas do item, reaproveitando as cores já usadas na pílula de situação. Dá pra ver o andamento do item inteiro sem abrir parcela por parcela, mesmo padrão visto nos cards de contrato do GEFISC.
+
+`app/processos/lista.tsx`: dois novos chips de filtro rápido com contador, ao lado de "Ativos"/"Concluídos" — "Entrega Atrasada (N)" e "Relatório Desatualizado (N)" (só aparecem quando há pelo menos 1 contrato nessa condição, só na aba Ativos). Clicar liga/desliga o filtro. Mesmo padrão "Meus Contratos 9" do GEFISC.
+
+`app/avisos/lista.tsx`: lista dos avisos virou um mural — cards em grid com leve rotação (determinística por índice, não aleatória, pra não divergir entre servidor e cliente), fundo amarelo pros não lidos e um "pino" no topo de cada nota, lembrando post-it. Lidos ficam acinzentados e mais discretos. Mesma lógica de "marcar como lido" de antes, só o visual mudou.
+
+Ainda não aplicados (ficam pra depois, se o Caio quiser): badges combinados tipo "Incompleto + Regular" (não tem equivalente direto no nosso modelo de dados) e uma timeline de prazos mais elaborada (o Dashboard já cobre isso de forma mais simples).

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { card, cor } from "@/lib/theme";
+import { cor } from "@/lib/theme";
 
 type Aviso = {
   id: string;
@@ -16,6 +16,11 @@ type Aviso = {
 function formatarData(data: string) {
   return new Date(data).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
+
+// Pequena variação de rotação por índice (não aleatória de verdade — evita
+// divergência entre o HTML gerado no servidor e o re-render no cliente),
+// só pra dar aquele ar de "post-it colado na parede" do mural do GEFISC.
+const ROTACOES = [-2, 1.5, -1, 2, -1.5, 1];
 
 export default function ListaAvisos({
   avisos,
@@ -45,46 +50,82 @@ export default function ListaAvisos({
   }
 
   return (
-    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ marginTop: 16 }}>
       {naoLidos > 0 && (
-        <p style={{ fontSize: 12.5, color: cor.urgente, fontWeight: 600, margin: 0 }}>
+        <p style={{ fontSize: 12.5, color: cor.urgente, fontWeight: 600, margin: "0 0 14px" }}>
           {naoLidos} aviso{naoLidos > 1 ? "s" : ""} não lido{naoLidos > 1 ? "s" : ""}
         </p>
       )}
-      {avisos.map((a) => {
-        const lido = !!a.lido_em;
-        return (
-          <div
-            key={a.id}
-            style={{
-              ...card,
-              padding: "12px 14px",
-              opacity: lido ? 0.6 : 1,
-              borderLeft: lido ? undefined : `3px solid ${cor.urgente}`,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ minWidth: 0 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: cor.urgente, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  {a.contexto}
-                </span>
-                <p style={{ margin: "4px 0 0", fontSize: 13, overflowWrap: "break-word" }}>{a.mensagem}</p>
-                <span style={{ fontSize: 11, color: cor.textoTerciario }}>{formatarData(a.created_at)}</span>
-              </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+          gap: 20,
+          padding: "4px 2px",
+        }}
+      >
+        {avisos.map((a, i) => {
+          const lido = !!a.lido_em;
+          const rotacao = ROTACOES[i % ROTACOES.length];
+          return (
+            <div
+              key={a.id}
+              style={{
+                background: lido ? "#F5F3EC" : cor.amareloFundo,
+                borderRadius: 3,
+                padding: "16px 14px 14px",
+                boxShadow: lido ? "0 1px 3px rgba(0,0,0,.08)" : "0 3px 8px rgba(0,0,0,.14)",
+                transform: `rotate(${rotacao}deg)`,
+                transition: "transform .15s ease",
+                position: "relative",
+                opacity: lido ? 0.75 : 1,
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  top: -7,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 13,
+                  height: 13,
+                  borderRadius: "50%",
+                  background: lido ? "#B5AF9A" : cor.urgente,
+                  boxShadow: "0 2px 3px rgba(0,0,0,.25)",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: lido ? cor.textoTerciario : cor.vermelhoEscuro,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                {a.contexto}
+              </span>
+              <p style={{ margin: "6px 0 0", fontSize: 13, overflowWrap: "break-word", color: cor.texto }}>
+                {a.mensagem}
+              </p>
+              <span style={{ display: "block", marginTop: 8, fontSize: 10.5, color: cor.textoTerciario }}>
+                {formatarData(a.created_at)}
+              </span>
               {!lido && (
                 <button
                   type="button"
                   onClick={() => marcarComoLido(a.id)}
                   disabled={marcandoId === a.id}
-                  style={{ fontSize: 11, padding: "5px 10px", flex: "none" }}
+                  style={{ fontSize: 10.5, padding: "4px 9px", marginTop: 8 }}
                 >
                   {marcandoId === a.id ? "..." : "Marcar como lido"}
                 </button>
               )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

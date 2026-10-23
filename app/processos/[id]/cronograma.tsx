@@ -926,6 +926,46 @@ export default function Cronograma({
         </div>
       )}
 
+      {itemSelecionado && execucoes.length > 0 && (() => {
+        // Barra de progresso do item: proporção da quantidade total de
+        // parcelas em cada situação (pendente/em trânsito/entregue/atrasada),
+        // mesmo padrão de "barra de 4 cores" visto no GEFISC — dá pra ver o
+        // andamento do item inteiro num relance, sem abrir parcela por parcela.
+        const ORDEM_SITUACAO = ["entregue", "em_transito", "pendente", "atrasada"];
+        const totalQuantidade = execucoes.reduce((soma, e) => soma + Number(e.quantidade), 0);
+        if (totalQuantidade <= 0) return null;
+        const segmentos = ORDEM_SITUACAO.map((situacao) => ({
+          situacao,
+          quantidade: execucoes
+            .filter((e) => e.situacao === situacao)
+            .reduce((soma, e) => soma + Number(e.quantidade), 0),
+        })).filter((s) => s.quantidade > 0);
+        return (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", height: 8, borderRadius: 5, overflow: "hidden", background: "rgba(96,93,93,.10)" }}>
+              {segmentos.map((s) => (
+                <div
+                  key={s.situacao}
+                  title={`${s.situacao}: ${formatarQuantidade(s.quantidade)} (${Math.round((s.quantidade / totalQuantidade) * 100)}%)`}
+                  style={{
+                    width: `${(s.quantidade / totalQuantidade) * 100}%`,
+                    background: SITUACAO_COR[s.situacao]?.fg ?? cor.textoTerciario,
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
+              {segmentos.map((s) => (
+                <span key={s.situacao} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: cor.textoTerciario }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: SITUACAO_COR[s.situacao]?.fg, flex: "none" }} />
+                  {s.situacao} · {formatarQuantidade(s.quantidade)}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {itemSelecionado && (
         <>
           {execucoes.length === 0 && !novo && (
