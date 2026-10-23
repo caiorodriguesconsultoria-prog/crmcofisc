@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { cor } from "@/lib/theme";
 
 type Item = {
   id: string;
@@ -146,7 +147,10 @@ export default function PautaDistribuicao({
 
   return (
     <div style={{ marginTop: 8 }}>
-      <strong style={{ fontSize: 13 }}>Pauta de distribuição</strong>
+      <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 7 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.verdeEscuro }} />
+        Pauta de distribuição
+      </strong>
       <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
         Forma de entrega: {formaEntrega}
       </p>

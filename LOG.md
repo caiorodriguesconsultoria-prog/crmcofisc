@@ -736,3 +736,15 @@ Caio achou o sistema "morto" visualmente — identificou a paleta pálida/monocr
 `app/dashboard/painel-dashboard.tsx`: os 4 cards de resumo no topo (Total/Ativos/Concluídos/Vencendo hoje) ganharam cor própria — fundo levemente tingido na cor do que representam (azul/verde/verde-claro/laranja-vermelho) e uma borda superior colorida, em vez do branco neutro igual pros quatro. "Entregas em atraso" virou um card com fundo vermelho-claro de verdade (antes só tinha uma borda fina vermelha). Cada título de seção (Atividade de hoje, Contratos parados, Contratos por etapa e evento) ganhou uma bolinha colorida antes do texto, pra quebrar a repetição visual de "texto preto em negrito" toda vez. Contratos parados na lista agora têm fundo laranja-claro (antes era cinza neutro). Sem mudança de dados/lógica, só visual — nenhum token novo em `lib/theme.ts`, reaproveitando as cores que já existiam.
 
 Ainda não espalhado pro resto do sistema — aguardando aprovação do Caio sobre o estilo antes de replicar.
+
+## 2026-10-23 · Feature — Paleta mais viva espalhada pro resto do sistema + fonte do menu
+Caio gostou do protótipo do Dashboard e pediu pra espalhar. Também pediu fonte maior no menu lateral.
+
+`app/_nav/sidebar.tsx`: fonte dos itens de menu de 13px pra 15px (padding ajustado de leve pra acompanhar).
+
+Mesmo tratamento do Dashboard (bolinha colorida antes de título de seção, tiles de resumo com fundo tingido + borda superior colorida em vez de branco neutro) espalhado pra:
+- `app/dados/page.tsx`: os 4 KPIs (tempo médio de assinatura, conclusão, atraso) ganharam cor própria, mesmo padrão dos cards do Dashboard — antes eram brancos neutros com só o número colorido condicionalmente.
+- `app/_ui/cartao-colapsavel.tsx`: bolinha azul antes do título — como é componente compartilhado, isso já cobre de uma vez "Andamento e Tarefas", "Responsável" e "Histórico" na tela do contrato.
+- Títulos de seção pontuais: "Pauta de distribuição" (verde), "Dados de entrega" (azul escuro), "Agendamentos de entrega" (azul), "% de contratos por evento" em `/dados` (azul).
+
+Deixei de fora de propósito os títulos menores dentro de modais/diálogos (ex.: "Editar fornecedor", "Observações", "Anexos", confirmações de ocorrência) — são sub-cabeçalhos pequenos dentro de um contexto já claro, aplicar bolinha colorida ali vira ruído visual em vez de vida.

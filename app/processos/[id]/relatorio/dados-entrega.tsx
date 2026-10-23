@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CampoMascarado } from "@/app/_ui/campo";
 import { formatarMoedaBR, paraNumeroMoeda } from "@/lib/moeda";
+import { cor } from "@/lib/theme";
 
 // Mesma máscara de milhar em tempo real usada no cronograma de entregas,
 // só que com 3 casas decimais (padrão pra quantidade em numeric(14,3)).
@@ -124,7 +125,10 @@ export default function DadosEntrega({
 
   return (
     <div style={{ marginTop: 20 }}>
-      <strong style={{ fontSize: 13 }}>Dados de entrega</strong>
+      <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 7 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.azulEscuro }} />
+        Dados de entrega
+      </strong>
       <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
         Atraso e % de transcurso não são calculados automaticamente — preencha manualmente.
       </p>
