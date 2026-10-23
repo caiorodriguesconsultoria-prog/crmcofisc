@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { notificarErroAdmins } from "@/lib/alerta-erro";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
@@ -37,10 +38,15 @@ async function obterAccessToken(): Promise<string | null> {
   });
   if (!resposta.ok) {
     // Falha aqui é sempre silenciosa pro usuário (sincronização é "a mais",
-    // nunca bloqueia a ação principal) — mas sem logar, uma falha permanente
-    // (ex.: refresh_token morto) nunca aparece em lugar nenhum, só se percebe
-    // quando alguém nota que os eventos pararam de ir pro Google.
-    console.error("Google Calendar: falha ao renovar access_token", resposta.status, await resposta.text());
+    // nunca bloqueia a ação principal) — mas sem avisar alguém, uma falha
+    // permanente (ex.: refresh_token morto) só se percebe quando alguém nota
+    // que os eventos pararam de ir pro Google, às vezes semanas depois.
+    const textoErro = await resposta.text();
+    console.error("Google Calendar: falha ao renovar access_token", resposta.status, textoErro);
+    await notificarErroAdmins(
+      "Google Calendar — renovação de token",
+      `HTTP ${resposta.status}: ${textoErro.slice(0, 300)}`,
+    );
     return null;
   }
   const dados = await resposta.json();

@@ -32,25 +32,47 @@ export default async function AgendaPage({
   const ehAdmin = !!pessoaAtual?.is_admin;
   const conectadoGoogle = await googleConectado();
 
-  const [{ data: processos, error }, { data: agendamentosRaw }, { data: andamentosAgendadosRaw }] =
-    await Promise.all([
-      supabase
-        .from("processos")
-        .select("id, numero_contrato, prazo_data, coordenacoes(sigla), fornecedores(nome)")
-        .not("prazo_data", "is", null)
-        .order("prazo_data"),
-      supabase
-        .from("processo_agendamentos")
-        .select("id, data, horario, observacao, processos(id, numero_contrato)")
-        .order("data")
-        .order("horario"),
-      supabase
-        .from("andamentos")
-        .select("id, texto, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
-        .not("agendamento_data", "is", null)
-        .order("agendamento_data")
-        .order("agendamento_horario"),
-    ]);
+  const [
+    { data: processos, error },
+    { data: agendamentosRaw },
+    { data: andamentosAgendadosRaw },
+    { data: tarefasAgendadasRaw },
+  ] = await Promise.all([
+    supabase
+      .from("processos")
+      .select("id, numero_contrato, prazo_data, coordenacoes(sigla), fornecedores(nome)")
+      .not("prazo_data", "is", null)
+      .order("prazo_data"),
+    supabase
+      .from("processo_agendamentos")
+      .select("id, data, horario, observacao, processos(id, numero_contrato)")
+      .order("data")
+      .order("horario"),
+    supabase
+      .from("andamentos")
+      .select("id, texto, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
+      .not("agendamento_data", "is", null)
+      .order("agendamento_data")
+      .order("agendamento_horario"),
+    // Tarefas do checklist com data marcada — antes não entravam na Agenda
+    // de jeito nenhum (só agendamentos de entrega e andamentos agendados).
+    // Concluídas não aparecem mais, já cumpriram o papel.
+    supabase
+      .from("processo_tarefas")
+      .select("id, label, agendamento_data, periodo, processos(id, numero_contrato)")
+      .eq("concluida", false)
+      .not("agendamento_data", "is", null)
+      .order("agendamento_data"),
+  ]);
+
+  // Tarefas só têm período (manhã/tarde), não horário exato — convertido num
+  // horário fictício só pra ordenar/exibir junto dos demais, mesmo padrão já
+  // usado na listagem de /processos.
+  function horarioFicticio(periodo: string | null) {
+    if (periodo === "manha") return "08:00:00";
+    if (periodo === "tarde") return "14:00:00";
+    return "23:59:59";
+  }
 
   const prazos = (processos ?? []).map((p: any) => ({
     id: p.id,
@@ -80,6 +102,16 @@ export default async function AgendaPage({
         data: a.agendamento_data as string,
         horario: a.agendamento_horario as string,
         observacao: a.texto as string | null,
+      })),
+    ...(tarefasAgendadasRaw ?? [])
+      .filter((t: any) => t.processos)
+      .map((t: any) => ({
+        id: t.id,
+        processoId: t.processos.id,
+        numeroContrato: numeroContratoSemSei(t.processos.numero_contrato),
+        data: t.agendamento_data as string,
+        horario: horarioFicticio(t.periodo),
+        observacao: t.label as string | null,
       })),
   ];
 

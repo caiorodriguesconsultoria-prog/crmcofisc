@@ -692,3 +692,13 @@ Caio testou "+ Itens por anexo" num contrato real (287/2026) e notou que a "Cane
 `app/api/processos/extrair-pdf/route.ts`: instrução explícita pra também capturar itens complementares/acessórios com cronograma próprio (quantitativo + prazo), mesmo sem CATMAT/valor unitário — `catmat`/`valor_unitario` ficam `null` nesses casos, mas `descricao`/`quantidade`/`parcelas` vêm preenchidos normalmente.
 
 Também expliquei a ele por que o "Item 1" ficou duplicado nesse teste: era um item genérico que a migração 0042 (Fase 1) já tinha criado automaticamente pra esse contrato (usando o Objeto como descrição, antes de existir extração por PDF) — o anexo corretamente só *adicionou* os itens novos (2 e 3), sem saber que devia substituir o item antigo (comportamento intencional: anexo nunca mexe no que já existe). Fica a cargo do Caio remover manualmente o item-placeholder antigo quando isso acontecer num contrato migrado.
+
+## 2026-10-23 · Correção — Tarefas agendadas não apareciam na Agenda do CRM
+Caio reportou que tarefas agendadas não aparecem nem no Google Calendar nem na Agenda do próprio CRM, mesmo depois de reconectar o Google. Investigação achou DOIS problemas distintos:
+
+1. **Google Tasks API desabilitada** no projeto do Google Cloud — erro 403 recorrente em `/api/google/sync` (visto nos logs desde 14/10, inclusive hoje). Isso é configuração externa (console do Google), não dá pra corrigir por código; passei o link de ativação pro Caio.
+2. **Bug de verdade**: `/agenda` (tela) e `/api/agenda.ics` (feed) nunca consultavam `processo_tarefas` — só agendamentos de entrega e andamentos agendados. Achei até um comentário no código do `.ics` mencionando "tarefas de checklist" que nunca virou consulta de fato. Ou seja, tarefas com data nunca apareceram na Agenda do CRM, independente do Google — não tinha relação com a reconexão.
+
+Corrigido: `app/agenda/page.tsx` e `app/api/agenda.ics/route.ts` passam a consultar `processo_tarefas` (não concluídas, com `agendamento_data`) e juntam na mesma lista de agendamentos — período (manhã/tarde) vira um horário fictício (08:00/14:00) só pra ordenar/exibir, mesmo padrão já usado em `/processos`.
+
+Também aproveitei pra fechar uma lacuna de visibilidade: `lib/google-calendar.ts` agora chama `notificarErroAdmins` quando a renovação do token OAuth falha (token morto/revogado) — antes só ia pro `console.error`, silencioso, e uma quebra permanente só era percebida quando alguém notava "faz tempo que não vai nada pro Google". Não adicionei alerta nas chamadas de Tasks/Events em si (criar/atualizar evento ou tarefa) — isso roda a cada ação do usuário, e com a Tasks API desabilitada geraria um push a cada tarefa salva; a renovação de token já cobre o caso de quebra permanente sem ser barulhento.
