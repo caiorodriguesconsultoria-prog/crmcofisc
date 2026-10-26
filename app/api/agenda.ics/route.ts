@@ -5,10 +5,6 @@ function escaparTexto(texto: string) {
   return texto.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
 }
 
-function formatarDataIcs(data: string) {
-  return data.slice(0, 10).replace(/-/g, "");
-}
-
 function formatarCarimboIcs(data: Date) {
   return data.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
@@ -32,53 +28,22 @@ export async function GET(request: Request) {
   }
 
   const supabase = createServiceClient();
-  const [
-    { data: processos, error },
-    { data: agendamentos, error: erroAgendamentos },
-  ] = await Promise.all([
-    supabase
-      .from("processos")
-      .select("id, numero_contrato, etapa_atual, prazo_data, coordenacoes(sigla), fornecedores(nome)")
-      .not("prazo_data", "is", null),
-    supabase
-      .from("processo_agendamentos")
-      .select("id, data, horario, observacao, processos(id, numero_contrato)"),
-  ]);
+  const { data: agendamentos, error: erroAgendamentos } = await supabase
+    .from("processo_agendamentos")
+    .select("id, data, horario, observacao, processos(id, numero_contrato)");
 
-  if (error || erroAgendamentos) {
+  if (erroAgendamentos) {
     return new Response("Erro ao carregar agenda", { status: 500 });
   }
 
   const agora = formatarCarimboIcs(new Date());
 
-  const eventosPrazo = (processos ?? [])
-    .map((p: any) => {
-      const resumo = escaparTexto(`CT nº ${numeroContratoSemSei(p.numero_contrato)} - ${p.etapa_atual}`);
-      const descricao = escaparTexto(
-        `Coordenação: ${p.coordenacoes?.sigla ?? ""} · Fornecedor: ${p.fornecedores?.nome ?? ""}`,
-      );
-      return [
-        "BEGIN:VEVENT",
-        `UID:${p.id}@crmcofisc`,
-        `DTSTAMP:${agora}`,
-        `DTSTART;VALUE=DATE:${formatarDataIcs(p.prazo_data)}`,
-        `SUMMARY:${resumo}`,
-        `DESCRIPTION:${descricao}`,
-        `URL:${url.origin}/processos/${p.id}`,
-        "END:VEVENT",
-      ].join("\r\n");
-    })
-    .join("\r\n");
-
-  // Só agendamentos de entrega (processo_agendamentos) — título
-  // "CT {numero} - {tarefa}" conforme pedido; ao apagar o agendamento ele
-  // some daqui, e o Google reflete isso na próxima sincronização (feed é só
-  // leitura, sem push).
-  // Tarefas do checklist (processo_tarefas) NÃO entram aqui de propósito:
-  // elas já viram Google Task via sincronização em tempo real (ver
-  // lib/google-calendar.ts) — incluí-las aqui também duplicava a mesma
-  // tarefa no Google (um check-box em "Tarefas" + um bloco de horário
-  // fictício no calendário), que foi o bug relatado pelo Caio.
+  // Só agendamentos de entrega (processo_agendamentos) — "Agenda da COFISC"
+  // é só isso agora, por pedido do Caio. Prazo (processos.prazo_data) e
+  // tarefas do checklist (processo_tarefas) viram Google Task em vez de
+  // evento aqui (prazo por sincronização periódica, ver
+  // lib/google-calendar.ts; tarefa por sincronização em tempo real) — os
+  // dois entrarem aqui também já causou duplicação no Google antes.
   const eventosAgendamento = (agendamentos ?? [])
     .filter((a: any) => a.processos)
     .map((a: any) => ({
@@ -109,8 +74,7 @@ export async function GET(request: Request) {
     "VERSION:2.0",
     "PRODID:-//CRM-COFISC//Agenda//PT-BR",
     "CALSCALE:GREGORIAN",
-    "X-WR-CALNAME:CRM-COFISC — Prazos",
-    eventosPrazo,
+    "X-WR-CALNAME:CRM-COFISC — Entregas",
     eventosAgendamento,
     "END:VCALENDAR",
   ]
@@ -120,7 +84,7 @@ export async function GET(request: Request) {
   return new Response(ics, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": "inline; filename=crmcofisc-prazos.ics",
+      "Content-Disposition": "inline; filename=crmcofisc-entregas.ics",
     },
   });
 }

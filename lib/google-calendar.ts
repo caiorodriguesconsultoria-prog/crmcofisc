@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { notificarErroAdmins } from "@/lib/alerta-erro";
+import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
@@ -186,4 +187,55 @@ export async function marcarConclusaoTarefaGoogle(params: {
       ...(params.concluida ? { completed: new Date().toISOString() } : {}),
     }),
   });
+}
+
+// Prazo do contrato (processos.prazo_data) não tem tela de "salvar" no CRM
+// — é preenchido direto no banco — então não há como sincronizar na hora
+// como agendamento/tarefa. Em vez disso, essa função roda periodicamente
+// (chamada pela mesma rota de lembrete por push, 2x/dia) e sincroniza todos
+// os prazos ativos de uma vez: cria/atualiza a Google Task de quem tem
+// prazo e ainda não tem task; remove a task de quem concluiu ou perdeu o
+// prazo. Idempotente — pode rodar quantas vezes quiser sem duplicar nada,
+// guardando o id em processos.prazo_google_task_id.
+type ProcessoPrazo = {
+  id: string;
+  numero_contrato: string;
+  etapa_atual: string;
+  situacao: string;
+  prazo_data: string | null;
+  prazo_google_task_id: string | null;
+};
+
+export async function sincronizarPrazosGoogleTasks(origin: string): Promise<void> {
+  const supabase = createServiceClient();
+  const SELECT = "id, numero_contrato, etapa_atual, situacao, prazo_data, prazo_google_task_id";
+  // Precisa buscar os dois lados: quem tem prazo ativo (candidato a ganhar
+  // task) e quem já tem task salva (candidato a perder, se o prazo sumiu ou
+  // o contrato concluiu) — um union simples por "id" evita duplicar lógica.
+  const [{ data: comTask }, { data: comPrazoAtivo }] = await Promise.all([
+    supabase.from("processos").select(SELECT).not("prazo_google_task_id", "is", null),
+    supabase.from("processos").select(SELECT).not("prazo_data", "is", null).neq("situacao", "concluido"),
+  ]);
+
+  const porId = new Map<string, ProcessoPrazo>();
+  for (const p of (comTask ?? []) as ProcessoPrazo[]) porId.set(p.id, p);
+  for (const p of (comPrazoAtivo ?? []) as ProcessoPrazo[]) porId.set(p.id, p);
+
+  for (const p of porId.values()) {
+    const deveExistir = !!p.prazo_data && p.situacao !== "concluido";
+    if (deveExistir) {
+      const novoId = await criarOuAtualizarTarefaGoogle({
+        googleTaskId: p.prazo_google_task_id,
+        titulo: `CT ${numeroContratoSemSei(p.numero_contrato)} - Prazo: ${p.etapa_atual}`,
+        notas: `${origin}/processos/${p.id}`,
+        data: p.prazo_data as string,
+      });
+      if (novoId && novoId !== p.prazo_google_task_id) {
+        await supabase.from("processos").update({ prazo_google_task_id: novoId }).eq("id", p.id);
+      }
+    } else if (p.prazo_google_task_id) {
+      await removerTarefaGoogle(p.prazo_google_task_id);
+      await supabase.from("processos").update({ prazo_google_task_id: null }).eq("id", p.id);
+    }
+  }
 }

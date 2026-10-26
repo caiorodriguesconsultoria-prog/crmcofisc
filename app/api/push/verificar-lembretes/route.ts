@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { enviarPush } from "@/lib/push";
+import { sincronizarPrazosGoogleTasks } from "@/lib/google-calendar";
 
 // Brasil não observa horário de verão desde 2019 — UTC-3 fixo é seguro aqui
 // (mesma convenção usada em lib/google-calendar.ts).
@@ -41,6 +42,11 @@ async function executar(request: NextRequest) {
     .eq("agendamento_data", hoje)
     .eq("concluida", false)
     .eq("lembrete_enviado", false);
+
+  // Prazo não tem ação de "salvar" no CRM pra sincronizar na hora — essa
+  // rotina (já roda 2x/dia) é o jeito de manter o Google Tasks em dia com
+  // os prazos ativos, sem depender de nenhuma tela nova.
+  await sincronizarPrazosGoogleTasks(request.nextUrl.origin);
 
   if (!tarefas || tarefas.length === 0) {
     return NextResponse.json({ ok: true, enviados: 0 });
