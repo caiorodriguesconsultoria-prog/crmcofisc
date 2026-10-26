@@ -6,48 +6,19 @@ import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
 import { sincronizarGoogle } from "@/lib/google-sync-cliente";
 
-type Periodo = "manha" | "tarde";
 type Tarefa = {
   id: string;
   label: string;
   concluida: boolean;
   agendamentoData: string | null;
-  periodo: Periodo | null;
   googleEventId: string | null;
 };
 type Grupo = { origemId: string; origemTipo: string; nome: string; tarefas: Tarefa[] };
 type Observacao = { id: string; texto: string; autor: string | null; criadoEm: string };
 
-function formatarAgendamento(data: string | null, periodo: Periodo | null) {
+function formatarAgendamento(data: string | null) {
   if (!data) return null;
-  const dataFmt = new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
-  const periodoFmt = periodo === "manha" ? "Manhã" : periodo === "tarde" ? "Tarde" : null;
-  return periodoFmt ? `${dataFmt} · ${periodoFmt}` : dataFmt;
-}
-
-function SeletorPeriodo({ valor, onChange }: { valor: Periodo | ""; onChange: (p: Periodo) => void }) {
-  return (
-    <div style={{ display: "flex", gap: 4 }}>
-      {(["manha", "tarde"] as Periodo[]).map((p) => (
-        <button
-          key={p}
-          type="button"
-          onClick={() => onChange(p)}
-          style={{
-            fontSize: 10.5,
-            fontWeight: 600,
-            padding: "4px 9px",
-            borderRadius: 7,
-            border: "none",
-            color: valor === p ? cor.destaque : cor.textoTerciario,
-            background: valor === p ? cor.destaqueFundo : "rgba(96,93,93,.10)",
-          }}
-        >
-          {p === "manha" ? "Manhã" : "Tarde"}
-        </button>
-      ))}
-    </div>
-  );
+  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
 }
 
 function ListaTarefas({
@@ -61,23 +32,21 @@ function ListaTarefas({
   tarefas: Tarefa[];
   carregando: string | null;
   onAlternar: (t: Tarefa) => void;
-  onAgendar: (id: string, data: string, periodo: Periodo | "") => void;
+  onAgendar: (id: string, data: string) => void;
   onReordenar: (tarefas: Tarefa[]) => void;
   onObservar: (id: string) => void;
 }) {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [data, setData] = useState("");
-  const [periodo, setPeriodo] = useState<Periodo | "">("");
   const [arrastandoId, setArrastandoId] = useState<string | null>(null);
 
   function abrirEdicao(t: Tarefa) {
     setEditandoId(t.id);
     setData(t.agendamentoData ?? "");
-    setPeriodo(t.periodo ?? "");
   }
 
   function salvarAgendamento(id: string) {
-    onAgendar(id, data, periodo);
+    onAgendar(id, data);
     setEditandoId(null);
   }
 
@@ -175,23 +144,22 @@ function ListaTarefas({
                   padding: "2px 7px",
                   border: "none",
                   borderRadius: 7,
-                  color: formatarAgendamento(t.agendamentoData, t.periodo) ? cor.destaque : cor.textoTerciario,
-                  background: formatarAgendamento(t.agendamentoData, t.periodo) ? cor.destaqueFundo : "rgba(96,93,93,.10)",
+                  color: formatarAgendamento(t.agendamentoData) ? cor.destaque : cor.textoTerciario,
+                  background: formatarAgendamento(t.agendamentoData) ? cor.destaqueFundo : "rgba(96,93,93,.10)",
                 }}
               >
-                {formatarAgendamento(t.agendamentoData, t.periodo) ?? "+ agendar"}
+                {formatarAgendamento(t.agendamentoData) ?? "+ agendar"}
               </button>
             )}
           </div>
           {editandoId === t.id && (
             <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "0 8px 8px 34px", flexWrap: "wrap" }}>
               <input type="date" value={data} onChange={(e) => setData(e.target.value)} style={{ padding: 5, fontSize: 12 }} />
-              <SeletorPeriodo valor={periodo} onChange={setPeriodo} />
               <button onClick={() => salvarAgendamento(t.id)} style={{ fontSize: 10.5, padding: "4px 10px" }}>
                 Salvar
               </button>
               {t.agendamentoData && (
-                <button onClick={() => { onAgendar(t.id, "", ""); setEditandoId(null); }} style={{ fontSize: 10.5, padding: "4px 10px" }}>
+                <button onClick={() => { onAgendar(t.id, ""); setEditandoId(null); }} style={{ fontSize: 10.5, padding: "4px 10px" }}>
                   Remover
                 </button>
               )}
@@ -264,7 +232,6 @@ export default function Checklist({
   const [novaTarefaEm, setNovaTarefaEm] = useState<string | null>(null);
   const [tarefaLabel, setTarefaLabel] = useState("");
   const [tarefaData, setTarefaData] = useState("");
-  const [tarefaPeriodo, setTarefaPeriodo] = useState<Periodo | "">("");
   const [modalTarefaId, setModalTarefaId] = useState<string | null>(null);
   const [modalObservacoes, setModalObservacoes] = useState<Observacao[] | null>(null);
   const [novaObs, setNovaObs] = useState("");
@@ -300,17 +267,17 @@ export default function Checklist({
     router.refresh();
   }
 
-  async function agendar(tarefaId: string, data: string, periodo: Periodo | "") {
+  async function agendar(tarefaId: string, data: string) {
     setErro(null);
-    // lembrete_enviado volta pra false sempre que a data/período é definido
-    // (inclusive reagendando um já avisado) — é o jeito de "reenviar" o
+    // lembrete_enviado volta pra false sempre que a data é definida
+    // (inclusive reagendando uma já avisada) — é o jeito de "reenviar" o
     // lembrete manualmente, já que não há reenvio automático.
     const { error } = await supabase
       .from("processo_tarefas")
       .update({
         agendamento_data: data || null,
-        periodo: periodo || null,
-        lembrete_enviado: data && periodo ? false : undefined,
+        periodo: null,
+        lembrete_enviado: data ? false : undefined,
       })
       .eq("id", tarefaId);
     if (error) {
@@ -321,7 +288,7 @@ export default function Checklist({
     if (tarefa) {
       sincronizarGoogle({
         tipo: "tarefa",
-        acao: data && periodo ? "salvar" : "remover",
+        acao: data ? "salvar" : "remover",
         id: tarefaId,
         googleEventId: tarefa.googleEventId,
         numeroContrato,
@@ -359,7 +326,6 @@ export default function Checklist({
         ordem: grupo.tarefas.length + 1,
         label: tarefaLabel.trim(),
         agendamento_data: tarefaData || null,
-        periodo: tarefaPeriodo || null,
       })
       .select("id")
       .single();
@@ -368,7 +334,7 @@ export default function Checklist({
       setErro(error.message);
       return;
     }
-    if (criada && tarefaData && tarefaPeriodo) {
+    if (criada && tarefaData) {
       sincronizarGoogle({
         tipo: "tarefa",
         acao: "salvar",
@@ -383,7 +349,6 @@ export default function Checklist({
     setNovaTarefaEm(null);
     setTarefaLabel("");
     setTarefaData("");
-    setTarefaPeriodo("");
     router.refresh();
   }
 
@@ -437,7 +402,6 @@ export default function Checklist({
           style={{ padding: 6, flex: 1, minWidth: 160 }}
         />
         <input type="date" value={tarefaData} onChange={(e) => setTarefaData(e.target.value)} style={{ padding: 6 }} />
-        <SeletorPeriodo valor={tarefaPeriodo} onChange={setTarefaPeriodo} />
         <button
           onClick={() => adicionarTarefa(grupo)}
           disabled={carregando === "nova-tarefa" || !tarefaLabel.trim()}

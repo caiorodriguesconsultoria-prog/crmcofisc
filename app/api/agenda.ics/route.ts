@@ -36,7 +36,6 @@ export async function GET(request: Request) {
     { data: processos, error },
     { data: agendamentos, error: erroAgendamentos },
     { data: andamentosAgendados, error: erroAndamentos },
-    { data: tarefasAgendadas, error: erroTarefas },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -49,23 +48,10 @@ export async function GET(request: Request) {
       .from("andamentos")
       .select("id, texto, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
       .not("agendamento_data", "is", null),
-    // Tarefas do checklist com data marcada — o comentário abaixo já previa
-    // isso, mas a consulta nunca tinha sido escrita de fato.
-    supabase
-      .from("processo_tarefas")
-      .select("id, label, agendamento_data, periodo, processos(id, numero_contrato)")
-      .eq("concluida", false)
-      .not("agendamento_data", "is", null),
   ]);
 
-  if (error || erroAgendamentos || erroAndamentos || erroTarefas) {
+  if (error || erroAgendamentos || erroAndamentos) {
     return new Response("Erro ao carregar agenda", { status: 500 });
-  }
-
-  function horarioFicticio(periodo: string | null) {
-    if (periodo === "manha") return "08:00:00";
-    if (periodo === "tarde") return "14:00:00";
-    return "23:59:59";
   }
 
   const agora = formatarCarimboIcs(new Date());
@@ -89,10 +75,15 @@ export async function GET(request: Request) {
     })
     .join("\r\n");
 
-  // Agendamentos de entrega e tarefas de checklist com horário marcado —
-  // título "CT {numero} - {tarefa}" conforme pedido; ao concluir a tarefa
-  // (ou apagar o agendamento) ela some daqui, e o Google reflete isso na
-  // próxima sincronização (feed é só leitura, sem push).
+  // Agendamentos de entrega e andamentos agendados com horário marcado —
+  // título "CT {numero} - {tarefa}" conforme pedido; ao apagar o
+  // agendamento ele some daqui, e o Google reflete isso na próxima
+  // sincronização (feed é só leitura, sem push).
+  // Tarefas do checklist (processo_tarefas) NÃO entram aqui de propósito:
+  // elas já viram Google Task via sincronização em tempo real (ver
+  // lib/google-calendar.ts) — incluí-las aqui também duplicava a mesma
+  // tarefa no Google (um check-box em "Tarefas" + um bloco de horário
+  // fictício no calendário), que foi o bug relatado pelo Caio.
   const eventosAgendamento = [
     ...(agendamentos ?? [])
       .filter((a: any) => a.processos)
@@ -113,16 +104,6 @@ export async function GET(request: Request) {
         data: a.agendamento_data as string,
         horario: a.agendamento_horario as string,
         tarefa: a.texto as string,
-      })),
-    ...(tarefasAgendadas ?? [])
-      .filter((t: any) => t.processos)
-      .map((t: any) => ({
-        id: `tarefa-${t.id}`,
-        processoId: t.processos.id,
-        numeroContrato: numeroContratoSemSei(t.processos.numero_contrato),
-        data: t.agendamento_data as string,
-        horario: horarioFicticio(t.periodo),
-        tarefa: t.label as string,
       })),
   ]
     .map((e) => {

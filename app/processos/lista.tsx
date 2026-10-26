@@ -49,7 +49,7 @@ type Processo = {
   responsavel: { nome: string } | null;
   processo_eletronico_numero: string | null;
   processo_tags: { tags: { id: string; valor: string; cor: string | null } | null }[];
-  proximoAgendamento: { data: string; horario: string | null; periodo: "manha" | "tarde" | null } | null;
+  proximoAgendamento: { data: string; horario: string | null } | null;
   ultimoAndamento: string | null;
   entregaAtrasada: boolean;
   relatorioDesatualizado: boolean;
@@ -491,13 +491,7 @@ export default function ListaProcessos({
                     {p.proximoAgendamento && (
                       <span style={{ fontSize: 11, color: cor.textoTerciario, whiteSpace: "nowrap" }}>
                         {formatarDataAgendamento(p.proximoAgendamento.data)}{" "}
-                        {p.proximoAgendamento.horario
-                          ? p.proximoAgendamento.horario.slice(0, 5)
-                          : p.proximoAgendamento.periodo === "manha"
-                            ? "Manhã"
-                            : p.proximoAgendamento.periodo === "tarde"
-                              ? "Tarde"
-                              : ""}
+                        {p.proximoAgendamento.horario ? p.proximoAgendamento.horario.slice(0, 5) : ""}
                       </span>
                     )}
                   </div>

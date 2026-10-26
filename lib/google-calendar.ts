@@ -164,11 +164,12 @@ export async function removerTarefaGoogle(googleTaskId: string): Promise<void> {
   });
 }
 
-// Ao concluir uma tarefa no CRM, a Google Task correspondente não é apagada
-// — só ganha um "✅ " na frente do título, pra continuar visível na lista de
-// Tarefas do Calendar em vez de sumir. Reversível: reabrir a tarefa tira o
-// prefixo de volta. Só tarefa recebe esse check — entrega (execução do
-// cronograma) não sincroniza com o Google.
+// Ao concluir uma tarefa no CRM, usa o campo nativo "status" da Google Task
+// (completed/needsAction) — é isso que faz o próprio Google marcar o check e
+// riscar o texto (tachado) na lista de Tarefas do Calendar, em vez de só
+// mudar o título. Reversível: reabrir a tarefa volta pra needsAction. Só
+// tarefa recebe esse check — entrega (execução do cronograma) não
+// sincroniza com o Google.
 export async function marcarConclusaoTarefaGoogle(params: {
   googleTaskId: string;
   tituloBase: string;
@@ -180,6 +181,9 @@ export async function marcarConclusaoTarefaGoogle(params: {
   await fetch(`${TASKS_URL}/${params.googleTaskId}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ title: params.concluida ? `✅ ${params.tituloBase}` : params.tituloBase }),
+    body: JSON.stringify({
+      status: params.concluida ? "completed" : "needsAction",
+      ...(params.concluida ? { completed: new Date().toISOString() } : {}),
+    }),
   });
 }
