@@ -35,7 +35,6 @@ export async function GET(request: Request) {
   const [
     { data: processos, error },
     { data: agendamentos, error: erroAgendamentos },
-    { data: andamentosAgendados, error: erroAndamentos },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -44,13 +43,9 @@ export async function GET(request: Request) {
     supabase
       .from("processo_agendamentos")
       .select("id, data, horario, observacao, processos(id, numero_contrato)"),
-    supabase
-      .from("andamentos")
-      .select("id, texto, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
-      .not("agendamento_data", "is", null),
   ]);
 
-  if (error || erroAgendamentos || erroAndamentos) {
+  if (error || erroAgendamentos) {
     return new Response("Erro ao carregar agenda", { status: 500 });
   }
 
@@ -75,37 +70,25 @@ export async function GET(request: Request) {
     })
     .join("\r\n");
 
-  // Agendamentos de entrega e andamentos agendados com horário marcado —
-  // título "CT {numero} - {tarefa}" conforme pedido; ao apagar o
-  // agendamento ele some daqui, e o Google reflete isso na próxima
-  // sincronização (feed é só leitura, sem push).
+  // Só agendamentos de entrega (processo_agendamentos) — título
+  // "CT {numero} - {tarefa}" conforme pedido; ao apagar o agendamento ele
+  // some daqui, e o Google reflete isso na próxima sincronização (feed é só
+  // leitura, sem push).
   // Tarefas do checklist (processo_tarefas) NÃO entram aqui de propósito:
   // elas já viram Google Task via sincronização em tempo real (ver
   // lib/google-calendar.ts) — incluí-las aqui também duplicava a mesma
   // tarefa no Google (um check-box em "Tarefas" + um bloco de horário
   // fictício no calendário), que foi o bug relatado pelo Caio.
-  const eventosAgendamento = [
-    ...(agendamentos ?? [])
-      .filter((a: any) => a.processos)
-      .map((a: any) => ({
-        id: `agendamento-${a.id}`,
-        processoId: a.processos.id,
-        numeroContrato: numeroContratoSemSei(a.processos.numero_contrato),
-        data: a.data as string,
-        horario: a.horario as string,
-        tarefa: (a.observacao as string | null) ?? "Agendamento de entrega",
-      })),
-    ...(andamentosAgendados ?? [])
-      .filter((a: any) => a.processos)
-      .map((a: any) => ({
-        id: `andamento-${a.id}`,
-        processoId: a.processos.id,
-        numeroContrato: numeroContratoSemSei(a.processos.numero_contrato),
-        data: a.agendamento_data as string,
-        horario: a.agendamento_horario as string,
-        tarefa: a.texto as string,
-      })),
-  ]
+  const eventosAgendamento = (agendamentos ?? [])
+    .filter((a: any) => a.processos)
+    .map((a: any) => ({
+      id: `agendamento-${a.id}`,
+      processoId: a.processos.id,
+      numeroContrato: numeroContratoSemSei(a.processos.numero_contrato),
+      data: a.data as string,
+      horario: a.horario as string,
+      tarefa: (a.observacao as string | null) ?? "Agendamento de entrega",
+    }))
     .map((e) => {
       const resumo = escaparTexto(`CT ${e.numeroContrato} - ${e.tarefa}`);
       return [

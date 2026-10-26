@@ -4,7 +4,7 @@
 // continua salvo normalmente no CRM — a sincronização é um "a mais", nunca
 // bloqueia a ação principal.
 export async function sincronizarGoogle(params: {
-  tipo: "agendamento" | "tarefa" | "andamento";
+  tipo: "agendamento" | "tarefa";
   acao: "salvar" | "remover" | "concluir";
   id: string;
   googleEventId: string | null;
