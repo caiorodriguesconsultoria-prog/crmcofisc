@@ -50,7 +50,7 @@ export default async function ProcessosPage({
     supabase.from("processo_agendamentos").select("processo_id, data, horario").gte("data", hoje),
     supabase
       .from("processo_tarefas")
-      .select("processo_id, agendamento_data, periodo")
+      .select("processo_id, agendamento_data")
       .eq("origem_tipo", "evento")
       .eq("concluida", false)
       .not("agendamento_data", "is", null)
@@ -69,34 +69,31 @@ export default async function ProcessosPage({
       .lt("data_prevista", hoje),
   ]);
 
-  // Agendamentos de entrega têm horário exato; tarefas só têm período
-  // (Manhã/Tarde) — "manha"/"tarde" viram um horário fictício só pra
-  // comparar qual vem primeiro no dia, nunca são exibidos como hora real.
-  function chaveOrdenacao(horario: string | null, periodo: "manha" | "tarde" | null) {
-    if (horario) return horario;
-    if (periodo === "manha") return "08:00:00";
-    if (periodo === "tarde") return "14:00:00";
-    return "23:59:59";
+  // Agendamentos de entrega têm horário exato; tarefas são de dia inteiro
+  // (sem horário) — entram depois de qualquer agendamento com hora marcada
+  // no mesmo dia.
+  function chaveOrdenacao(horario: string | null) {
+    return horario ?? "23:59:59";
   }
   const proximoAgendamentoPorProcesso = new Map<
     string,
-    { data: string; horario: string | null; periodo: "manha" | "tarde" | null }
+    { data: string; horario: string | null }
   >();
-  function considerar(processoId: string, data: string, horario: string | null, periodo: "manha" | "tarde" | null) {
+  function considerar(processoId: string, data: string, horario: string | null) {
     const atual = proximoAgendamentoPorProcesso.get(processoId);
     if (
       !atual ||
       data < atual.data ||
-      (data === atual.data && chaveOrdenacao(horario, periodo) < chaveOrdenacao(atual.horario, atual.periodo))
+      (data === atual.data && chaveOrdenacao(horario) < chaveOrdenacao(atual.horario))
     ) {
-      proximoAgendamentoPorProcesso.set(processoId, { data, horario, periodo });
+      proximoAgendamentoPorProcesso.set(processoId, { data, horario });
     }
   }
   for (const a of agendamentosRaw ?? []) {
-    considerar(a.processo_id, a.data, a.horario, null);
+    considerar(a.processo_id, a.data, a.horario);
   }
   for (const t of tarefasAgendadasRaw ?? []) {
-    considerar(t.processo_id, t.agendamento_data as string, null, t.periodo as "manha" | "tarde" | null);
+    considerar(t.processo_id, t.agendamento_data as string, null);
   }
   // Último andamento de cada contrato — andamentosRaw já vem ordenado por
   // data desc, então a primeira ocorrência de cada processo_id é a mais

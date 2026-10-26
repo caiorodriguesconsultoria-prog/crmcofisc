@@ -59,20 +59,15 @@ export default async function AgendaPage({
     // Concluídas não aparecem mais, já cumpriram o papel.
     supabase
       .from("processo_tarefas")
-      .select("id, label, agendamento_data, periodo, processos(id, numero_contrato)")
+      .select("id, label, agendamento_data, processos(id, numero_contrato)")
       .eq("concluida", false)
       .not("agendamento_data", "is", null)
       .order("agendamento_data"),
   ]);
 
-  // Tarefas só têm período (manhã/tarde), não horário exato — convertido num
-  // horário fictício só pra ordenar/exibir junto dos demais, mesmo padrão já
-  // usado na listagem de /processos.
-  function horarioFicticio(periodo: string | null) {
-    if (periodo === "manha") return "08:00:00";
-    if (periodo === "tarde") return "14:00:00";
-    return "23:59:59";
-  }
+  // Tarefas não têm horário (são de dia inteiro) — entram no fim da lista
+  // do dia, junto dos demais itens que têm horário exato.
+  const HORARIO_TAREFA = "23:59:00";
 
   const prazos = (processos ?? []).map((p: any) => ({
     id: p.id,
@@ -110,7 +105,7 @@ export default async function AgendaPage({
         processoId: t.processos.id,
         numeroContrato: numeroContratoSemSei(t.processos.numero_contrato),
         data: t.agendamento_data as string,
-        horario: horarioFicticio(t.periodo),
+        horario: HORARIO_TAREFA,
         observacao: t.label as string | null,
       })),
   ];

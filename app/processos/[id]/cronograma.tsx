@@ -522,7 +522,6 @@ export default function Cronograma({
       ordem,
       label,
       agendamento_data: amanha.toISOString().slice(0, 10),
-      periodo: "manha",
     });
   }
 
