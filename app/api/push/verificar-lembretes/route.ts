@@ -8,16 +8,6 @@ function agoraBrasilia() {
   return new Date(Date.now() - 3 * 60 * 60 * 1000);
 }
 
-// Decide o período pelo horário real de Brasília no momento em que a rota
-// roda — não por qual agendamento nominal disparou. O GitHub Actions (usado
-// antes) atrasava horas o disparo do cron, e um disparo da manhã atrasado
-// até quase meio-dia ainda dizia "tarefa da manhã" horas depois de fato.
-// Assim a rota se autocorrige mesmo com atraso pequeno (o Vercel Cron é bem
-// mais pontual, mas continua sendo o jeito certo de decidir isso).
-function periodoAgora(): "manha" | "tarde" {
-  return agoraBrasilia().getUTCHours() < 12 ? "manha" : "tarde";
-}
-
 function autorizado(request: NextRequest): boolean {
   const segredo = process.env.CRON_SECRET;
   if (!segredo) return false;
@@ -31,19 +21,16 @@ function autorizado(request: NextRequest): boolean {
 }
 
 // Chamado 2x por dia pelo Vercel Cron (08h e 14h de Brasília, ver
-// vercel.json) — dispara UM push só, juntando todas as tarefas do período
-// que ainda não foram avisadas. Sem reenvio automático: se não foi
-// resolvida, só volta a avisar se alguém reagendar a tarefa manualmente
-// (o que zera lembrete_enviado — ver checklist.tsx).
+// vercel.json) — dispara UM push só, juntando todas as tarefas de hoje
+// que ainda não foram avisadas (tarefa não tem mais período, só data —
+// quem pegar primeiro no dia avisa; a segunda chamada do dia não acha mais
+// nada porque lembrete_enviado já foi marcado). Sem reenvio automático: se
+// não foi resolvida, só volta a avisar se alguém reagendar a tarefa
+// manualmente (o que zera lembrete_enviado — ver checklist.tsx).
 async function executar(request: NextRequest) {
   if (!autorizado(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-
-  // Só pra teste manual (?periodo=manha) — o disparo normal do Cron não
-  // manda esse parâmetro, a rota decide sozinha pelo horário real.
-  const periodoForcado = request.nextUrl.searchParams.get("periodo");
-  const periodo = periodoForcado === "manha" || periodoForcado === "tarde" ? periodoForcado : periodoAgora();
 
   const supabase = createServiceClient();
   const hoje = agoraBrasilia().toISOString().slice(0, 10);
@@ -51,13 +38,12 @@ async function executar(request: NextRequest) {
   const { data: tarefas } = await supabase
     .from("processo_tarefas")
     .select("id, label, processos(numero_contrato)")
-    .eq("periodo", periodo)
     .eq("agendamento_data", hoje)
     .eq("concluida", false)
     .eq("lembrete_enviado", false);
 
   if (!tarefas || tarefas.length === 0) {
-    return NextResponse.json({ ok: true, periodo, enviados: 0 });
+    return NextResponse.json({ ok: true, enviados: 0 });
   }
 
   await supabase
@@ -65,7 +51,6 @@ async function executar(request: NextRequest) {
     .update({ lembrete_enviado: true })
     .in("id", tarefas.map((t) => t.id));
 
-  const nomePeriodo = periodo === "manha" ? "manhã" : "tarde";
   const itens = tarefas.map((t: any) => `CT ${t.processos?.numero_contrato ?? "?"} - ${t.label}`);
   // Notificação push mostra só umas poucas linhas do corpo — em vez de
   // deixar cortar no meio de uma tarefa (parecendo incompleto), resume com
@@ -75,7 +60,7 @@ async function executar(request: NextRequest) {
     itens.length > LIMITE_LINHAS
       ? [...itens.slice(0, LIMITE_LINHAS), `e mais ${itens.length - LIMITE_LINHAS}...`].join("\n")
       : itens.join("\n");
-  const titulo = tarefas.length === 1 ? `Lembrete: 1 tarefa (${nomePeriodo})` : `Lembrete: ${tarefas.length} tarefas (${nomePeriodo})`;
+  const titulo = tarefas.length === 1 ? `Lembrete: 1 tarefa hoje` : `Lembrete: ${tarefas.length} tarefas hoje`;
 
   const { data: inscricoes } = await supabase.from("push_subscriptions").select("id, endpoint, p256dh, auth");
 
@@ -94,7 +79,7 @@ async function executar(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, periodo, enviados, itensNaMensagem: tarefas.length });
+  return NextResponse.json({ ok: true, enviados, itensNaMensagem: tarefas.length });
 }
 
 // Vercel Cron sempre chama via GET.

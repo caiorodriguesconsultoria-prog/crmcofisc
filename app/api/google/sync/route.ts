@@ -14,8 +14,8 @@ import {
 // novo aqui), só passa o suficiente pra montar o evento/tarefa e salva o
 // google_event_id resultante de volta na linha, pra saber qual atualizar
 // ou remover da próxima vez. "tarefa" vira Google Task (aparece na lista
-// de Tarefas do Calendar); "agendamento"/"andamento" continuam virando
-// evento de Calendar de verdade, com horário marcado.
+// de Tarefas do Calendar); "agendamento" continua virando evento de
+// Calendar de verdade, com horário marcado.
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { tipo, acao, id, googleEventId, numeroContrato, descricao, data, horario, urlProcesso, concluida } = body as {
-    tipo: "agendamento" | "tarefa" | "andamento";
+    tipo: "agendamento" | "tarefa";
     acao: "salvar" | "remover" | "concluir";
     id: string;
     googleEventId: string | null;
@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
   const TABELAS = {
     agendamento: "processo_agendamentos",
     tarefa: "processo_tarefas",
-    andamento: "andamentos",
   } as const;
   const tabela = TABELAS[tipo];
   if (!tabela) {
