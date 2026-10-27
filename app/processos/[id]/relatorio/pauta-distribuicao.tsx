@@ -49,10 +49,56 @@ export default function PautaDistribuicao({
   const [edicaoData, setEdicaoData] = useState("");
   const [edicaoExecucaoId, setEdicaoExecucaoId] = useState("");
 
+  const [extraindoAnexo, setExtraindoAnexo] = useState(false);
+  const [erroAnexo, setErroAnexo] = useState<string | null>(null);
+
   const total = pauta.reduce((soma, p) => soma + Number(p.quantidade), 0);
   const formaEntrega = pauta.length > 1 ? "Descentralizada" : pauta.length === 1 ? "Centralizada" : "não definida";
 
   const execucoesOrdenadas = [...execucoes].sort((a, b) => a.numero - b.numero);
+
+  // Anexar o documento de distribuição (PDF, foto ou planilha) já cadastra
+  // as linhas extraídas — só adiciona, nunca mexe nas linhas já cadastradas.
+  async function processarAnexo(arquivo: File) {
+    setErroAnexo(null);
+    setExtraindoAnexo(true);
+    try {
+      const formData = new FormData();
+      formData.append("arquivo", arquivo);
+      const resp = await fetch("/api/processos/extrair-pauta", { method: "POST", body: formData });
+      const corpo = await resp.json();
+      if (!resp.ok) {
+        setErroAnexo(corpo.error ?? "Não deu pra extrair os dados do anexo.");
+        return;
+      }
+      const linhas = Array.isArray(corpo.dados?.linhas) ? corpo.dados.linhas : [];
+      if (linhas.length === 0) {
+        setErroAnexo("Não encontrei nenhuma linha de pauta de distribuição nesse anexo.");
+        return;
+      }
+      const execucaoIdPorNumero = new Map(execucoesOrdenadas.map((e) => [e.numero, e.id]));
+      const { error: erroInsercao } = await supabase.from("processo_pauta_distribuicao").insert(
+        linhas
+          .filter((l: any) => l.uf && l.quantidade != null)
+          .map((l: any) => ({
+            processo_id: processoId,
+            uf: l.uf,
+            quantidade: l.quantidade,
+            data_entrega: l.data_entrega ?? null,
+            execucao_id: l.numero_parcela != null ? execucaoIdPorNumero.get(l.numero_parcela) ?? null : null,
+          })),
+      );
+      if (erroInsercao) {
+        setErroAnexo(erroInsercao.message);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setErroAnexo("Não deu pra extrair os dados do anexo.");
+    } finally {
+      setExtraindoAnexo(false);
+    }
+  }
 
   // Agrupa as linhas por parcela do Cronograma, na ordem das parcelas, com
   // "Sem parcela vinculada" por último — só pra quem ainda não linkou.
@@ -156,6 +202,7 @@ export default function PautaDistribuicao({
       </p>
 
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erroAnexo && <p style={{ color: "#B0655C" }}>{erroAnexo}</p>}
 
       {grupos.map((grupo) => (
         <div key={grupo.execucaoId ?? "sem-parcela"} style={{ marginBottom: 10 }}>
@@ -270,9 +317,35 @@ export default function PautaDistribuicao({
           </button>
         </div>
       ) : (
-        <button onClick={() => setNovo(true)} style={{ marginTop: 8 }}>
-          + Adicionar à pauta
-        </button>
+        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+          <button onClick={() => setNovo(true)}>+ Adicionar à pauta</button>
+          <label
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "6px 12px",
+              borderRadius: 20,
+              border: `1px dashed ${cor.borda}`,
+              color: cor.textoTerciario,
+              background: "transparent",
+              cursor: extraindoAnexo ? "default" : "pointer",
+              opacity: extraindoAnexo ? 0.6 : 1,
+            }}
+          >
+            {extraindoAnexo ? "Lendo anexo..." : "+ Anexar PDF/Excel/foto"}
+            <input
+              type="file"
+              accept="application/pdf,image/png,image/jpeg,image/webp,.xlsx,.xls"
+              disabled={extraindoAnexo}
+              onChange={(e) => {
+                const arquivo = e.target.files?.[0];
+                if (arquivo) processarAnexo(arquivo);
+                e.target.value = "";
+              }}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
       )}
     </div>
   );
