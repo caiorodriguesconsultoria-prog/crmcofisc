@@ -76,8 +76,58 @@ export default function DadosEntrega({
   const [carregando, setCarregando] = useState<string | null>(null);
   const [novo, setNovo] = useState(false);
   const [campos, setCampos] = useState(CAMPOS_VAZIOS);
+  const [extraindoAnexo, setExtraindoAnexo] = useState(false);
+  const [erroAnexo, setErroAnexo] = useState<string | null>(null);
 
   const totalNf = entregas.reduce((soma, e) => soma + (e.valor_total_nf ?? 0), 0);
+
+  // Anexar a nota fiscal/romaneio (PDF, foto ou planilha) já cadastra as
+  // entregas extraídas — só adiciona, nunca mexe nas entregas já cadastradas.
+  // atraso_dias/percentual_transcurso continuam sempre manuais (não vêm de
+  // documento, ver regra no prompt da IA).
+  async function processarAnexo(arquivo: File) {
+    setErroAnexo(null);
+    setExtraindoAnexo(true);
+    try {
+      const formData = new FormData();
+      formData.append("arquivo", arquivo);
+      const resp = await fetch("/api/processos/extrair-entregas", { method: "POST", body: formData });
+      const corpo = await resp.json();
+      if (!resp.ok) {
+        setErroAnexo(corpo.error ?? "Não deu pra extrair os dados do anexo.");
+        return;
+      }
+      const linhas = Array.isArray(corpo.dados?.entregas) ? corpo.dados.entregas : [];
+      if (linhas.length === 0) {
+        setErroAnexo("Não encontrei nenhuma entrega nesse anexo.");
+        return;
+      }
+      const { error: erroInsercao } = await supabase.from("processo_entregas").insert(
+        linhas.map((l: any) => ({
+          processo_id: processoId,
+          local_entrega: l.local_entrega || null,
+          quantidade: l.quantidade ?? null,
+          valor_total_nf: l.valor_total_nf ?? null,
+          danfe_venda: l.danfe_venda || null,
+          danfe_remessa: l.danfe_remessa || null,
+          lote: l.lote || null,
+          data_fabricacao: l.data_fabricacao || null,
+          data_validade: l.data_validade || null,
+          data_entrega: l.data_entrega || null,
+          responsavel: l.responsavel || null,
+        })),
+      );
+      if (erroInsercao) {
+        setErroAnexo(erroInsercao.message);
+        return;
+      }
+      onSalvo?.();
+    } catch {
+      setErroAnexo("Não deu pra extrair os dados do anexo.");
+    } finally {
+      setExtraindoAnexo(false);
+    }
+  }
 
   function atualizar(chave: keyof typeof CAMPOS_VAZIOS, valor: string) {
     setCampos((atual) => ({ ...atual, [chave]: valor }));
@@ -134,6 +184,7 @@ export default function DadosEntrega({
       </p>
 
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erroAnexo && <p style={{ color: "#B0655C" }}>{erroAnexo}</p>}
 
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
@@ -303,9 +354,35 @@ export default function DadosEntrega({
           </div>
         </div>
       ) : (
-        <button onClick={() => setNovo(true)} style={{ marginTop: 8 }}>
-          + Adicionar entrega
-        </button>
+        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+          <button onClick={() => setNovo(true)}>+ Adicionar entrega</button>
+          <label
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "6px 12px",
+              borderRadius: 20,
+              border: `1px dashed ${cor.borda}`,
+              color: cor.textoTerciario,
+              background: "transparent",
+              cursor: extraindoAnexo ? "default" : "pointer",
+              opacity: extraindoAnexo ? 0.6 : 1,
+            }}
+          >
+            {extraindoAnexo ? "Lendo anexo..." : "+ Anexar PDF/Excel/foto"}
+            <input
+              type="file"
+              accept="application/pdf,image/png,image/jpeg,image/webp,.xlsx,.xls"
+              disabled={extraindoAnexo}
+              onChange={(e) => {
+                const arquivo = e.target.files?.[0];
+                if (arquivo) processarAnexo(arquivo);
+                e.target.value = "";
+              }}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
       )}
     </div>
   );

@@ -379,7 +379,7 @@ export default function NovoProcessoForm({
         </label>
         <input
           type="file"
-          accept="application/pdf,image/png,image/jpeg,image/webp"
+          accept="application/pdf,image/png,image/jpeg,image/webp,.xlsx,.xls"
           disabled={extraindoPdf}
           onChange={(e) => {
             const arquivo = e.target.files?.[0];

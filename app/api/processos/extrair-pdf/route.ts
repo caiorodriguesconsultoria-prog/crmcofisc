@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { construirBlocoAnexo, TAMANHO_MAXIMO_ANEXO_BYTES, tipoAnexoValido } from "@/lib/ia-anexo";
 
 const SISTEMA = `Você extrai dados estruturados de contratos administrativos do Ministério da Saúde (Brasil), publicados no SEI, pro Quadro Resumitivo de um sistema de gestão de contratos (COFISC/DAF/SCTIE).
 
@@ -58,13 +59,6 @@ Regras:
 - Se a imagem/PDF mostrar só a tabela de itens e/ou de cronograma (sem o texto do contrato inteiro), preencha só o que der pra ler dessa tabela e devolva null nos demais campos — não é erro, é esperado.
 - Se não encontrar a informação de algum campo, use null — nunca omita a chave.`;
 
-const TIPOS_ACEITOS: Record<string, string> = {
-  "application/pdf": "document",
-  "image/png": "image",
-  "image/jpeg": "image",
-  "image/webp": "image",
-};
-
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -83,20 +77,15 @@ export async function POST(request: NextRequest) {
   if (!(arquivo instanceof File)) {
     return NextResponse.json({ error: "arquivo não enviado" }, { status: 400 });
   }
-  const tipoBloco = TIPOS_ACEITOS[arquivo.type];
-  if (!tipoBloco) {
-    return NextResponse.json({ error: "envie um PDF ou uma imagem (JPG, PNG ou WEBP)" }, { status: 400 });
+  if (!tipoAnexoValido(arquivo.type)) {
+    return NextResponse.json({ error: "envie um PDF, uma imagem (JPG, PNG ou WEBP) ou uma planilha (XLSX/XLS)" }, { status: 400 });
   }
-  // Limite conservador — funções serverless da Vercel têm um teto de
-  // tamanho de corpo da requisição bem menor que o da API da Anthropic.
-  const TAMANHO_MAXIMO_BYTES = 4 * 1024 * 1024;
-  if (arquivo.size > TAMANHO_MAXIMO_BYTES) {
+  if (arquivo.size > TAMANHO_MAXIMO_ANEXO_BYTES) {
     return NextResponse.json({ error: "Arquivo muito grande (máximo 4MB)" }, { status: 400 });
   }
 
-  const base64 = Buffer.from(await arquivo.arrayBuffer()).toString("base64");
-
   try {
+    const blocoAnexo = await construirBlocoAnexo(arquivo);
     const anthropic = new Anthropic();
     const resposta = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -105,13 +94,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "user",
-          content: [
-            {
-              type: tipoBloco,
-              source: { type: "base64", media_type: arquivo.type, data: base64 },
-            } as Anthropic.Messages.ContentBlockParam,
-            { type: "text", text: "Extraia os dados desse contrato conforme as instruções." },
-          ],
+          content: [blocoAnexo, { type: "text", text: "Extraia os dados desse contrato conforme as instruções." }],
         },
       ],
     });

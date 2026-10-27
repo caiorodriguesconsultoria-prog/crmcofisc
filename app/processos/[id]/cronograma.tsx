@@ -816,10 +816,10 @@ export default function Cronograma({
             opacity: extraindoAnexo ? 0.6 : 1,
           }}
         >
-          {extraindoAnexo ? "Lendo anexo..." : "+ Itens por anexo (PDF/foto)"}
+          {extraindoAnexo ? "Lendo anexo..." : "+ Itens por anexo (PDF/Excel/foto)"}
           <input
             type="file"
-            accept="application/pdf,image/png,image/jpeg,image/webp"
+            accept="application/pdf,image/png,image/jpeg,image/webp,.xlsx,.xls"
             disabled={extraindoAnexo}
             onChange={(e) => {
               const arquivo = e.target.files?.[0];
