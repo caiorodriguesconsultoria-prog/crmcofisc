@@ -393,7 +393,7 @@ export default function QuadroResumitivo({
     if (tipo === "textarea") {
       return (
         <textarea
-          value={valores[chave]}
+          value={valores[chave] ?? ""}
           onChange={(e) => atualizar(chave, e.target.value)}
           style={{ width: "100%", padding: 6 }}
         />
@@ -406,6 +406,17 @@ export default function QuadroResumitivo({
         onChange={(e) => atualizar(chave, e.target.value)}
         style={{ width: "100%", padding: 6 }}
       />
+    );
+  }
+
+  // campoValor() sozinho não mostra o rótulo — esse wrapper é o que coloca
+  // o rótulo (igual todo campo tem) junto do valor/input.
+  function campoComLabel(chave: string, label: string, tipo: CampoTexto["tipo"], span?: boolean) {
+    return (
+      <div style={span ? { gridColumn: "1 / -1" } : undefined}>
+        <div style={rotulo}>{label}</div>
+        <div style={{ marginTop: 2 }}>{campoValor(chave, tipo)}</div>
+      </div>
     );
   }
 
@@ -571,11 +582,12 @@ export default function QuadroResumitivo({
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
+          gridAutoFlow: "dense",
           gap: 12,
           marginTop: 8,
         }}
       >
-        <div>{campoValor("processo_eletronico_numero", undefined)}</div>
+        {campoComLabel("processo_eletronico_numero", "Processo Eletrônico nº", undefined)}
 
         {campoComSei("Pregão Eletrônico nº", "pregao_eletronico_numero", "pregao_eletronico_numero_sei")}
         {blocoDou("Publicação D.O.U (Pregão)", processo.publicacao_dou_pregao, douPregao, atualizarDouPregao, "publicacao_dou_pregao_sei")}
@@ -589,8 +601,8 @@ export default function QuadroResumitivo({
         {blocoDou("Publicação D.O.U (Contrato)", processo.publicacao_dou, douContrato, atualizarDouContrato, "publicacao_dou_sei")}
         {campoComSei("Publicação PNCP (Contrato)", "publicacao_pncp", "publicacao_pncp_sei", "data")}
 
-        <div style={{ gridColumn: "1 / -1" }}>{campoValor("objeto", "textarea")}</div>
-        <div>{campoValor("data_assinatura", "data")}</div>
+        {campoComLabel("objeto", "Objeto", "textarea", true)}
+        {campoComLabel("data_assinatura", "Data da Assinatura", "data")}
 
         <div style={{ gridColumn: "1 / -1" }}>
           <div style={rotulo}>Portaria Designação de Fiscal</div>
@@ -643,10 +655,10 @@ export default function QuadroResumitivo({
           </div>
         </div>
 
-        <div>{campoValor("nota_empenho_numero", undefined)}</div>
-        <div>{campoValor("programa_trabalho", undefined)}</div>
-        <div>{campoValor("natureza_despesa", undefined)}</div>
-        <div>{campoValor("local_entrega", undefined)}</div>
+        {campoComLabel("nota_empenho_numero", "Nota de Empenho nº", undefined)}
+        {campoComLabel("programa_trabalho", "Programa de Trabalho", undefined)}
+        {campoComLabel("natureza_despesa", "Natureza de Despesa", undefined)}
+        {campoComLabel("local_entrega", "Local de Entrega", undefined)}
 
         <div>
           <div style={rotulo}>Vigência do Contrato</div>
