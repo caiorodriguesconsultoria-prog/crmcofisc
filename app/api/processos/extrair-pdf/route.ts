@@ -14,14 +14,25 @@ Leia o documento do contrato (pode ser o PDF inteiro, ou uma foto/imagem só da 
   "unidade_medida": string ou null,
   "processo_eletronico_numero": string ou null,
   "pregao_eletronico_numero": string ou null,
-  "publicacao_pncp_pregao": string ou null,
+  "pregao_eletronico_numero_sei": string ou null,
+  "publicacao_dou_pregao": string ou null,
+  "publicacao_dou_pregao_sei": string ou null,
+  "publicacao_pncp_pregao": "AAAA-MM-DD" ou null,
+  "publicacao_pncp_pregao_sei": string ou null,
   "ata_registro_precos_numero": string ou null,
-  "publicacao_pncp_ata": string ou null,
+  "ata_registro_precos_numero_sei": string ou null,
+  "publicacao_dou_ata": string ou null,
+  "publicacao_dou_ata_sei": string ou null,
+  "publicacao_pncp_ata": "AAAA-MM-DD" ou null,
+  "publicacao_pncp_ata_sei": string ou null,
+  "numero_contrato_sei": string ou null,
   "data_assinatura": "AAAA-MM-DD" ou null,
   "vigencia_inicio": "AAAA-MM-DD" ou null,
   "vigencia_fim": "AAAA-MM-DD" ou null,
   "publicacao_dou": string ou null,
-  "publicacao_pncp": string ou null,
+  "publicacao_dou_sei": string ou null,
+  "publicacao_pncp": "AAAA-MM-DD" ou null,
+  "publicacao_pncp_sei": string ou null,
   "valor_global": number ou null,
   "valor_garantia": number ou null,
   "portaria_designacao_fiscal": string ou null,
@@ -54,7 +65,10 @@ Regras:
 - "nup_principal" é o número do Processo SEI (ex.: "25000.054774/2024-67"), não o número do documento SEI do contrato em si.
 - Datas sempre no formato AAAA-MM-DD.
 - Valores monetários como número puro (sem "R$", sem separador de milhar) — use o valor em reais (R$), mesmo quando o contrato também tiver valores em moeda estrangeira.
-- Há 3 publicações no PNCP (Portal Nacional de Contratações Públicas) distintas, uma pra cada documento: "publicacao_pncp_pregao" (do Pregão Eletrônico), "publicacao_pncp_ata" (da Ata de Registro de Preços) e "publicacao_pncp" (do Contrato em si). Não confunda uma com a outra — cada uma vem perto do número do respectivo documento no texto.
+- Pregão Eletrônico, Ata de Registro de Preços e Contrato cada um pode ter sido publicado no D.O.U, no PNCP, nos dois ou em nenhum — não é obrigatório nenhum dos dois. Não confunda a publicação de um documento com a de outro — cada uma vem perto do número do respectivo documento no texto.
+  - "publicacao_pncp_*" é só a data da publicação no PNCP (Portal Nacional de Contratações Públicas), formato AAAA-MM-DD.
+  - "publicacao_dou_*" é o texto da publicação no D.O.U, no formato "Edição nº X, Seção 3, pág. Y, (dia da semana, DD de mês por extenso de AAAA)" — monte exatamente nesse formato a partir do que o documento trouxer (edição, página, data), mesmo que o texto original esteja em outra ordem/redação.
+  - Os campos "*_sei" (ex.: "pregao_eletronico_numero_sei", "publicacao_dou_pregao_sei", "publicacao_pncp_pregao_sei") são o número do documento SEI correspondente (geralmente um número de 10 dígitos perto da informação, às vezes entre parênteses) — cada número/publicação pode ter o seu próprio, não repita o mesmo SEI em campos diferentes a não ser que o documento realmente mostre o mesmo número duas vezes.
 - "itens" é a tabela de itens do contrato (coluna ITEM/DESCRIÇÃO/CATMAT/UNIDADE/QUANTIDADE/VALOR UNITÁRIO) — um item por linha dessa tabela. Se o contrato tiver só um item, devolva mesmo assim como lista com 1 elemento.
 - Além da tabela formal de itens, CONTINUE a numeração e inclua também qualquer item complementar/acessório do contrato que tenha seu próprio cronograma de entrega (parcelas com quantitativo e prazo), mesmo que ele apareça fora da tabela principal, sem CATMAT e sem valor unitário — por exemplo "caneta reutilizável", "seringa", brindes, acessórios ou similares mencionados em outra cláusula. Nesses casos, "catmat" e "valor_unitario" ficam null, mas "descricao", "quantidade" e "parcelas" devem vir preenchidos normalmente. Não pule nenhum bloco de cronograma de entrega do documento, esteja ele onde estiver.
 - "parcelas" vem do cronograma de entrega de cada item (tabela PARCELAS/QUANTITATIVO/PRAZO MÁXIMO DE ENTREGA, numerada "1ª", "2ª" etc. — use só o número, sem o "ª"). Se o prazo for descrito como "N dias após a assinatura do contrato" (ou "da assinatura", "contados da assinatura" etc.) E você já souber "data_assinatura", calcule "data_prevista" somando N dias corridos a essa data e devolva no formato AAAA-MM-DD. Se "data_assinatura" for null, ou o prazo não for relativo à assinatura, ou você não tiver certeza da conta, devolva "data_prevista": null — nunca adivinhe uma data.

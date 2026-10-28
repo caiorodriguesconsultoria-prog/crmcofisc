@@ -22,6 +22,7 @@ type Item = {
 type Processo = {
   id: string;
   numero_contrato: string;
+  numero_contrato_sei: string | null;
   objeto: string;
   quantidade_contratada: string | null;
   data_assinatura: string | null;
@@ -29,11 +30,21 @@ type Processo = {
   vigencia_fim: string | null;
   processo_eletronico_numero: string | null;
   pregao_eletronico_numero: string | null;
+  pregao_eletronico_numero_sei: string | null;
+  publicacao_dou_pregao: string | null;
+  publicacao_dou_pregao_sei: string | null;
   publicacao_pncp_pregao: string | null;
+  publicacao_pncp_pregao_sei: string | null;
   ata_registro_precos_numero: string | null;
+  ata_registro_precos_numero_sei: string | null;
+  publicacao_dou_ata: string | null;
+  publicacao_dou_ata_sei: string | null;
   publicacao_pncp_ata: string | null;
+  publicacao_pncp_ata_sei: string | null;
   publicacao_dou: string | null;
+  publicacao_dou_sei: string | null;
   publicacao_pncp: string | null;
+  publicacao_pncp_sei: string | null;
   valor_unitario: number | null;
   valor_global: number | null;
   valor_garantia: number | null;
@@ -67,8 +78,10 @@ const MESES = [
 // "Publicação D.O.U" e "Portaria Designação de Fiscal" têm um texto quase
 // todo fixo (modelo padrão da COFISC) — só alguns números/datas mudam a
 // cada contrato. Em vez de editar o texto inteiro à mão toda vez, só os
-// pedaços variáveis são inputs; o texto final (o que de fato fica salvo em
-// processos.publicacao_dou/portaria_designacao_fiscal) é montado sozinho.
+// pedaços variáveis são inputs; o texto final (o que de fato fica salvo no
+// banco) é montado sozinho. Pregão, Ata e Contrato cada um pode ter sua
+// própria publicação no D.O.U — não é obrigatório nenhum dos dois (D.O.U/
+// PNCP), pode ter um, outro, os dois ou nenhum.
 function diaSemanaEExtenso(dataIso: string): { diaSemana: string; extenso: string } {
   const data = new Date(`${dataIso}T00:00:00`);
   const diaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(data);
@@ -76,13 +89,15 @@ function diaSemanaEExtenso(dataIso: string): { diaSemana: string; extenso: strin
   return { diaSemana, extenso };
 }
 
-function montarPublicacaoDou(edicao: string, pagina: string, data: string): string | null {
-  if (!edicao.trim() || !pagina.trim() || !data) return null;
-  const { diaSemana, extenso } = diaSemanaEExtenso(data);
-  return `Edição nº ${edicao.trim()}, Seção 3, pág. ${pagina.trim()}, (${diaSemana}, ${extenso})`;
+type PartesDou = { edicao: string; pagina: string; data: string };
+
+function montarPublicacaoDou(p: PartesDou): string | null {
+  if (!p.edicao.trim() || !p.pagina.trim() || !p.data) return null;
+  const { diaSemana, extenso } = diaSemanaEExtenso(p.data);
+  return `Edição nº ${p.edicao.trim()}, Seção 3, pág. ${p.pagina.trim()}, (${diaSemana}, ${extenso})`;
 }
 
-function parsePublicacaoDou(texto: string | null): { edicao: string; pagina: string; data: string } {
+function parsePublicacaoDou(texto: string | null): PartesDou {
   const vazio = { edicao: "", pagina: "", data: "" };
   if (!texto) return vazio;
   const m = texto.match(
@@ -96,21 +111,15 @@ function parsePublicacaoDou(texto: string | null): { edicao: string; pagina: str
   return { edicao: m[1], pagina: m[2], data: `${m[5]}-${mes}-${dia}` };
 }
 
-function montarPortaria(
-  numero: string,
-  data: string,
-  tipo: string,
-  numeroTipo: string,
-  dataTipo: string,
-): string | null {
-  if (!numero.trim() || !data || !numeroTipo.trim() || !dataTipo) return null;
-  const { extenso } = diaSemanaEExtenso(data);
-  return `Portaria CGLIS nº ${numero.trim()}, de ${extenso}; ${tipo} nº ${numeroTipo.trim()}, ${formatarData(dataTipo)}`;
+type PartesPortaria = { numero: string; data: string; tipo: string; numeroTipo: string; dataTipo: string };
+
+function montarPortaria(p: PartesPortaria): string | null {
+  if (!p.numero.trim() || !p.data || !p.numeroTipo.trim() || !p.dataTipo) return null;
+  const { extenso } = diaSemanaEExtenso(p.data);
+  return `Portaria CGLIS nº ${p.numero.trim()}, de ${extenso}; ${p.tipo} nº ${p.numeroTipo.trim()}, ${formatarData(p.dataTipo)}`;
 }
 
-function parsePortaria(
-  texto: string | null,
-): { numero: string; data: string; tipo: string; numeroTipo: string; dataTipo: string } {
+function parsePortaria(texto: string | null): PartesPortaria {
   const vazio = { numero: "", data: "", tipo: "BGP", numeroTipo: "", dataTipo: "" };
   if (!texto) return vazio;
   const m = texto.match(
@@ -159,12 +168,6 @@ type CampoTexto = {
 
 const CAMPOS: CampoTexto[] = [
   { chave: "processo_eletronico_numero", label: "Processo Eletrônico nº" },
-  { chave: "pregao_eletronico_numero", label: "Pregão Eletrônico nº" },
-  { chave: "publicacao_pncp_pregao", label: "Publicação PNCP (Pregão)" },
-  { chave: "ata_registro_precos_numero", label: "Ata de Registro de Preços nº" },
-  { chave: "publicacao_pncp_ata", label: "Publicação PNCP (Ata)" },
-  { chave: "numero_contrato", label: "Contrato nº" },
-  { chave: "publicacao_pncp", label: "Publicação PNCP (Contrato)" },
   { chave: "objeto", label: "Objeto", span: true, tipo: "textarea" },
   { chave: "data_assinatura", label: "Data da Assinatura", tipo: "data" },
   { chave: "nota_empenho_numero", label: "Nota de Empenho nº" },
@@ -172,6 +175,11 @@ const CAMPOS: CampoTexto[] = [
   { chave: "natureza_despesa", label: "Natureza de Despesa" },
   { chave: "local_entrega", label: "Local de Entrega" },
 ];
+
+// Campo com um número/sigla do SEI entre parênteses ao lado — o documento
+// original do Quadro Resumitivo mostra isso em Pregão/Ata/Contrato nº e nas
+// publicações de PNCP. SEI é sempre opcional (nem todo campo tem um).
+const rotulo = { fontSize: 10.5, textTransform: "uppercase" as const, color: "#7D7979", letterSpacing: 0.5 };
 
 export default function QuadroResumitivo({
   processoId,
@@ -199,31 +207,55 @@ export default function QuadroResumitivo({
     iniciais.valor_garantia = moedaParaFormatado(processo.valor_garantia);
     iniciais.publicacao_dou = processo.publicacao_dou ?? "";
     iniciais.portaria_designacao_fiscal = processo.portaria_designacao_fiscal ?? "";
+    iniciais.numero_contrato = processo.numero_contrato;
+    // Número + SEI (Pregão/Ata/Contrato) e PNCP (Pregão/Ata/Contrato) —
+    // fora do CAMPOS genérico porque têm um campo de SEI ao lado.
+    const chavesComSei: (keyof Processo)[] = [
+      "numero_contrato_sei",
+      "pregao_eletronico_numero", "pregao_eletronico_numero_sei",
+      "publicacao_pncp_pregao", "publicacao_pncp_pregao_sei",
+      "publicacao_dou_pregao_sei",
+      "ata_registro_precos_numero", "ata_registro_precos_numero_sei",
+      "publicacao_pncp_ata", "publicacao_pncp_ata_sei",
+      "publicacao_dou_ata_sei",
+      "publicacao_pncp", "publicacao_pncp_sei",
+      "publicacao_dou_sei",
+    ];
+    for (const chave of chavesComSei) {
+      iniciais[chave] = (processo[chave] as string) ?? "";
+    }
     return iniciais;
   });
 
-  // Publicação D.O.U e Portaria Designação de Fiscal têm texto quase todo
-  // fixo — só os pedaços abaixo são digitados, o texto final é montado
-  // sozinho (ver montarPublicacaoDou/montarPortaria). Pré-preenchidos a
-  // partir do texto já salvo quando possível (parsePublicacaoDou/parsePortaria).
-  const [dou, setDou] = useState(() => parsePublicacaoDou(processo.publicacao_dou));
+  // Publicação D.O.U (Pregão/Ata/Contrato) e Portaria Designação de Fiscal
+  // — só os pedaços variáveis são inputs, o texto final é montado sozinho
+  // (ver montarPublicacaoDou/montarPortaria). Pré-preenchidos a partir do
+  // texto já salvo quando possível.
+  const [douPregao, setDouPregao] = useState(() => parsePublicacaoDou(processo.publicacao_dou_pregao));
+  const [douAta, setDouAta] = useState(() => parsePublicacaoDou(processo.publicacao_dou_ata));
+  const [douContrato, setDouContrato] = useState(() => parsePublicacaoDou(processo.publicacao_dou));
   const [portaria, setPortaria] = useState(() => parsePortaria(processo.portaria_designacao_fiscal));
 
   function atualizar(chave: string, valor: string) {
     setValores((atual) => ({ ...atual, [chave]: valor }));
   }
 
-  function atualizarDou(parte: keyof typeof dou, valor: string) {
-    const novo = { ...dou, [parte]: valor };
-    setDou(novo);
-    const composto = montarPublicacaoDou(novo.edicao, novo.pagina, novo.data);
-    if (composto) atualizar("publicacao_dou", composto);
+  function fazerAtualizarDou(estado: PartesDou, setEstado: (p: PartesDou) => void, chaveTexto: string) {
+    return (parte: keyof PartesDou, valor: string) => {
+      const novo = { ...estado, [parte]: valor };
+      setEstado(novo);
+      const composto = montarPublicacaoDou(novo);
+      if (composto) atualizar(chaveTexto, composto);
+    };
   }
+  const atualizarDouPregao = fazerAtualizarDou(douPregao, setDouPregao, "publicacao_dou_pregao");
+  const atualizarDouAta = fazerAtualizarDou(douAta, setDouAta, "publicacao_dou_ata");
+  const atualizarDouContrato = fazerAtualizarDou(douContrato, setDouContrato, "publicacao_dou");
 
-  function atualizarPortaria(parte: keyof typeof portaria, valor: string) {
+  function atualizarPortaria(parte: keyof PartesPortaria, valor: string) {
     const novo = { ...portaria, [parte]: valor };
     setPortaria(novo);
-    const composto = montarPortaria(novo.numero, novo.data, novo.tipo, novo.numeroTipo, novo.dataTipo);
+    const composto = montarPortaria(novo);
     if (composto) atualizar("portaria_designacao_fiscal", composto);
   }
 
@@ -235,16 +267,27 @@ export default function QuadroResumitivo({
       .update({
         processo_eletronico_numero: valores.processo_eletronico_numero || null,
         pregao_eletronico_numero: valores.pregao_eletronico_numero || null,
+        pregao_eletronico_numero_sei: valores.pregao_eletronico_numero_sei || null,
+        publicacao_dou_pregao: valores.publicacao_dou_pregao || null,
+        publicacao_dou_pregao_sei: valores.publicacao_dou_pregao_sei || null,
         publicacao_pncp_pregao: valores.publicacao_pncp_pregao || null,
+        publicacao_pncp_pregao_sei: valores.publicacao_pncp_pregao_sei || null,
         ata_registro_precos_numero: valores.ata_registro_precos_numero || null,
+        ata_registro_precos_numero_sei: valores.ata_registro_precos_numero_sei || null,
+        publicacao_dou_ata: valores.publicacao_dou_ata || null,
+        publicacao_dou_ata_sei: valores.publicacao_dou_ata_sei || null,
         publicacao_pncp_ata: valores.publicacao_pncp_ata || null,
+        publicacao_pncp_ata_sei: valores.publicacao_pncp_ata_sei || null,
         numero_contrato: valores.numero_contrato,
+        numero_contrato_sei: valores.numero_contrato_sei || null,
         objeto: valores.objeto,
         data_assinatura: valores.data_assinatura || null,
         vigencia_inicio: valores.vigencia_inicio || null,
         vigencia_fim: valores.vigencia_fim || null,
         publicacao_dou: valores.publicacao_dou || null,
+        publicacao_dou_sei: valores.publicacao_dou_sei || null,
         publicacao_pncp: valores.publicacao_pncp || null,
+        publicacao_pncp_sei: valores.publicacao_pncp_sei || null,
         valor_global: paraNumeroMoeda(valores.valor_global),
         valor_garantia: paraNumeroMoeda(valores.valor_garantia),
         portaria_designacao_fiscal: valores.portaria_designacao_fiscal || null,
@@ -300,6 +343,110 @@ export default function QuadroResumitivo({
     );
   }
 
+  // Valor + nº SEI ao lado, igual ao padrão do documento original ("valor
+  // (nº SEI)"). Usado pra Pregão/Ata/Contrato nº e pras publicações no
+  // PNCP (que só têm data). SEI é sempre opcional.
+  function campoComSei(
+    label: string,
+    valorChave: string,
+    seiChave: string,
+    tipo: "texto" | "data" = "texto",
+  ) {
+    const valorAtual = processo[valorChave as keyof Processo] as string | null;
+    const seiAtual = processo[seiChave as keyof Processo] as string | null;
+    return (
+      <div>
+        <div style={rotulo}>{label}</div>
+        <div style={{ marginTop: 2 }}>
+          {!editando ? (
+            valorAtual ? (
+              <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 6 }}>
+                {tipo === "data" ? formatarData(valorAtual) : valorAtual}
+                {seiAtual && ` (${seiAtual})`}
+                <BotaoCopiar texto={`${tipo === "data" ? formatarData(valorAtual) : valorAtual}${seiAtual ? ` (${seiAtual})` : ""}`} />
+              </span>
+            ) : (
+              "não informado"
+            )
+          ) : (
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                type={tipo === "data" ? "date" : "text"}
+                value={valores[valorChave] ?? ""}
+                onChange={(e) => atualizar(valorChave, e.target.value)}
+                style={{ padding: 6, flex: 1 }}
+              />
+              <input
+                placeholder="nº SEI"
+                value={valores[seiChave] ?? ""}
+                onChange={(e) => atualizar(seiChave, e.target.value)}
+                style={{ padding: 6, width: 110 }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Publicação no D.O.U (Pregão/Ata/Contrato) — mini-forma (edição/página/
+  // data) + nº SEI, nunca obrigatória.
+  function blocoDou(
+    label: string,
+    textoAtual: string | null,
+    estado: PartesDou,
+    atualizarParte: (parte: keyof PartesDou, valor: string) => void,
+    seiChave: string,
+  ) {
+    return (
+      <div>
+        <div style={rotulo}>{label}</div>
+        <div style={{ marginTop: 2 }}>
+          {!editando ? (
+            textoAtual ? (
+              <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 6 }}>
+                {textoAtual}
+                {processo[seiChave as keyof Processo] && ` (${processo[seiChave as keyof Processo]})`}
+                <BotaoCopiar
+                  texto={`${textoAtual}${processo[seiChave as keyof Processo] ? ` (${processo[seiChave as keyof Processo]})` : ""}`}
+                />
+              </span>
+            ) : (
+              "não informado"
+            )
+          ) : (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <input
+                placeholder="Edição nº"
+                value={estado.edicao}
+                onChange={(e) => atualizarParte("edicao", e.target.value)}
+                style={{ padding: 6, width: 80 }}
+              />
+              <input
+                placeholder="Página"
+                value={estado.pagina}
+                onChange={(e) => atualizarParte("pagina", e.target.value)}
+                style={{ padding: 6, width: 70 }}
+              />
+              <input
+                type="date"
+                value={estado.data}
+                onChange={(e) => atualizarParte("data", e.target.value)}
+                style={{ padding: 6, flex: 1, minWidth: 130 }}
+              />
+              <input
+                placeholder="nº SEI"
+                value={valores[seiChave] ?? ""}
+                onChange={(e) => atualizar(seiChave, e.target.value)}
+                style={{ padding: 6, width: 100 }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // Salva sozinho assim que o foco sai de toda a área de edição (clicar em
   // outro lugar da página, fechar o processo, etc.) — não fica mais
   // dependendo de lembrar de clicar em "Salvar" antes de sair daqui.
@@ -333,58 +480,25 @@ export default function QuadroResumitivo({
           marginTop: 8,
         }}
       >
-        {CAMPOS.map((c) => (
-          <div key={c.chave} style={c.span ? { gridColumn: "1 / -1" } : undefined}>
-            <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-              {c.label}
-            </div>
-            <div style={{ marginTop: 2 }}>{campoValor(c.chave, c.tipo)}</div>
-          </div>
-        ))}
+        <div>{campoValor("processo_eletronico_numero", undefined)}</div>
 
-        <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Publicação D.O.U
-          </div>
-          <div style={{ marginTop: 2 }}>
-            {!editando ? (
-              processo.publicacao_dou ? (
-                <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 6 }}>
-                  {processo.publicacao_dou}
-                  <BotaoCopiar texto={processo.publicacao_dou} />
-                </span>
-              ) : (
-                "não informado"
-              )
-            ) : (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                <input
-                  placeholder="Edição nº"
-                  value={dou.edicao}
-                  onChange={(e) => atualizarDou("edicao", e.target.value)}
-                  style={{ padding: 6, width: 90 }}
-                />
-                <input
-                  placeholder="Página"
-                  value={dou.pagina}
-                  onChange={(e) => atualizarDou("pagina", e.target.value)}
-                  style={{ padding: 6, width: 80 }}
-                />
-                <input
-                  type="date"
-                  value={dou.data}
-                  onChange={(e) => atualizarDou("data", e.target.value)}
-                  style={{ padding: 6, flex: 1, minWidth: 140 }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
+        {campoComSei("Pregão Eletrônico nº", "pregao_eletronico_numero", "pregao_eletronico_numero_sei")}
+        {blocoDou("Publicação D.O.U (Pregão)", processo.publicacao_dou_pregao, douPregao, atualizarDouPregao, "publicacao_dou_pregao_sei")}
+        {campoComSei("Publicação PNCP (Pregão)", "publicacao_pncp_pregao", "publicacao_pncp_pregao_sei", "data")}
+
+        {campoComSei("Ata de Registro de Preços nº", "ata_registro_precos_numero", "ata_registro_precos_numero_sei")}
+        {blocoDou("Publicação D.O.U (Ata)", processo.publicacao_dou_ata, douAta, atualizarDouAta, "publicacao_dou_ata_sei")}
+        {campoComSei("Publicação PNCP (Ata)", "publicacao_pncp_ata", "publicacao_pncp_ata_sei", "data")}
+
+        {campoComSei("Contrato nº", "numero_contrato", "numero_contrato_sei")}
+        {blocoDou("Publicação D.O.U (Contrato)", processo.publicacao_dou, douContrato, atualizarDouContrato, "publicacao_dou_sei")}
+        {campoComSei("Publicação PNCP (Contrato)", "publicacao_pncp", "publicacao_pncp_sei", "data")}
+
+        <div style={{ gridColumn: "1 / -1" }}>{campoValor("objeto", "textarea")}</div>
+        <div>{campoValor("data_assinatura", "data")}</div>
 
         <div style={{ gridColumn: "1 / -1" }}>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Portaria Designação de Fiscal
-          </div>
+          <div style={rotulo}>Portaria Designação de Fiscal</div>
           <div style={{ marginTop: 2 }}>
             {!editando ? (
               processo.portaria_designacao_fiscal ? (
@@ -434,10 +548,13 @@ export default function QuadroResumitivo({
           </div>
         </div>
 
+        <div>{campoValor("nota_empenho_numero", undefined)}</div>
+        <div>{campoValor("programa_trabalho", undefined)}</div>
+        <div>{campoValor("natureza_despesa", undefined)}</div>
+        <div>{campoValor("local_entrega", undefined)}</div>
+
         <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Vigência do Contrato
-          </div>
+          <div style={rotulo}>Vigência do Contrato</div>
           <div style={{ marginTop: 2 }}>
             {!editando ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -466,9 +583,7 @@ export default function QuadroResumitivo({
         </div>
 
         <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Empresa
-          </div>
+          <div style={rotulo}>Empresa</div>
           <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
             {processo.fornecedores?.nome ?? "não informado"}
             {processo.fornecedores?.nome && <BotaoCopiar texto={processo.fornecedores.nome} />}
@@ -476,9 +591,7 @@ export default function QuadroResumitivo({
         </div>
 
         <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            CNPJ
-          </div>
+          <div style={rotulo}>CNPJ</div>
           <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
             {processo.fornecedores?.cnpj ?? "não informado"}
             {processo.fornecedores?.cnpj && <BotaoCopiar texto={processo.fornecedores.cnpj} />}
@@ -486,9 +599,7 @@ export default function QuadroResumitivo({
         </div>
 
         <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Valor Global do Contrato
-          </div>
+          <div style={rotulo}>Valor Global do Contrato</div>
           <div style={{ marginTop: 2 }}>
             {editando ? (
               <CampoMascarado
@@ -512,9 +623,7 @@ export default function QuadroResumitivo({
         </div>
 
         <div style={{ gridColumn: "1 / -1" }}>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Valor da Garantia
-          </div>
+          <div style={rotulo}>Valor da Garantia</div>
           <div style={{ marginTop: 2 }}>
             {editando ? (
               <CampoMascarado
@@ -538,36 +647,28 @@ export default function QuadroResumitivo({
         </div>
 
         <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Gestor Titular
-          </div>
+          <div style={rotulo}>Gestor Titular</div>
           <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
             {formatarPessoa(processo.gestor)}
             {processo.gestor && <BotaoCopiar texto={formatarPessoa(processo.gestor)} />}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Gestor Substituto
-          </div>
+          <div style={rotulo}>Gestor Substituto</div>
           <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
             {formatarPessoa(processo.gestor_substituto)}
             {processo.gestor_substituto && <BotaoCopiar texto={formatarPessoa(processo.gestor_substituto)} />}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Fiscal Titular
-          </div>
+          <div style={rotulo}>Fiscal Titular</div>
           <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
             {formatarPessoa(processo.fiscal)}
             {processo.fiscal && <BotaoCopiar texto={formatarPessoa(processo.fiscal)} />}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
-            Fiscal Substituto
-          </div>
+          <div style={rotulo}>Fiscal Substituto</div>
           <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
             {formatarPessoa(processo.fiscal_substituto)}
             {processo.fiscal_substituto && <BotaoCopiar texto={formatarPessoa(processo.fiscal_substituto)} />}

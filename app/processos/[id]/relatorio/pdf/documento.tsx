@@ -16,11 +16,22 @@ type Processo = {
   vigencia_fim: string | null;
   processo_eletronico_numero: string | null;
   pregao_eletronico_numero: string | null;
+  pregao_eletronico_numero_sei: string | null;
+  publicacao_dou_pregao: string | null;
+  publicacao_dou_pregao_sei: string | null;
   publicacao_pncp_pregao: string | null;
+  publicacao_pncp_pregao_sei: string | null;
   ata_registro_precos_numero: string | null;
+  ata_registro_precos_numero_sei: string | null;
+  publicacao_dou_ata: string | null;
+  publicacao_dou_ata_sei: string | null;
   publicacao_pncp_ata: string | null;
+  publicacao_pncp_ata_sei: string | null;
+  numero_contrato_sei: string | null;
   publicacao_dou: string | null;
+  publicacao_dou_sei: string | null;
   publicacao_pncp: string | null;
+  publicacao_pncp_sei: string | null;
   valor_unitario: number | null;
   valor_global: number | null;
   valor_garantia: number | null;
@@ -199,13 +210,23 @@ export default function Documento({
   const entTotalV = entregas.reduce((s, e) => s + (e.valor_total_nf ?? 0), 0);
   const { atrasoPorId, faltantePorId } = calcularDerivadosEntregas(entregas, pauta);
 
+  // "valor (nº SEI)" quando tiver SEI, só o valor quando não tiver — SEI é
+  // sempre opcional (campo original do Quadro Resumitivo pode não ter um).
+  function comSei(valor: string | null, sei: string | null, formatarData_ = false) {
+    if (!valor) return "não informado";
+    const v = formatarData_ ? formatarData(valor) : valor;
+    return sei ? `${v} (${sei})` : v;
+  }
+
   const quadro: { k: string; v: string }[] = [
     { k: "Processo Eletrônico nº", v: p.processo_eletronico_numero ?? "não informado" },
-    { k: "Pregão Eletrônico nº", v: p.pregao_eletronico_numero ?? "não informado" },
-    { k: "Publicação PNCP (Pregão)", v: p.publicacao_pncp_pregao ?? "não informado" },
-    { k: "Ata de Registro de Preços nº", v: p.ata_registro_precos_numero ?? "não informado" },
-    { k: "Publicação PNCP (Ata)", v: p.publicacao_pncp_ata ?? "não informado" },
-    { k: "Contrato nº", v: p.numero_contrato },
+    { k: "Pregão Eletrônico nº", v: comSei(p.pregao_eletronico_numero, p.pregao_eletronico_numero_sei) },
+    { k: "Publicação D.O.U (Pregão)", v: comSei(p.publicacao_dou_pregao, p.publicacao_dou_pregao_sei) },
+    { k: "Publicação PNCP (Pregão)", v: comSei(p.publicacao_pncp_pregao, p.publicacao_pncp_pregao_sei, true) },
+    { k: "Ata de Registro de Preços nº", v: comSei(p.ata_registro_precos_numero, p.ata_registro_precos_numero_sei) },
+    { k: "Publicação D.O.U (Ata)", v: comSei(p.publicacao_dou_ata, p.publicacao_dou_ata_sei) },
+    { k: "Publicação PNCP (Ata)", v: comSei(p.publicacao_pncp_ata, p.publicacao_pncp_ata_sei, true) },
+    { k: "Contrato nº", v: comSei(p.numero_contrato, p.numero_contrato_sei) },
     { k: "Objeto", v: p.unidade_medida ? `${p.objeto}, ${p.unidade_medida}` : p.objeto },
     { k: "Quantidade Contratada", v: p.quantidade_contratada ?? "não informado" },
     { k: "Data da Assinatura", v: formatarData(p.data_assinatura) },
@@ -230,8 +251,8 @@ export default function Documento({
         ? `${formatarMoeda(p.valor_garantia)} (${valorPorExtenso(p.valor_garantia as number)})`
         : "não informado",
     },
-    { k: "Publicação D.O.U", v: p.publicacao_dou ?? "não informado" },
-    { k: "Publicação PNCP (Contrato)", v: p.publicacao_pncp ?? "não informado" },
+    { k: "Publicação D.O.U (Contrato)", v: comSei(p.publicacao_dou, p.publicacao_dou_sei) },
+    { k: "Publicação PNCP (Contrato)", v: comSei(p.publicacao_pncp, p.publicacao_pncp_sei, true) },
     { k: "Portaria Designação de Fiscal", v: p.portaria_designacao_fiscal ?? "não informado" },
     { k: "Nota de Empenho nº", v: p.nota_empenho_numero ?? "não informado" },
     { k: "Programa de Trabalho", v: p.programa_trabalho ?? "não informado" },
