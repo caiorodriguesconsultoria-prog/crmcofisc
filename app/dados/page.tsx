@@ -5,6 +5,7 @@ import { corEvento } from "@/lib/cores-evento";
 import Painel from "@/app/_ui/painel";
 import MedidorCircular from "@/app/_ui/medidor-circular";
 import { getTagsEvento } from "@/lib/dados-referencia";
+import { calcularDerivadosEntregas } from "@/lib/entregas-derivados";
 
 const MS_POR_DIA = 1000 * 60 * 60 * 24;
 
@@ -36,6 +37,7 @@ export default async function DadosPage() {
     eventos,
     { data: assinaturaHistorico },
     { data: entregas },
+    { data: pautaTodas },
   ] = await Promise.all([
     supabase.from("processos").select("id, created_at, updated_at, conclusao_tipo"),
     supabase.from("processos").select("id", { count: "exact", head: true }),
@@ -46,7 +48,10 @@ export default async function DadosPage() {
       .select("entrada_em, saida_em")
       .eq("kanban", "Aguardando assinatura")
       .not("saida_em", "is", null),
-    supabase.from("processo_entregas").select("processo_id, atraso_dias"),
+    supabase
+      .from("processo_entregas")
+      .select("id, processo_id, local_entrega, quantidade, data_entrega, data_fabricacao, data_validade"),
+    supabase.from("processo_pauta_distribuicao").select("processo_id, uf, quantidade, data_entrega"),
   ]);
 
   const total = totalProcessos ?? 0;
@@ -74,9 +79,35 @@ export default async function DadosPage() {
   );
   const mediaConclusao = media(diasConclusao);
 
-  const entregasComAtraso = (entregas ?? []).filter((e) => (e.atraso_dias ?? 0) > 0);
-  const processosComAtraso = new Set(entregasComAtraso.map((e) => e.processo_id)).size;
-  const mediaAtraso = media(entregasComAtraso.map((e) => e.atraso_dias as number));
+  // Atraso não fica mais salvo em processo_entregas — calculado por
+  // contrato (cruzando com a Pauta de Distribuição, ver
+  // lib/entregas-derivados.ts), já que só faz sentido comparar UFs dentro
+  // do mesmo contrato.
+  const pautaPorProcesso = new Map<string, typeof pautaTodas>();
+  for (const p of pautaTodas ?? []) {
+    const lista = pautaPorProcesso.get(p.processo_id) ?? [];
+    lista.push(p);
+    pautaPorProcesso.set(p.processo_id, lista as any);
+  }
+  const entregasPorProcesso = new Map<string, typeof entregas>();
+  for (const e of entregas ?? []) {
+    const lista = entregasPorProcesso.get(e.processo_id) ?? [];
+    lista.push(e);
+    entregasPorProcesso.set(e.processo_id, lista as any);
+  }
+  const diasAtrasoTodos: number[] = [];
+  const processosComAtrasoSet = new Set<string>();
+  for (const [processoId, listaEntregas] of entregasPorProcesso) {
+    const { atrasoPorId } = calcularDerivadosEntregas(listaEntregas ?? [], (pautaPorProcesso.get(processoId) ?? []) as any);
+    for (const dias of atrasoPorId.values()) {
+      if (dias && dias > 0) {
+        diasAtrasoTodos.push(dias);
+        processosComAtrasoSet.add(processoId);
+      }
+    }
+  }
+  const processosComAtraso = processosComAtrasoSet.size;
+  const mediaAtraso = media(diasAtrasoTodos);
 
   return (
     <Painel titulo="Dados" subtitulo="KPIs de contratos" voltarHref="/dashboard" maxWidth={1000}>

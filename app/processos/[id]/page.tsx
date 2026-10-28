@@ -10,7 +10,7 @@ export default async function ProcessoPage({
   const { topo, corpo } = await carregarProcesso(id);
 
   return (
-    <PainelAlto voltarHref="/processos" maxWidth={820} topo={topo}>
+    <PainelAlto voltarHref="/processos" maxWidth={1400} topo={topo}>
       {corpo}
     </PainelAlto>
   );
