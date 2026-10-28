@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
-import { construirBlocoAnexo, TAMANHO_MAXIMO_ANEXO_BYTES, tipoAnexoValido } from "@/lib/ia-anexo";
+import { construirBlocoAnexo, extrairTextoResposta, TAMANHO_MAXIMO_ANEXO_BYTES, tipoAnexoValido } from "@/lib/ia-anexo";
 
 const SISTEMA = `Você extrai dados estruturados de contratos administrativos do Ministério da Saúde (Brasil), publicados no SEI, pro Quadro Resumitivo de um sistema de gestão de contratos (COFISC/DAF/SCTIE).
 
@@ -57,7 +57,8 @@ Regras:
 - "parcelas" vem do cronograma de entrega de cada item (tabela PARCELAS/QUANTITATIVO/PRAZO MÁXIMO DE ENTREGA, numerada "1ª", "2ª" etc. — use só o número, sem o "ª"). Se o prazo for descrito como "N dias após a assinatura do contrato" (ou "da assinatura", "contados da assinatura" etc.) E você já souber "data_assinatura", calcule "data_prevista" somando N dias corridos a essa data e devolva no formato AAAA-MM-DD. Se "data_assinatura" for null, ou o prazo não for relativo à assinatura, ou você não tiver certeza da conta, devolva "data_prevista": null — nunca adivinhe uma data.
 - Se um item não tiver tabela de cronograma de entrega visível, devolva "parcelas": [] pra ele.
 - Se a imagem/PDF mostrar só a tabela de itens e/ou de cronograma (sem o texto do contrato inteiro), preencha só o que der pra ler dessa tabela e devolva null nos demais campos — não é erro, é esperado.
-- Se não encontrar a informação de algum campo, use null — nunca omita a chave.`;
+- Se não encontrar a informação de algum campo, use null — nunca omita a chave.
+- Responda só com o JSON, compacto (sem indentação/quebra de linha desnecessária) — isso evita estourar o limite de tamanho da resposta em contratos com muitos itens/parcelas.`;
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
     const anthropic = new Anthropic();
     const resposta = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 6144,
+      max_tokens: 8192,
       system: SISTEMA,
       messages: [
         {
@@ -99,14 +100,7 @@ export async function POST(request: NextRequest) {
       ],
     });
 
-    const bloco = resposta.content.find((b) => b.type === "text");
-    if (!bloco || bloco.type !== "text") {
-      return NextResponse.json({ error: "sem resposta da IA" }, { status: 502 });
-    }
-
-    // A IA pode devolver o JSON dentro de um bloco ```json ... ``` apesar da
-    // instrução de não fazer isso — removido com segurança se aparecer.
-    const textoLimpo = bloco.text.trim().replace(/^```json\s*|```\s*$/g, "").trim();
+    const textoLimpo = extrairTextoResposta(resposta);
     const dados = JSON.parse(textoLimpo);
     return NextResponse.json({ dados });
   } catch (erro) {

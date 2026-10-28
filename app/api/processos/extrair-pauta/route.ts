@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
-import { construirBlocoAnexo, TAMANHO_MAXIMO_ANEXO_BYTES, tipoAnexoValido } from "@/lib/ia-anexo";
+import { construirBlocoAnexo, extrairTextoResposta, TAMANHO_MAXIMO_ANEXO_BYTES, tipoAnexoValido } from "@/lib/ia-anexo";
 
 const SISTEMA = `Você extrai dados de pauta de distribuição de contratos administrativos do Ministério da Saúde (Brasil) pra um sistema de gestão de contratos (COFISC/DAF/SCTIE).
 
@@ -27,7 +27,9 @@ Regras:
 - "data_entrega" é a data prevista/realizada de entrega daquela linha, se indicada no documento, no formato AAAA-MM-DD. Nunca invente — use null se não tiver certeza.
 - Uma linha por combinação UF+parcela. Se a mesma UF aparecer em parcelas diferentes, devolva uma linha pra cada.
 - Nunca invente valores que não estão no documento — use null (exceto "uf" e "quantidade", que são obrigatórios; se uma linha não tiver essas duas informações, não a inclua).
-- Se não encontrar nenhuma linha de pauta de distribuição no documento, devolva "linhas": [].`;
+- Ignore linhas de totalização/resumo (ex.: uma linha "TOTAL" no fim de uma tabela) — não são linhas de distribuição.
+- Se não encontrar nenhuma linha de pauta de distribuição no documento, devolva "linhas": [].
+- Responda só com o JSON, compacto (sem indentação/quebra de linha desnecessária) — isso evita estourar o limite de tamanho da resposta em documentos com muitas linhas.`;
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     const anthropic = new Anthropic();
     const resposta = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: SISTEMA,
       messages: [
         {
@@ -69,11 +71,7 @@ export async function POST(request: NextRequest) {
       ],
     });
 
-    const bloco = resposta.content.find((b) => b.type === "text");
-    if (!bloco || bloco.type !== "text") {
-      return NextResponse.json({ error: "sem resposta da IA" }, { status: 502 });
-    }
-    const textoLimpo = bloco.text.trim().replace(/^```json\s*|```\s*$/g, "").trim();
+    const textoLimpo = extrairTextoResposta(resposta);
     const dados = JSON.parse(textoLimpo);
     return NextResponse.json({ dados });
   } catch (erro) {
