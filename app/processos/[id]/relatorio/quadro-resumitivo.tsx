@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { valorPorExtenso } from "@/lib/extenso";
 import { formatarMoedaBR, paraNumeroMoeda, moedaParaFormatado } from "@/lib/moeda";
 import { BotaoCopiar, CampoMascarado } from "@/app/_ui/campo";
+import { cor } from "@/lib/theme";
 
 type Pessoa = { nome: string; matricula: string | null } | null;
 
@@ -236,6 +237,71 @@ export default function QuadroResumitivo({
   const [douContrato, setDouContrato] = useState(() => parsePublicacaoDou(processo.publicacao_dou));
   const [portaria, setPortaria] = useState(() => parsePortaria(processo.portaria_designacao_fiscal));
 
+  const [extraindoAnexo, setExtraindoAnexo] = useState(false);
+  const [erroAnexo, setErroAnexo] = useState<string | null>(null);
+
+  // Anexar um documento (PDF, foto ou planilha) já preenche o Quadro
+  // Resumitivo sozinho — mesma IA usada na criação do contrato, só que
+  // aqui atualiza um contrato já existente. Só preenche o que está vazio,
+  // nunca sobrescreve um campo que você já preencheu (igual ao padrão do
+  // "+ Itens por anexo" no Cronograma).
+  const CAMPOS_PREENCHIVEIS_POR_ANEXO = [
+    "processo_eletronico_numero",
+    "pregao_eletronico_numero", "pregao_eletronico_numero_sei",
+    "publicacao_dou_pregao", "publicacao_dou_pregao_sei",
+    "publicacao_pncp_pregao", "publicacao_pncp_pregao_sei",
+    "ata_registro_precos_numero", "ata_registro_precos_numero_sei",
+    "publicacao_dou_ata", "publicacao_dou_ata_sei",
+    "publicacao_pncp_ata", "publicacao_pncp_ata_sei",
+    "numero_contrato_sei",
+    "data_assinatura", "vigencia_inicio", "vigencia_fim",
+    "publicacao_dou", "publicacao_dou_sei",
+    "publicacao_pncp", "publicacao_pncp_sei",
+    "portaria_designacao_fiscal",
+    "nota_empenho_numero", "programa_trabalho", "natureza_despesa", "local_entrega",
+  ] as const;
+
+  async function processarAnexo(arquivo: File) {
+    setErroAnexo(null);
+    setExtraindoAnexo(true);
+    try {
+      const formData = new FormData();
+      formData.append("arquivo", arquivo);
+      const resp = await fetch("/api/processos/extrair-pdf", { method: "POST", body: formData });
+      const corpo = await resp.json();
+      if (!resp.ok) {
+        setErroAnexo(corpo.error ?? "Não deu pra extrair os dados do anexo.");
+        return;
+      }
+      const dados = (corpo.dados ?? {}) as Record<string, any>;
+      const atualizacao: Record<string, any> = {};
+      for (const chave of CAMPOS_PREENCHIVEIS_POR_ANEXO) {
+        const atual = (processo as any)[chave];
+        const extraido = dados[chave];
+        if ((atual === null || atual === undefined || atual === "") && extraido != null && extraido !== "") {
+          atualizacao[chave] = extraido;
+        }
+      }
+      if (processo.valor_global == null && dados.valor_global != null) atualizacao.valor_global = dados.valor_global;
+      if (processo.valor_garantia == null && dados.valor_garantia != null) atualizacao.valor_garantia = dados.valor_garantia;
+
+      if (Object.keys(atualizacao).length === 0) {
+        setErroAnexo("Não encontrei nenhuma informação nova pra preencher — os campos já estavam preenchidos, ou o anexo não trouxe nada reconhecível.");
+        return;
+      }
+      const { error } = await supabase.from("processos").update(atualizacao).eq("id", processoId);
+      if (error) {
+        setErroAnexo(error.message);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setErroAnexo("Não deu pra extrair os dados do anexo.");
+    } finally {
+      setExtraindoAnexo(false);
+    }
+  }
+
   function atualizar(chave: string, valor: string) {
     setValores((atual) => ({ ...atual, [chave]: valor }));
   }
@@ -458,7 +524,35 @@ export default function QuadroResumitivo({
 
   return (
     <div style={{ marginTop: 8 }} onBlur={aoPerderFoco}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+        {!editando && (
+          <label
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "6px 12px",
+              borderRadius: 20,
+              border: `1px dashed ${cor.borda}`,
+              color: cor.textoTerciario,
+              background: "transparent",
+              cursor: extraindoAnexo ? "default" : "pointer",
+              opacity: extraindoAnexo ? 0.6 : 1,
+            }}
+          >
+            {extraindoAnexo ? "Lendo anexo..." : "+ Anexar documento (PDF/Excel/foto)"}
+            <input
+              type="file"
+              accept="application/pdf,image/png,image/jpeg,image/webp,.xlsx,.xls"
+              disabled={extraindoAnexo}
+              onChange={(e) => {
+                const arquivo = e.target.files?.[0];
+                if (arquivo) processarAnexo(arquivo);
+                e.target.value = "";
+              }}
+              style={{ display: "none" }}
+            />
+          </label>
+        )}
         {!editando ? (
           <button onClick={() => setEditando(true)}>Editar</button>
         ) : (
@@ -471,6 +565,7 @@ export default function QuadroResumitivo({
       </div>
 
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
+      {erroAnexo && <p style={{ color: "#B0655C" }}>{erroAnexo}</p>}
 
       <div
         style={{
