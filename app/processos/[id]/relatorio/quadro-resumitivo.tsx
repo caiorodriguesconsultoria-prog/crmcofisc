@@ -59,6 +59,77 @@ function formatarData(data: string | null) {
   return data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "não informado";
 }
 
+const MESES = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+// "Publicação D.O.U" e "Portaria Designação de Fiscal" têm um texto quase
+// todo fixo (modelo padrão da COFISC) — só alguns números/datas mudam a
+// cada contrato. Em vez de editar o texto inteiro à mão toda vez, só os
+// pedaços variáveis são inputs; o texto final (o que de fato fica salvo em
+// processos.publicacao_dou/portaria_designacao_fiscal) é montado sozinho.
+function diaSemanaEExtenso(dataIso: string): { diaSemana: string; extenso: string } {
+  const data = new Date(`${dataIso}T00:00:00`);
+  const diaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(data);
+  const extenso = `${data.getDate()} de ${MESES[data.getMonth()]} de ${data.getFullYear()}`;
+  return { diaSemana, extenso };
+}
+
+function montarPublicacaoDou(edicao: string, pagina: string, data: string): string | null {
+  if (!edicao.trim() || !pagina.trim() || !data) return null;
+  const { diaSemana, extenso } = diaSemanaEExtenso(data);
+  return `Edição nº ${edicao.trim()}, Seção 3, pág. ${pagina.trim()}, (${diaSemana}, ${extenso})`;
+}
+
+function parsePublicacaoDou(texto: string | null): { edicao: string; pagina: string; data: string } {
+  const vazio = { edicao: "", pagina: "", data: "" };
+  if (!texto) return vazio;
+  const m = texto.match(
+    /Edição nº (.+?), Seção 3, pág\.?\s*(.+?),\s*\([^,]+,\s*(\d{1,2}) de (\w+) de (\d{4})\)/i,
+  );
+  if (!m) return vazio;
+  const mesIdx = MESES.findIndex((nome) => nome === m[4].toLowerCase());
+  if (mesIdx === -1) return vazio;
+  const dia = m[3].padStart(2, "0");
+  const mes = String(mesIdx + 1).padStart(2, "0");
+  return { edicao: m[1], pagina: m[2], data: `${m[5]}-${mes}-${dia}` };
+}
+
+function montarPortaria(
+  numero: string,
+  data: string,
+  tipo: string,
+  numeroTipo: string,
+  dataTipo: string,
+): string | null {
+  if (!numero.trim() || !data || !numeroTipo.trim() || !dataTipo) return null;
+  const { extenso } = diaSemanaEExtenso(data);
+  return `Portaria CGLIS nº ${numero.trim()}, de ${extenso}; ${tipo} nº ${numeroTipo.trim()}, ${formatarData(dataTipo)}`;
+}
+
+function parsePortaria(
+  texto: string | null,
+): { numero: string; data: string; tipo: string; numeroTipo: string; dataTipo: string } {
+  const vazio = { numero: "", data: "", tipo: "BGP", numeroTipo: "", dataTipo: "" };
+  if (!texto) return vazio;
+  const m = texto.match(
+    /Portaria CGLIS nº (.+?), de (\d{1,2}) de (\w+) de (\d{4}); (BGP|BSE) nº (.+?),\s*(\d{2})\/(\d{2})\/(\d{4})/i,
+  );
+  if (!m) return vazio;
+  const mesIdx = MESES.findIndex((nome) => nome === m[3].toLowerCase());
+  if (mesIdx === -1) return vazio;
+  const dia = m[2].padStart(2, "0");
+  const mes = String(mesIdx + 1).padStart(2, "0");
+  return {
+    numero: m[1],
+    data: `${m[4]}-${mes}-${dia}`,
+    tipo: m[5].toUpperCase(),
+    numeroTipo: m[6],
+    dataTipo: `${m[9]}-${m[8]}-${m[7]}`,
+  };
+}
+
 function formatarMoeda(valor: number | null) {
   return valor != null ? valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : null;
 }
@@ -96,8 +167,6 @@ const CAMPOS: CampoTexto[] = [
   { chave: "publicacao_pncp", label: "Publicação PNCP (Contrato)" },
   { chave: "objeto", label: "Objeto", span: true, tipo: "textarea" },
   { chave: "data_assinatura", label: "Data da Assinatura", tipo: "data" },
-  { chave: "publicacao_dou", label: "Publicação D.O.U" },
-  { chave: "portaria_designacao_fiscal", label: "Portaria Designação de Fiscal", span: true },
   { chave: "nota_empenho_numero", label: "Nota de Empenho nº" },
   { chave: "programa_trabalho", label: "Programa de Trabalho" },
   { chave: "natureza_despesa", label: "Natureza de Despesa" },
@@ -128,11 +197,34 @@ export default function QuadroResumitivo({
     iniciais.vigencia_fim = processo.vigencia_fim ?? "";
     iniciais.valor_global = moedaParaFormatado(processo.valor_global);
     iniciais.valor_garantia = moedaParaFormatado(processo.valor_garantia);
+    iniciais.publicacao_dou = processo.publicacao_dou ?? "";
+    iniciais.portaria_designacao_fiscal = processo.portaria_designacao_fiscal ?? "";
     return iniciais;
   });
 
+  // Publicação D.O.U e Portaria Designação de Fiscal têm texto quase todo
+  // fixo — só os pedaços abaixo são digitados, o texto final é montado
+  // sozinho (ver montarPublicacaoDou/montarPortaria). Pré-preenchidos a
+  // partir do texto já salvo quando possível (parsePublicacaoDou/parsePortaria).
+  const [dou, setDou] = useState(() => parsePublicacaoDou(processo.publicacao_dou));
+  const [portaria, setPortaria] = useState(() => parsePortaria(processo.portaria_designacao_fiscal));
+
   function atualizar(chave: string, valor: string) {
     setValores((atual) => ({ ...atual, [chave]: valor }));
+  }
+
+  function atualizarDou(parte: keyof typeof dou, valor: string) {
+    const novo = { ...dou, [parte]: valor };
+    setDou(novo);
+    const composto = montarPublicacaoDou(novo.edicao, novo.pagina, novo.data);
+    if (composto) atualizar("publicacao_dou", composto);
+  }
+
+  function atualizarPortaria(parte: keyof typeof portaria, valor: string) {
+    const novo = { ...portaria, [parte]: valor };
+    setPortaria(novo);
+    const composto = montarPortaria(novo.numero, novo.data, novo.tipo, novo.numeroTipo, novo.dataTipo);
+    if (composto) atualizar("portaria_designacao_fiscal", composto);
   }
 
   async function salvar() {
@@ -249,6 +341,98 @@ export default function QuadroResumitivo({
             <div style={{ marginTop: 2 }}>{campoValor(c.chave, c.tipo)}</div>
           </div>
         ))}
+
+        <div>
+          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
+            Publicação D.O.U
+          </div>
+          <div style={{ marginTop: 2 }}>
+            {!editando ? (
+              processo.publicacao_dou ? (
+                <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 6 }}>
+                  {processo.publicacao_dou}
+                  <BotaoCopiar texto={processo.publicacao_dou} />
+                </span>
+              ) : (
+                "não informado"
+              )
+            ) : (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <input
+                  placeholder="Edição nº"
+                  value={dou.edicao}
+                  onChange={(e) => atualizarDou("edicao", e.target.value)}
+                  style={{ padding: 6, width: 90 }}
+                />
+                <input
+                  placeholder="Página"
+                  value={dou.pagina}
+                  onChange={(e) => atualizarDou("pagina", e.target.value)}
+                  style={{ padding: 6, width: 80 }}
+                />
+                <input
+                  type="date"
+                  value={dou.data}
+                  onChange={(e) => atualizarDou("data", e.target.value)}
+                  style={{ padding: 6, flex: 1, minWidth: 140 }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ gridColumn: "1 / -1" }}>
+          <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
+            Portaria Designação de Fiscal
+          </div>
+          <div style={{ marginTop: 2 }}>
+            {!editando ? (
+              processo.portaria_designacao_fiscal ? (
+                <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 6 }}>
+                  {processo.portaria_designacao_fiscal}
+                  <BotaoCopiar texto={processo.portaria_designacao_fiscal} />
+                </span>
+              ) : (
+                "não informado"
+              )
+            ) : (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <input
+                  placeholder="Portaria CGLIS nº"
+                  value={portaria.numero}
+                  onChange={(e) => atualizarPortaria("numero", e.target.value)}
+                  style={{ padding: 6, width: 110 }}
+                />
+                <input
+                  type="date"
+                  value={portaria.data}
+                  onChange={(e) => atualizarPortaria("data", e.target.value)}
+                  style={{ padding: 6, width: 150 }}
+                />
+                <select
+                  value={portaria.tipo}
+                  onChange={(e) => atualizarPortaria("tipo", e.target.value)}
+                  style={{ padding: 6 }}
+                >
+                  <option value="BGP">BGP</option>
+                  <option value="BSE">BSE</option>
+                </select>
+                <input
+                  placeholder={`Nº ${portaria.tipo}`}
+                  value={portaria.numeroTipo}
+                  onChange={(e) => atualizarPortaria("numeroTipo", e.target.value)}
+                  style={{ padding: 6, width: 110 }}
+                />
+                <input
+                  type="date"
+                  value={portaria.dataTipo}
+                  onChange={(e) => atualizarPortaria("dataTipo", e.target.value)}
+                  style={{ padding: 6, width: 150 }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
 
         <div>
           <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5 }}>
