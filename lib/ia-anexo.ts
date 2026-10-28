@@ -27,6 +27,24 @@ export function tipoAnexoValido(mime: string): boolean {
   return mime in TIPO_POR_MIME;
 }
 
+// Quando a resposta da IA é cortada por estourar max_tokens (documento com
+// muitas linhas), o JSON vem incompleto e `JSON.parse` falha com uma
+// mensagem técnica ("Unterminated string...") que não ajuda o usuário a
+// entender o que houve. Detectado via `stop_reason`, devolve uma mensagem
+// clara em vez de deixar estourar na hora do parse.
+export function extrairTextoResposta(resposta: Anthropic.Messages.Message): string {
+  const bloco = resposta.content.find((b) => b.type === "text");
+  if (!bloco || bloco.type !== "text") {
+    throw new Error("sem resposta da IA");
+  }
+  if (resposta.stop_reason === "max_tokens") {
+    throw new Error(
+      "O documento tem conteúdo demais pra extrair de uma vez (resposta cortada). Tente anexar uma parte menor (ex.: só uma parcela ou uma faixa de UFs por vez).",
+    );
+  }
+  return bloco.text.trim().replace(/^```json\s*|```\s*$/g, "").trim();
+}
+
 export async function construirBlocoAnexo(arquivo: File): Promise<Anthropic.Messages.ContentBlockParam> {
   const tipo = TIPO_POR_MIME[arquivo.type];
   const buffer = Buffer.from(await arquivo.arrayBuffer());
