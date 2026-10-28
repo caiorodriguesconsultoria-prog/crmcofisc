@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CampoMascarado } from "@/app/_ui/campo";
 import { formatarMoedaBR, paraNumeroMoeda } from "@/lib/moeda";
 import { cor } from "@/lib/theme";
+import { calcularDerivadosEntregas, calcularTranscurso } from "@/lib/entregas-derivados";
 
 // Mesma máscara de milhar em tempo real usada no cronograma de entregas,
 // só que com 3 casas decimais (padrão pra quantidade em numeric(14,3)).
@@ -34,9 +35,9 @@ type Entrega = {
   data_validade: string | null;
   data_entrega: string | null;
   responsavel: string | null;
-  atraso_dias: number | null;
-  percentual_transcurso: number | null;
 };
+
+type PautaRow = { uf: string; quantidade: number; data_entrega: string | null };
 
 const CAMPOS_VAZIOS = {
   local_entrega: "",
@@ -49,8 +50,6 @@ const CAMPOS_VAZIOS = {
   data_validade: "",
   data_entrega: "",
   responsavel: "",
-  atraso_dias: "",
-  percentual_transcurso: "",
 };
 
 function formatarData(data: string | null) {
@@ -64,10 +63,12 @@ function formatarMoeda(valor: number | null) {
 export default function DadosEntrega({
   processoId,
   entregas,
+  pauta,
   onSalvo,
 }: {
   processoId: string;
   entregas: Entrega[];
+  pauta: PautaRow[];
   onSalvo?: () => void;
 }) {
   const supabase = createClient();
@@ -80,11 +81,10 @@ export default function DadosEntrega({
   const [erroAnexo, setErroAnexo] = useState<string | null>(null);
 
   const totalNf = entregas.reduce((soma, e) => soma + (e.valor_total_nf ?? 0), 0);
+  const { atrasoPorId, faltantePorId } = useMemo(() => calcularDerivadosEntregas(entregas, pauta), [entregas, pauta]);
 
   // Anexar a nota fiscal/romaneio (PDF, foto ou planilha) já cadastra as
   // entregas extraídas — só adiciona, nunca mexe nas entregas já cadastradas.
-  // atraso_dias/percentual_transcurso continuam sempre manuais (não vêm de
-  // documento, ver regra no prompt da IA).
   async function processarAnexo(arquivo: File) {
     setErroAnexo(null);
     setExtraindoAnexo(true);
@@ -148,8 +148,6 @@ export default function DadosEntrega({
       data_validade: campos.data_validade || null,
       data_entrega: campos.data_entrega || null,
       responsavel: campos.responsavel || null,
-      atraso_dias: campos.atraso_dias ? Number(campos.atraso_dias) : null,
-      percentual_transcurso: campos.percentual_transcurso ? Number(campos.percentual_transcurso) : null,
     });
     setSalvando(false);
     if (error) {
@@ -180,14 +178,15 @@ export default function DadosEntrega({
         Dados de entrega
       </strong>
       <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
-        Atraso e % de transcurso não são calculados automaticamente — preencha manualmente.
+        Atraso, % de transcurso e Faltante são calculados automaticamente (cruzando com a Pauta de
+        distribuição pela UF/local de entrega) — não ficam salvos, recalculam sempre que a lista muda.
       </p>
 
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
       {erroAnexo && <p style={{ color: "#B0655C" }}>{erroAnexo}</p>}
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
               <th style={{ padding: 6 }}>Local</th>
@@ -202,34 +201,43 @@ export default function DadosEntrega({
               <th style={{ padding: 6 }}>Responsável</th>
               <th style={{ padding: 6 }}>Atraso (d.)</th>
               <th style={{ padding: 6 }}>% transc.</th>
+              <th style={{ padding: 6 }}>Faltante</th>
               <th style={{ padding: 6 }}></th>
             </tr>
           </thead>
           <tbody>
-            {entregas.map((e) => (
-              <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: 6 }}>{e.local_entrega ?? "—"}</td>
-                <td style={{ padding: 6 }}>{e.quantidade ?? "—"}</td>
-                <td style={{ padding: 6 }}>{formatarMoeda(e.valor_total_nf)}</td>
-                <td style={{ padding: 6 }}>{e.danfe_venda ?? "—"}</td>
-                <td style={{ padding: 6 }}>{e.danfe_remessa ?? "—"}</td>
-                <td style={{ padding: 6 }}>{e.lote ?? "—"}</td>
-                <td style={{ padding: 6 }}>{formatarData(e.data_fabricacao)}</td>
-                <td style={{ padding: 6 }}>{formatarData(e.data_validade)}</td>
-                <td style={{ padding: 6 }}>{formatarData(e.data_entrega)}</td>
-                <td style={{ padding: 6 }}>{e.responsavel ?? "—"}</td>
-                <td style={{ padding: 6 }}>{e.atraso_dias ?? "—"}</td>
-                <td style={{ padding: 6 }}>{e.percentual_transcurso ?? "—"}</td>
-                <td style={{ padding: 6 }}>
-                  <button onClick={() => remover(e.id)} disabled={carregando === e.id}>
-                    remover
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {entregas.map((e) => {
+              const transcurso = calcularTranscurso(e.data_fabricacao, e.data_validade, e.data_entrega);
+              const atraso = atrasoPorId.get(e.id);
+              const faltante = faltantePorId.get(e.id);
+              return (
+                <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: 6 }}>{e.local_entrega ?? "—"}</td>
+                  <td style={{ padding: 6 }}>{e.quantidade ?? "—"}</td>
+                  <td style={{ padding: 6 }}>{formatarMoeda(e.valor_total_nf)}</td>
+                  <td style={{ padding: 6 }}>{e.danfe_venda ?? "—"}</td>
+                  <td style={{ padding: 6 }}>{e.danfe_remessa ?? "—"}</td>
+                  <td style={{ padding: 6 }}>{e.lote ?? "—"}</td>
+                  <td style={{ padding: 6 }}>{formatarData(e.data_fabricacao)}</td>
+                  <td style={{ padding: 6 }}>{formatarData(e.data_validade)}</td>
+                  <td style={{ padding: 6 }}>{formatarData(e.data_entrega)}</td>
+                  <td style={{ padding: 6 }}>{e.responsavel ?? "—"}</td>
+                  <td style={{ padding: 6 }}>{atraso != null ? atraso : "—"}</td>
+                  <td style={{ padding: 6 }}>{transcurso != null ? `${transcurso.toFixed(2)}%` : "—"}</td>
+                  <td style={{ padding: 6, color: faltante != null && faltante > 0 ? cor.urgente : undefined }}>
+                    {faltante != null ? faltante.toLocaleString("pt-BR") : "—"}
+                  </td>
+                  <td style={{ padding: 6 }}>
+                    <button onClick={() => remover(e.id)} disabled={carregando === e.id}>
+                      remover
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
             {entregas.length === 0 && (
               <tr>
-                <td colSpan={13} style={{ padding: 6, color: "#7D7979" }}>
+                <td colSpan={14} style={{ padding: 6, color: "#7D7979" }}>
                   Nenhuma entrega registrada.
                 </td>
               </tr>
@@ -239,7 +247,7 @@ export default function DadosEntrega({
                 <td style={{ padding: 6 }}>TOTAL</td>
                 <td style={{ padding: 6 }}></td>
                 <td style={{ padding: 6 }}>{formatarMoeda(totalNf)}</td>
-                <td colSpan={10} style={{ padding: 6 }}></td>
+                <td colSpan={11} style={{ padding: 6 }}></td>
               </tr>
             )}
           </tbody>
@@ -326,21 +334,6 @@ export default function DadosEntrega({
             placeholder="Responsável"
             value={campos.responsavel}
             onChange={(e) => atualizar("responsavel", e.target.value)}
-            style={{ padding: 6 }}
-          />
-          <input
-            type="number"
-            placeholder="Atraso (dias)"
-            value={campos.atraso_dias}
-            onChange={(e) => atualizar("atraso_dias", e.target.value)}
-            style={{ padding: 6 }}
-          />
-          <input
-            type="number"
-            step="0.01"
-            placeholder="% transcurso"
-            value={campos.percentual_transcurso}
-            onChange={(e) => atualizar("percentual_transcurso", e.target.value)}
             style={{ padding: 6 }}
           />
           {erro && <p style={{ color: "#B0655C", gridColumn: "1 / -1" }}>{erro}</p>}

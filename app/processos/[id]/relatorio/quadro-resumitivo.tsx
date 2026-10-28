@@ -29,7 +29,9 @@ type Processo = {
   vigencia_fim: string | null;
   processo_eletronico_numero: string | null;
   pregao_eletronico_numero: string | null;
+  publicacao_pncp_pregao: string | null;
   ata_registro_precos_numero: string | null;
+  publicacao_pncp_ata: string | null;
   publicacao_dou: string | null;
   publicacao_pncp: string | null;
   valor_unitario: number | null;
@@ -87,12 +89,14 @@ type CampoTexto = {
 const CAMPOS: CampoTexto[] = [
   { chave: "processo_eletronico_numero", label: "Processo Eletrônico nº" },
   { chave: "pregao_eletronico_numero", label: "Pregão Eletrônico nº" },
+  { chave: "publicacao_pncp_pregao", label: "Publicação PNCP (Pregão)" },
   { chave: "ata_registro_precos_numero", label: "Ata de Registro de Preços nº" },
+  { chave: "publicacao_pncp_ata", label: "Publicação PNCP (Ata)" },
   { chave: "numero_contrato", label: "Contrato nº" },
+  { chave: "publicacao_pncp", label: "Publicação PNCP (Contrato)" },
   { chave: "objeto", label: "Objeto", span: true, tipo: "textarea" },
   { chave: "data_assinatura", label: "Data da Assinatura", tipo: "data" },
   { chave: "publicacao_dou", label: "Publicação D.O.U" },
-  { chave: "publicacao_pncp", label: "Publicação PNCP" },
   { chave: "portaria_designacao_fiscal", label: "Portaria Designação de Fiscal", span: true },
   { chave: "nota_empenho_numero", label: "Nota de Empenho nº" },
   { chave: "programa_trabalho", label: "Programa de Trabalho" },
@@ -139,7 +143,9 @@ export default function QuadroResumitivo({
       .update({
         processo_eletronico_numero: valores.processo_eletronico_numero || null,
         pregao_eletronico_numero: valores.pregao_eletronico_numero || null,
+        publicacao_pncp_pregao: valores.publicacao_pncp_pregao || null,
         ata_registro_precos_numero: valores.ata_registro_precos_numero || null,
+        publicacao_pncp_ata: valores.publicacao_pncp_ata || null,
         numero_contrato: valores.numero_contrato,
         objeto: valores.objeto,
         data_assinatura: valores.data_assinatura || null,

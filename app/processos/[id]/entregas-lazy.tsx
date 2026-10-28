@@ -16,23 +16,30 @@ type Entrega = {
   data_validade: string | null;
   data_entrega: string | null;
   responsavel: string | null;
-  atraso_dias: number | null;
-  percentual_transcurso: number | null;
 };
+
+type PautaRow = { uf: string; quantidade: number; data_entrega: string | null };
 
 export default function EntregasLazy({ processoId }: { processoId: string }) {
   const [entregas, setEntregas] = useState<Entrega[] | null>(null);
+  const [pauta, setPauta] = useState<PautaRow[]>([]);
 
   async function carregar() {
     const supabase = createClient();
-    const { data } = await supabase
-      .from("processo_entregas")
-      .select(
-        "id, local_entrega, quantidade, valor_total_nf, danfe_venda, danfe_remessa, lote, data_fabricacao, data_validade, data_entrega, responsavel, atraso_dias, percentual_transcurso",
-      )
-      .eq("processo_id", processoId)
-      .order("created_at");
-    setEntregas((data ?? []) as Entrega[]);
+    const [{ data: entregasData }, { data: pautaData }] = await Promise.all([
+      supabase
+        .from("processo_entregas")
+        .select(
+          "id, local_entrega, quantidade, valor_total_nf, danfe_venda, danfe_remessa, lote, data_fabricacao, data_validade, data_entrega, responsavel",
+        )
+        .eq("processo_id", processoId)
+        .order("created_at"),
+      // Usada pra calcular atraso (data prevista x data real) e quantidade
+      // faltante por UF — ver DadosEntrega.
+      supabase.from("processo_pauta_distribuicao").select("uf, quantidade, data_entrega").eq("processo_id", processoId),
+    ]);
+    setEntregas((entregasData ?? []) as Entrega[]);
+    setPauta((pautaData ?? []) as PautaRow[]);
   }
 
   useEffect(() => {
@@ -48,5 +55,5 @@ export default function EntregasLazy({ processoId }: { processoId: string }) {
   // que o router.refresh() do Next recarrega — sem isso, adicionar/remover
   // uma entrega salvava certo no banco, mas a tabela continuava mostrando
   // a lista antiga até a página ser recarregada de verdade.
-  return <DadosEntrega processoId={processoId} entregas={entregas} onSalvo={carregar} />;
+  return <DadosEntrega processoId={processoId} entregas={entregas} pauta={pauta} onSalvo={carregar} />;
 }

@@ -33,7 +33,7 @@ Regras:
 - Datas sempre no formato AAAA-MM-DD.
 - "responsavel" é quem recebeu/assinou a entrega, se constar no documento.
 - Nunca invente valores que não estão no documento — use null.
-- "atraso_dias" e "percentual_transcurso" NÃO entram nesse JSON — são sempre preenchidos manualmente no sistema, não vêm de documento.
+- "atraso_dias" e "percentual_transcurso" NÃO entram nesse JSON — são calculados automaticamente pelo sistema (cruzando com a Pauta de Distribuição e com fabricação/validade/entrega), nunca vêm de documento.
 - Se uma célula de data tiver texto que não é uma data real (ex.: "Aguardando Agenda", "Agendado p/ 11/11", "#VALUE!", vazio), devolva null pra esse campo — nunca tente adivinhar ou forçar uma data a partir de texto assim.
 - Ignore linhas de totalização/resumo (ex.: uma linha "TOTAL" no fim de uma tabela) — não são entregas.
 - Se não encontrar nenhuma entrega no documento, devolva "entregas": [].

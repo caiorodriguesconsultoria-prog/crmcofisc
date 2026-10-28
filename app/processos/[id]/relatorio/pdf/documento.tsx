@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { valorPorExtenso } from "@/lib/extenso";
+import { calcularDerivadosEntregas, calcularTranscurso } from "@/lib/entregas-derivados";
 
 type Pessoa = { nome: string; matricula: string | null } | null;
 
@@ -15,7 +16,9 @@ type Processo = {
   vigencia_fim: string | null;
   processo_eletronico_numero: string | null;
   pregao_eletronico_numero: string | null;
+  publicacao_pncp_pregao: string | null;
   ata_registro_precos_numero: string | null;
+  publicacao_pncp_ata: string | null;
   publicacao_dou: string | null;
   publicacao_pncp: string | null;
   valor_unitario: number | null;
@@ -47,7 +50,7 @@ type Execucao = {
   data_prevista: string | null;
 };
 
-type PautaItem = { id: string; uf: string; quantidade: number };
+type PautaItem = { id: string; uf: string; quantidade: number; data_entrega: string | null };
 
 type Entrega = {
   id: string;
@@ -61,8 +64,6 @@ type Entrega = {
   data_validade: string | null;
   data_entrega: string | null;
   responsavel: string | null;
-  atraso_dias: number | null;
-  percentual_transcurso: number | null;
 };
 
 type Andamento = { id: string; texto: string };
@@ -196,11 +197,14 @@ export default function Documento({
   const pautaTotal = pauta.reduce((s, i) => s + Number(i.quantidade), 0);
   const entTotalQ = entregas.reduce((s, e) => s + (e.quantidade ?? 0), 0);
   const entTotalV = entregas.reduce((s, e) => s + (e.valor_total_nf ?? 0), 0);
+  const { atrasoPorId, faltantePorId } = calcularDerivadosEntregas(entregas, pauta);
 
   const quadro: { k: string; v: string }[] = [
     { k: "Processo Eletrônico nº", v: p.processo_eletronico_numero ?? "não informado" },
     { k: "Pregão Eletrônico nº", v: p.pregao_eletronico_numero ?? "não informado" },
+    { k: "Publicação PNCP (Pregão)", v: p.publicacao_pncp_pregao ?? "não informado" },
     { k: "Ata de Registro de Preços nº", v: p.ata_registro_precos_numero ?? "não informado" },
+    { k: "Publicação PNCP (Ata)", v: p.publicacao_pncp_ata ?? "não informado" },
     { k: "Contrato nº", v: p.numero_contrato },
     { k: "Objeto", v: p.unidade_medida ? `${p.objeto}, ${p.unidade_medida}` : p.objeto },
     { k: "Quantidade Contratada", v: p.quantidade_contratada ?? "não informado" },
@@ -227,7 +231,7 @@ export default function Documento({
         : "não informado",
     },
     { k: "Publicação D.O.U", v: p.publicacao_dou ?? "não informado" },
-    { k: "Publicação PNCP", v: p.publicacao_pncp ?? "não informado" },
+    { k: "Publicação PNCP (Contrato)", v: p.publicacao_pncp ?? "não informado" },
     { k: "Portaria Designação de Fiscal", v: p.portaria_designacao_fiscal ?? "não informado" },
     { k: "Nota de Empenho nº", v: p.nota_empenho_numero ?? "não informado" },
     { k: "Programa de Trabalho", v: p.programa_trabalho ?? "não informado" },
@@ -286,23 +290,28 @@ export default function Documento({
         )
       : "";
   const entregasHtml = tabelaHtml(
-    ["Local", "Qtd.", "Valor NF", "DANFE venda", "DANFE remessa", "Lote", "Fabricação", "Validade", "Entrega", "Responsável", "Atraso (d.)", "% transc."],
+    ["Local", "Qtd.", "Valor NF", "DANFE venda", "DANFE remessa", "Lote", "Fabricação", "Validade", "Entrega", "Responsável", "Atraso (d.)", "% transc.", "Faltante"],
     [
-      ...entregas.map((e) => [
-        e.local_entrega ?? "—",
-        e.quantidade ?? "—",
-        formatarMoeda(e.valor_total_nf) ?? "—",
-        e.danfe_venda ?? "—",
-        e.danfe_remessa ?? "—",
-        e.lote ?? "—",
-        formatarData(e.data_fabricacao),
-        formatarData(e.data_validade),
-        formatarData(e.data_entrega),
-        e.responsavel ?? "—",
-        e.atraso_dias ?? "—",
-        e.percentual_transcurso ?? "—",
-      ]),
-      ["TOTAL", entTotalQ, formatarMoeda(entTotalV) ?? "—", "", "", "", "", "", "", "", "", ""],
+      ...entregas.map((e) => {
+        const transcurso = calcularTranscurso(e.data_fabricacao, e.data_validade, e.data_entrega);
+        const faltante = faltantePorId.get(e.id);
+        return [
+          e.local_entrega ?? "—",
+          e.quantidade ?? "—",
+          formatarMoeda(e.valor_total_nf) ?? "—",
+          e.danfe_venda ?? "—",
+          e.danfe_remessa ?? "—",
+          e.lote ?? "—",
+          formatarData(e.data_fabricacao),
+          formatarData(e.data_validade),
+          formatarData(e.data_entrega),
+          e.responsavel ?? "—",
+          atrasoPorId.get(e.id) ?? "—",
+          transcurso != null ? `${transcurso.toFixed(2)}%` : "—",
+          faltante != null ? faltante.toLocaleString("pt-BR") : "—",
+        ];
+      }),
+      ["TOTAL", entTotalQ, formatarMoeda(entTotalV) ?? "—", "", "", "", "", "", "", "", "", "", ""],
     ],
   );
   const execHtml =
@@ -618,8 +627,8 @@ export default function Documento({
 
         <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Dados da entrega</div>
         <div style={{ border: "1px solid #000", marginBottom: 20, fontSize: 10.5, overflowX: "auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(12,1fr)", fontWeight: 600, borderBottom: "1px solid #000", minWidth: 940 }}>
-            {["Local", "Qtd.", "Valor NF", "DANFE venda", "DANFE remessa", "Lote", "Fabricação", "Validade", "Entrega", "Responsável", "Atraso (d.)", "% transc."].map(
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(13,1fr)", fontWeight: 600, borderBottom: "1px solid #000", minWidth: 1020 }}>
+            {["Local", "Qtd.", "Valor NF", "DANFE venda", "DANFE remessa", "Lote", "Fabricação", "Validade", "Entrega", "Responsável", "Atraso (d.)", "% transc.", "Faltante"].map(
               (h) => (
                 <div key={h} style={{ padding: "4px 5px", lineHeight: 1.2 }}>
                   {h}
@@ -627,29 +636,34 @@ export default function Documento({
               ),
             )}
           </div>
-          {entregas.map((e) => (
-            <div key={e.id} style={{ display: "grid", gridTemplateColumns: "repeat(12,1fr)", borderBottom: "1px solid #000", minWidth: 940 }}>
-              {[
-                e.local_entrega ?? "—",
-                e.quantidade ?? "—",
-                formatarMoeda(e.valor_total_nf) ?? "—",
-                e.danfe_venda ?? "—",
-                e.danfe_remessa ?? "—",
-                e.lote ?? "—",
-                formatarData(e.data_fabricacao),
-                formatarData(e.data_validade),
-                formatarData(e.data_entrega),
-                e.responsavel ?? "—",
-                e.atraso_dias ?? "—",
-                e.percentual_transcurso ?? "—",
-              ].map((cl, i) => (
-                <div key={i} style={{ padding: "4px 5px", lineHeight: 1.25 }}>
-                  {cl}
-                </div>
-              ))}
-            </div>
-          ))}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(12,1fr)", fontWeight: 600, minWidth: 940 }}>
+          {entregas.map((e) => {
+            const transcurso = calcularTranscurso(e.data_fabricacao, e.data_validade, e.data_entrega);
+            const faltante = faltantePorId.get(e.id);
+            return (
+              <div key={e.id} style={{ display: "grid", gridTemplateColumns: "repeat(13,1fr)", borderBottom: "1px solid #000", minWidth: 1020 }}>
+                {[
+                  e.local_entrega ?? "—",
+                  e.quantidade ?? "—",
+                  formatarMoeda(e.valor_total_nf) ?? "—",
+                  e.danfe_venda ?? "—",
+                  e.danfe_remessa ?? "—",
+                  e.lote ?? "—",
+                  formatarData(e.data_fabricacao),
+                  formatarData(e.data_validade),
+                  formatarData(e.data_entrega),
+                  e.responsavel ?? "—",
+                  atrasoPorId.get(e.id) ?? "—",
+                  transcurso != null ? `${transcurso.toFixed(2)}%` : "—",
+                  faltante != null ? faltante.toLocaleString("pt-BR") : "—",
+                ].map((cl, i) => (
+                  <div key={i} style={{ padding: "4px 5px", lineHeight: 1.25 }}>
+                    {cl}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(13,1fr)", fontWeight: 600, minWidth: 1020 }}>
             <div style={{ padding: "4px 5px" }}>TOTAL</div>
             <div style={{ padding: "4px 5px" }}>{entTotalQ}</div>
             <div style={{ padding: "4px 5px" }}>{formatarMoeda(entTotalV) ?? "—"}</div>
