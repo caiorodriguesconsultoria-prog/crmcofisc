@@ -4,8 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { googleConectado } from "@/lib/google-calendar";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
 import Calendario from "./calendario";
+import Semana from "./semana";
 import { card, cor, botaoPrimario } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import BarraTopo from "@/app/_ui/barra-topo";
 
 export default async function AgendaPage({
   searchParams,
@@ -32,10 +34,13 @@ export default async function AgendaPage({
   const ehAdmin = !!pessoaAtual?.is_admin;
   const conectadoGoogle = await googleConectado();
 
+  const hoje = new Date().toISOString().slice(0, 10);
+
   const [
     { data: processos, error },
     { data: agendamentosRaw },
     { data: tarefasAgendadasRaw },
+    { count: contagemProcessosAtivosRaw },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -56,6 +61,9 @@ export default async function AgendaPage({
       .eq("concluida", false)
       .not("agendamento_data", "is", null)
       .order("agendamento_data"),
+    // Pra BarraTopo — mesmo cálculo simples já usado em /dashboard e
+    // /processos, não uma consulta nova de verdade.
+    supabase.from("processos").select("id", { count: "exact", head: true }).is("conclusao_tipo", null),
   ]);
 
   // Tarefas não têm horário (são de dia inteiro) — entram no fim da lista
@@ -97,8 +105,29 @@ export default async function AgendaPage({
   const host = (await headers()).get("host");
   const linkIcs = token && host ? `https://${host}/api/agenda.ics?token=${token}` : null;
 
+  const contagemProcessosAtivos = contagemProcessosAtivosRaw ?? 0;
+  const contagemAgendaHoje = agendamentos.filter((a) => a.data.slice(0, 10) === hoje).length;
+  const iniciaisUsuario = (user.email ?? "?")
+    .split("@")[0]
+    .split(/[._-]/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join("") || "?";
+  const atualizadoEm = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
   return (
-    <Painel titulo="Agenda" voltarHref="/dashboard" maxWidth={900}>
+    <div className="crm-painel-fundo" style={{ flexDirection: "column", alignItems: "center" }}>
+      <BarraTopo
+        contagemProcessosAtivos={contagemProcessosAtivos}
+        contagemAgendaHoje={contagemAgendaHoje}
+        temAlerta={false}
+        iniciaisUsuario={iniciaisUsuario}
+        emailUsuario={user.email ?? undefined}
+        atualizadoEm={atualizadoEm}
+      />
+
+    <Painel titulo="Agenda" maxWidth={900}>
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
       {googleStatus === "conectado" && (
@@ -142,7 +171,17 @@ export default async function AgendaPage({
         )}
       </div>
 
+      <div style={{ ...card, marginTop: 16 }}>
+        <strong style={{ fontSize: 13 }}>Esta semana</strong>
+        <div style={{ marginTop: 10 }}>
+          <Semana prazos={prazos} agendamentos={agendamentos} />
+        </div>
+      </div>
+
       <Calendario prazos={prazos} agendamentos={agendamentos} />
     </Painel>
+
+      <div className="crm-barra-topo-espaco-mobile" />
+    </div>
   );
 }
