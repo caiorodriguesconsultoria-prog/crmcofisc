@@ -41,6 +41,18 @@ export const cor = {
   // design-system/REGRAS.md.
   destaqueQuente: "#E2883A",
   destaqueQuenteFundo: "rgba(226,136,58,.16)",
+  // Versões escurecidas de positivo/atencao/urgente, só pra TEXTO pequeno
+  // sobre fundo claro (Etapa 6 do redesenho — revisão de contraste). As
+  // cores "cheias" de cima (positivo/atencao/urgente) têm contraste de
+  // 3,0 a 4,3:1 contra branco — passam no mínimo de 3:1 pra elementos
+  // gráficos (ponto do IndicadorUrgencia), mas ficam abaixo dos 4,5:1
+  // exigidos pra texto pequeno legível. Essas três versões passam de
+  // 4,9:1. Usadas só nos componentes novos do redesenho por enquanto —
+  // o resto do sistema já usava as cores cheias como texto antes disso
+  // existir, e recolorir tudo de uma vez é maior que o escopo desta etapa.
+  positivoTexto: "#5A7355",
+  atencaoTexto: "#8A6420",
+  urgenteTexto: "#8A4B43",
 };
 
 // Cantos e movimento do design novo (grade bento/dashboard) — ver
@@ -64,7 +76,10 @@ export const movimento = {
   janela: 0.25,
   entrada: 0.3,
   escalonado: 0.04,
-  contagemKpi: 0.6,
+  // Caiu de 600ms pra 300ms na Etapa 6 (revisão de movimento) — mais rápido
+  // sem perder a sensação de contagem, e menos tempo com número "errado"
+  // na tela antes de chegar no valor final.
+  contagemKpi: 0.3,
 };
 
 export const sombraCard = "0 1px 2px rgba(32,31,29,.035)";

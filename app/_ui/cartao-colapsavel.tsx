@@ -5,9 +5,12 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { card, cor, movimento } from "@/lib/theme";
 
 // "Janela flutuante" do redesenho (Etapa 4) — o título expande o conteúdo a
-// partir dele mesmo, em 250ms (altura + opacidade, nunca `transition: all`).
-// Mesmo componente usado em todas as seções expansíveis do processo e do
-// relatório — ver design-system/REGRAS.md.
+// partir dele mesmo, em 250ms. Corrigido na Etapa 6 (revisão de movimento):
+// a versão anterior animava `height`, que a própria regra do design novo
+// proíbe (força recálculo de layout a cada frame — pesado no celular).
+// Agora anima só opacidade e uma leve subida (transform), nunca altura,
+// largura ou margem. Mesmo componente usado em todas as seções expansíveis
+// do processo e do relatório — ver design-system/REGRAS.md.
 export default function CartaoColapsavel({
   titulo,
   abertoInicial = true,
@@ -35,11 +38,10 @@ export default function CartaoColapsavel({
       <AnimatePresence initial={false}>
         {aberto && (
           <motion.div
-            initial={reduzido ? false : { height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={reduzido ? undefined : { height: 0, opacity: 0 }}
+            initial={reduzido ? false : { opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduzido ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: movimento.janela, ease: [0.22, 1, 0.36, 1] }}
-            style={{ overflow: "hidden" }}
           >
             <div style={{ marginTop: 10 }}>{children}</div>
           </motion.div>

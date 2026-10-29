@@ -39,8 +39,15 @@ export default function Kpi({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- conta só na 1ª aparição, não a cada mudança de valor
   }, []);
 
+  // Versões escuras (positivoTexto/urgenteTexto) — texto pequeno de 12,5px
+  // precisa de 4,5:1 de contraste; cor.positivo/cor.urgente "cheias" só têm
+  // 3 a 4,3:1 (ver nota em lib/theme.ts, Etapa 6 do redesenho).
   const corVariacao =
-    variacao?.sentido === "positivo" ? cor.positivo : variacao?.sentido === "negativo" ? cor.urgente : cor.textoTerciario;
+    variacao?.sentido === "positivo"
+      ? cor.positivoTexto
+      : variacao?.sentido === "negativo"
+        ? cor.urgenteTexto
+        : cor.textoTerciario;
 
   return (
     <div>

@@ -245,6 +245,15 @@ th {
     border-top: 1px solid rgba(32, 31, 29, 0.07);
     padding: 8px 6px calc(env(safe-area-inset-bottom, 0px) + 6px);
   }
+  /* Área de toque de pelo menos 44px (Etapa 6, revisão mobile) — os 4 botões
+     da barra inferior (Painel/Contratos/Agenda/Mais). */
+  .crm-barra-topo-mobile > * {
+    min-height: 44px;
+  }
+  .crm-barra-topo-alvo-toque {
+    width: 44px !important;
+    height: 44px !important;
+  }
   .crm-barra-topo-mais-painel {
     top: auto;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 60px);
