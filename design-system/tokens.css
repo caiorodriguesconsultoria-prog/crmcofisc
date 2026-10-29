@@ -1,0 +1,49 @@
+/* Tokens do design novo (grade bento/dashboard), em CSS — documentação e
+   referência. A implementação real nos componentes React usa os mesmos
+   valores via lib/theme.ts (`cor`, `raio`, `movimento`), porque o projeto
+   não usa Tailwind: todo o estilo existente é inline, orientado por
+   lib/theme.ts, em app/_ui/. Ver design-system/REGRAS.md. */
+:root {
+  /* Cor — mesmos valores de lib/theme.ts `cor` (fonte da verdade é o .ts,
+     mantenha os dois em sincronia se um mudar). */
+  --bg-page: #EFF3FB;
+  --bg-card: #FFFFFF;
+  --text-1: #201F1D;
+  --text-2: #605D5D;
+  --text-3: #7D7979;
+  --border: rgba(32, 31, 29, .07);
+  --accent: #2F5FDB;
+  --accent-bg: rgba(47, 95, 219, .10);
+  --accent-warm: #E2883A;
+  --accent-warm-bg: rgba(226, 136, 58, .16);
+  --urg-ok: #7E9B7E;
+  --urg-warn: #C08A3E;
+  --urg-crit: #B0655C;
+  --dark-card: #2D2B2B;
+
+  /* Forma e espaço */
+  --radius-field: 14px;
+  --radius-tag: 8px;
+  --radius-card-sm: 16px;
+  --radius-card: 22px;
+  --radius-panel: 24px;
+  --radius-pill: 999px;
+  --gap: 16px;
+  --pad-card: 24px;
+
+  /* Movimento */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-hover: 150ms;
+  --dur-fade: 200ms;
+  --dur-window: 250ms;
+  --dur-enter: 300ms;
+  --stagger: 40ms;
+  --dur-kpi-count: 600ms;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --gap: 12px;
+    --pad-card: 16px;
+  }
+}

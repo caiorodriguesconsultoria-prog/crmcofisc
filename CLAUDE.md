@@ -7,6 +7,7 @@
 - Implementar em passos pequenos, um commit por ajuste quando fizer sentido.
 - Documentar decisões relevantes no `LOG.md` (uma entrada por mudança, com o "porquê").
 - Fluxo de deploy: commitar/push na branch de trabalho → merge pra `main` (produção, auto-deploy) só depois de rodar `tsc --noEmit` e `npm run build` limpos → se a mudança depender de migração, só mergear depois do Caio confirmar que rodou o SQL.
+- Padrão visual novo (redesenho em etapas, grade bento/dashboard): ler `design-system/REGRAS.md` e `design-system/tokens.css` antes de mexer em qualquer tela que já tenha passado pelo redesenho, ou antes de criar componente novo em `app/_ui/`.
 
 ## Padrão de janela/popup (modal pequeno sobre a tela)
 

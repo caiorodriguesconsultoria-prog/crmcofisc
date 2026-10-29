@@ -29,6 +29,35 @@ export const cor = {
   vermelhoEscuro: "#7A2E2E",
   vermelhoEscuroFundo: "rgba(122,46,46,.15)",
   escuro: "#2D2B2B",
+  // Acento quente — só decorativo (card de destaque único no estilo
+  // bento/dashboard), nunca usado pra indicar urgência/status. Ver
+  // design-system/REGRAS.md.
+  destaqueQuente: "#E2883A",
+  destaqueQuenteFundo: "rgba(226,136,58,.16)",
+};
+
+// Cantos e movimento do design novo (grade bento/dashboard) — ver
+// design-system/REGRAS.md e design-system/tokens.css (mesmos valores, em
+// CSS). Os componentes em app/_ui/ usam estes; telas antigas continuam
+// com os raios que já tinham (18/22px em `card`/`.crm-painel-alto` etc.),
+// não foram tocadas na Etapa 1.
+export const raio = {
+  campo: 14,
+  tag: 8,
+  cardPequeno: 16,
+  card: 22,
+  painel: 24,
+  pilula: 999,
+};
+
+export const movimento = {
+  ease: "cubic-bezier(0.22, 1, 0.36, 1)",
+  hover: 0.15,
+  fade: 0.2,
+  janela: 0.25,
+  entrada: 0.3,
+  escalonado: 0.04,
+  contagemKpi: 0.6,
 };
 
 export const sombraCard = "0 1px 2px rgba(32,31,29,.035)";
