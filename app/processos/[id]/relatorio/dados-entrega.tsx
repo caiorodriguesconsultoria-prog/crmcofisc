@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CampoMascarado } from "@/app/_ui/campo";
+import { CampoMascarado, BotaoCopiar } from "@/app/_ui/campo";
 import { formatarMoedaBR, paraNumeroMoeda } from "@/lib/moeda";
 import { cor } from "@/lib/theme";
 import { calcularDerivadosEntregas, calcularTranscurso } from "@/lib/entregas-derivados";
+import MedidorSemicircular from "@/app/_ui/medidor-semicircular";
 
 // Mesma máscara de milhar em tempo real usada no cronograma de entregas,
 // só que com 3 casas decimais (padrão pra quantidade em numeric(14,3)).
@@ -82,6 +83,18 @@ export default function DadosEntrega({
 
   const totalNf = entregas.reduce((soma, e) => soma + (e.valor_total_nf ?? 0), 0);
   const { atrasoPorId, faltantePorId } = useMemo(() => calcularDerivadosEntregas(entregas, pauta), [entregas, pauta]);
+
+  // Medidor semicircular (Etapa 4/6 do redesenho) — média do % de transcurso
+  // entre as entregas que têm os 3 dados pra calcular (fabricação, validade e
+  // já entregues). Resumo de relance; o valor exato de cada entrega continua
+  // na coluna "% transc." da tabela abaixo.
+  const transcursoMedio = useMemo(() => {
+    const valores = entregas
+      .map((e) => calcularTranscurso(e.data_fabricacao, e.data_validade, e.data_entrega))
+      .filter((v): v is number => v != null);
+    if (valores.length === 0) return null;
+    return valores.reduce((soma, v) => soma + v, 0) / valores.length;
+  }, [entregas]);
 
   // Anexar a nota fiscal/romaneio (PDF, foto ou planilha) já cadastra as
   // entregas extraídas — só adiciona, nunca mexe nas entregas já cadastradas.
@@ -182,6 +195,12 @@ export default function DadosEntrega({
         distribuição pela UF/local de entrega) — não ficam salvos, recalculam sempre que a lista muda.
       </p>
 
+      {transcursoMedio != null && (
+        <div style={{ marginBottom: 12 }}>
+          <MedidorSemicircular percentual={transcursoMedio} rotulo="% de transcurso médio" tamanho={110} />
+        </div>
+      )}
+
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
       {erroAnexo && <p style={{ color: "#B0655C" }}>{erroAnexo}</p>}
 
@@ -215,9 +234,36 @@ export default function DadosEntrega({
                   <td style={{ padding: 6 }}>{e.local_entrega ?? "—"}</td>
                   <td style={{ padding: 6 }}>{e.quantidade ?? "—"}</td>
                   <td style={{ padding: 6 }}>{formatarMoeda(e.valor_total_nf)}</td>
-                  <td style={{ padding: 6 }}>{e.danfe_venda ?? "—"}</td>
-                  <td style={{ padding: 6 }}>{e.danfe_remessa ?? "—"}</td>
-                  <td style={{ padding: 6 }}>{e.lote ?? "—"}</td>
+                  <td style={{ padding: 6 }}>
+                    {e.danfe_venda ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {e.danfe_venda}
+                        <BotaoCopiar texto={e.danfe_venda} />
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td style={{ padding: 6 }}>
+                    {e.danfe_remessa ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {e.danfe_remessa}
+                        <BotaoCopiar texto={e.danfe_remessa} />
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td style={{ padding: 6 }}>
+                    {e.lote ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {e.lote}
+                        <BotaoCopiar texto={e.lote} />
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td style={{ padding: 6 }}>{formatarData(e.data_fabricacao)}</td>
                   <td style={{ padding: 6 }}>{formatarData(e.data_validade)}</td>
                   <td style={{ padding: 6 }}>{formatarData(e.data_entrega)}</td>

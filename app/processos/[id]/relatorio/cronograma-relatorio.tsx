@@ -1,3 +1,5 @@
+import { BotaoCopiar } from "@/app/_ui/campo";
+
 type Execucao = {
   id: string;
   numero: number;
@@ -31,11 +33,13 @@ export default function CronogramaRelatorio({ execucoes }: { execucoes: Execucao
             <th style={{ padding: 6 }}>Prazo máximo (até)</th>
             <th style={{ padding: 6 }}>Data de entrega</th>
             <th style={{ padding: 6 }}>Atraso (dias)</th>
+            <th style={{ padding: 6 }}></th>
           </tr>
         </thead>
         <tbody>
           {execucoes.map((e) => {
             const atraso = calcularAtraso(e.data_prevista, e.data_entrega);
+            const linha = `Parcela ${e.numero} — ${e.quantidade} ${e.unidade ?? ""} — prazo máximo ${formatarData(e.data_prevista)} — entregue em ${formatarData(e.data_entrega)}${atraso ? ` — ${atraso} dia(s) de atraso` : ""}`;
             return (
               <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
                 <td style={{ padding: 6 }}>{e.numero}</td>
@@ -45,12 +49,15 @@ export default function CronogramaRelatorio({ execucoes }: { execucoes: Execucao
                 <td style={{ padding: 6 }}>{formatarData(e.data_prevista)}</td>
                 <td style={{ padding: 6 }}>{formatarData(e.data_entrega)}</td>
                 <td style={{ padding: 6 }}>{atraso ?? "—"}</td>
+                <td style={{ padding: 6 }}>
+                  <BotaoCopiar texto={linha} />
+                </td>
               </tr>
             );
           })}
           {execucoes.length === 0 && (
             <tr>
-              <td colSpan={5} style={{ padding: 6, color: "#7D7979" }}>
+              <td colSpan={6} style={{ padding: 6, color: "#7D7979" }}>
                 Nenhuma parcela cadastrada.
               </td>
             </tr>
@@ -59,6 +66,7 @@ export default function CronogramaRelatorio({ execucoes }: { execucoes: Execucao
             <tr style={{ fontWeight: "bold", borderTop: "1px solid #ddd" }}>
               <td style={{ padding: 6 }}>TOTAL</td>
               <td style={{ padding: 6 }}>{total}</td>
+              <td style={{ padding: 6 }}></td>
               <td style={{ padding: 6 }}></td>
               <td style={{ padding: 6 }}></td>
               <td style={{ padding: 6 }}></td>
