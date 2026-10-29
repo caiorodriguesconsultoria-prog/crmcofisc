@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ChevronDown, Menu } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { cor, raio } from "@/lib/theme";
 
 // Navegação do Painel, no formato de cápsulas do novo design (ver
@@ -75,11 +75,15 @@ export default function BarraTopo({
         </span>
 
         <nav className="crm-barra-topo-abas" aria-label="Navegação principal">
-          {ABAS.map((a) => {
+          {[...ABAS, ...MAIS].map((a) => {
             const ativa = pathname === a.href || pathname.startsWith(a.href + "/");
             const contador = contadores[a.href];
+            // /processos/concluidos e /processos/novo têm o mesmo formato de URL
+            // da rota interceptada do modal /processos/[id] — <a> normal força
+            // navegação completa, mesma causa raiz já tratada em outros links.
+            const Tag = a.href === "/processos/concluidos" ? "a" : Link;
             return (
-              <Link
+              <Tag
                 key={a.href}
                 href={a.href}
                 style={{
@@ -91,6 +95,7 @@ export default function BarraTopo({
                   fontSize: 13,
                   fontWeight: 600,
                   textDecoration: "none",
+                  whiteSpace: "nowrap",
                   color: ativa ? "#fff" : cor.textoSecundario,
                   background: ativa ? cor.escuro : "transparent",
                   flex: "none",
@@ -111,32 +116,9 @@ export default function BarraTopo({
                     {contador}
                   </span>
                 )}
-              </Link>
+              </Tag>
             );
           })}
-
-          <div style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => setMaisAberto((v) => !v)}
-              aria-expanded={maisAberto}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "8px 12px",
-                borderRadius: raio.pilula,
-                border: "none",
-                fontSize: 13,
-                fontWeight: 600,
-                color: cor.textoSecundario,
-                background: "transparent",
-              }}
-            >
-              Mais
-              <ChevronDown size={14} />
-            </button>
-          </div>
         </nav>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto", flex: "none" }}>
