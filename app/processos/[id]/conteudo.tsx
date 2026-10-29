@@ -329,7 +329,7 @@ export async function carregarProcesso(id: string) {
     })),
   }));
 
-  const conteudoProcesso = (
+  const conteudoResumo = (
     <div>
       <DadosPrincipais
         processoId={p.id}
@@ -353,30 +353,6 @@ export async function carregarProcesso(id: string) {
         <div style={{ marginTop: 10 }}>
           <Cronograma processoId={p.id} itens={itensComExecucoes as any} tagsDisponiveis={tagsDisponiveis ?? []} />
         </div>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={true}>
-          <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
-            <EtapaAtual processoId={p.id} etapaAtual={p.etapa_atual} etapasDisponiveis={etapasDisponiveis ?? []} />
-          </div>
-                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
-            <Checklist
-              processoId={p.id}
-              autorId={pessoaAtual?.id ?? null}
-              numeroContrato={numeroContratoSemSei(p.numero_contrato)}
-              grupos={gruposTarefas}
-            />
-          </div>
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
-            <Andamentos
-              processoId={p.id}
-              autorId={pessoaAtual?.id ?? null}
-              tagsDisponiveis={tagsDisponiveis ?? []}
-              andamentos={andamentosMapeados}
-            />
-          </div>
-        </CartaoColapsavel>
       </div>
 
       <div
@@ -433,12 +409,6 @@ export async function carregarProcesso(id: string) {
         </CartaoColapsavel>
       </div>
 
-      <div style={{ marginTop: 16 }}>
-        <CartaoColapsavel titulo="Histórico" abertoInicial={false}>
-          <HistoricoLazy processoId={p.id} />
-        </CartaoColapsavel>
-      </div>
-
       {/* Concluir contrato (definitivo) — não confundir com "concluir cobertura de
       férias" (temporário, botão no topo da página) */}
       <div style={secao}>
@@ -459,6 +429,38 @@ export async function carregarProcesso(id: string) {
     </div>
   );
 
+  const conteudoAndamentos = (
+    <div>
+      <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={true}>
+        <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
+          <EtapaAtual processoId={p.id} etapaAtual={p.etapa_atual} etapasDisponiveis={etapasDisponiveis ?? []} />
+        </div>
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+          <Checklist
+            processoId={p.id}
+            autorId={pessoaAtual?.id ?? null}
+            numeroContrato={numeroContratoSemSei(p.numero_contrato)}
+            grupos={gruposTarefas}
+          />
+        </div>
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
+          <Andamentos
+            processoId={p.id}
+            autorId={pessoaAtual?.id ?? null}
+            tagsDisponiveis={tagsDisponiveis ?? []}
+            andamentos={andamentosMapeados}
+          />
+        </div>
+      </CartaoColapsavel>
+
+      <div style={{ marginTop: 16 }}>
+        <CartaoColapsavel titulo="Histórico" abertoInicial={false}>
+          <HistoricoLazy processoId={p.id} />
+        </CartaoColapsavel>
+      </div>
+    </div>
+  );
+
   const conteudoRelatorio = (
     <div>
       <p style={{ margin: "0 0 16px" }}>
@@ -469,28 +471,25 @@ export async function carregarProcesso(id: string) {
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={card}>
-          <span style={rotuloSecao}>1. Quadro resumitivo</span>
+        <CartaoColapsavel titulo="1. Quadro resumitivo" abertoInicial={true}>
           <QuadroResumitivo processoId={id} processo={p} itens={(itens ?? []) as any} />
-        </div>
+        </CartaoColapsavel>
 
-        <div style={card}>
-          <span style={rotuloSecao}>3. Cronograma de entrega</span>
+        <CartaoColapsavel titulo="3. Cronograma de entrega" abertoInicial={true}>
           <CronogramaRelatorio execucoes={(execucoes ?? []) as any} />
-        </div>
+        </CartaoColapsavel>
 
-        <div style={card}>
-          <span style={rotuloSecao}>4. Execução do contrato</span>
+        <CartaoColapsavel titulo="4. Execução do contrato" abertoInicial={true}>
+
           <PautaDistribuicao
             processoId={id}
             pauta={(pauta ?? []) as any}
             execucoes={(execucoes ?? []).map((exec) => ({ id: exec.id, numero: exec.numero }))}
           />
           <EntregasLazy processoId={id} />
-        </div>
+        </CartaoColapsavel>
 
-        <div style={card}>
-          <span style={rotuloSecao}>5. Ocorrências</span>
+        <CartaoColapsavel titulo="5. Ocorrências" abertoInicial={true}>
           <Ocorrencias
             processoId={p.id}
             autorId={pessoaAtual?.id ?? null}
@@ -503,10 +502,9 @@ export async function carregarProcesso(id: string) {
               tags: a.tags,
             }))}
           />
-        </div>
+        </CartaoColapsavel>
 
-        <div style={card}>
-          <span style={rotuloSecao}>8. Conclusões</span>
+        <CartaoColapsavel titulo="8. Conclusões" abertoInicial={true}>
           <Conclusao
             processoId={p.id}
             numeroContrato={numeroContratoSemSei(p.numero_contrato)}
@@ -517,7 +515,7 @@ export async function carregarProcesso(id: string) {
               penalidade: p.conclusao_penalidade,
             }}
           />
-        </div>
+        </CartaoColapsavel>
       </div>
     </div>
   );
@@ -625,7 +623,8 @@ export async function carregarProcesso(id: string) {
 
   const corpo = (
     <Abas
-      processo={conteudoProcesso}
+      resumo={conteudoResumo}
+      andamentos={conteudoAndamentos}
       relatorio={conteudoRelatorio}
       eventosAtivos={eventosAtivos}
       statusTags={
