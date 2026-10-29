@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor, pill } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
+import { BotaoCopiar } from "@/app/_ui/campo";
 
 type Tag = { id: string; valor: string; cor?: string | null };
 
@@ -219,6 +220,7 @@ export default function Ocorrencias({
               <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                 <p style={{ textAlign: "justify", textIndent: "2em", margin: 0, flex: 1 }}>{a.texto}</p>
                 <div style={{ display: "flex", gap: 4, flex: "none" }}>
+                  <BotaoCopiar texto={a.texto} />
                   <button
                     type="button"
                     onClick={() => abrirEdicao(a)}
