@@ -972,4 +972,6 @@ Caio avaliou o resultado e achou que "no fim ficou igual ao que estava" — pedi
 
 Build e `tsc --noEmit` limpos. Sem migração, sem alteração de dado — só o Painel (`/dashboard`) e os componentes de UI compartilhados (`BarraTopo`, `CardBento`, `Kpi`, `TagRotulo`) usados em todo o sistema.
 
+**Ajuste no mesmo dia:** Caio aprovou o resultado (pizza, cores, hover, layout empilhado) e pediu pra aumentar o painel no desktop — estava em `maxWidth={1100}`, igual à BarraTopo de cima ficou em 1400 desde a Etapa 2. Ajustado pra `maxWidth={1400}` em `app/dashboard/page.tsx`, pra bater com a largura da barra.
+
 **Ajuste no mesmo dia — paleta azul-marinho:** Caio mandou uma paleta de referência (preta-azulada #021024 a azul clarinho #C1E8FF) e perguntou se encaixava. Recomendei usar só nos elementos escuros do redesenho novo (não trocar texto/fundo do sistema inteiro, que usa um neutro quente já aprovado) — ele topou. `cor.escuro` (cinza quente `#2D2B2B`) virou `#021024` (só afeta os componentes do redesenho: card "Ação do dia", cápsula ativa da BarraTopo, trilho de visões — nada de telas antigas, confirmado por grep antes de trocar). Novo token `cor.azulClaroDestaque` (`#C1E8FF`) para o destaque de arraste no Kanban (coluna que recebe o card fica com esse azul claro em vez do azul padrão de botão, mais vivo).
