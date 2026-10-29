@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { cor } from "@/lib/theme";
+import { cor, raio } from "@/lib/theme";
 
 type Item = {
   id: string;
@@ -200,6 +200,40 @@ export default function PautaDistribuicao({
       <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
         Forma de entrega: {formaEntrega}
       </p>
+
+      {/* Grade de UF (Etapa 4 do redesenho) — só aparece quando a entrega é
+      descentralizada (mais de uma UF cadastrada); resumo visual, a tabela
+      abaixo continua sendo onde se edita de fato. */}
+      {pauta.length > 1 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+          {Object.entries(
+            pauta.reduce((acc: Record<string, number>, p) => {
+              acc[p.uf] = (acc[p.uf] ?? 0) + Number(p.quantidade);
+              return acc;
+            }, {}),
+          )
+            .sort((a, b) => b[1] - a[1])
+            .map(([uf, quantidade]) => (
+              <span
+                key={uf}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: "5px 10px",
+                  borderRadius: raio.tag,
+                  border: `1px solid ${cor.borda}`,
+                  color: cor.texto,
+                }}
+              >
+                {uf}
+                <span style={{ color: cor.destaque }}>{quantidade}</span>
+              </span>
+            ))}
+        </div>
+      )}
 
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
       {erroAnexo && <p style={{ color: "#B0655C" }}>{erroAnexo}</p>}

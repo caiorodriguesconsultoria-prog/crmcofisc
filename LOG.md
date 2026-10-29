@@ -879,6 +879,25 @@ Build e `tsc --noEmit` limpos. Sem migração, sem alteração de tela fora de `
 
 **Ajuste no mesmo dia — BarraTopo mais larga + "Mais" sem dropdown:** Caio pediu pra puxar a barra pras laterais e colocar os itens do menu "Mais" direto na barra, em vez de escondidos atrás de um clique. `crm-barra-topo` passou de `max-width: 1100px` pra `1400px` (mais larga que o painel de baixo, de propósito); os 7 itens que estavam em `MAIS` viram cápsulas soltas junto com Painel/Contratos/Agenda (sem dropdown no desktop — o dropdown continua existindo só pro botão "Mais" do rodapé mobile, onde o espaço é mais apertado). Linha de cápsulas ganhou rolagem horizontal silenciosa (sem barra de rolagem visível) como rede de segurança em telas menores que não caibam todos os itens numa linha só.
 
-De quebra, adiantei uma peça da Etapa 4 que já estava pronta e é autocontida: `CartaoColapsavel` (usado em "Andamento e Tarefas", "Responsável", "Histórico" no processo) ganhou a animação de abrir/fechar em 250ms (altura + opacidade) que o guia pede pra "janela flutuante" — o resto da Etapa 4 (dividir a aba em Resumo/Andamentos, janelas no Relatório, grade de UF) ainda está em andamento.
+De quebra, adiantei uma peça da Etapa 4 que já estava pronta e é autocontida: `CartaoColapsavel` (usado em "Andamento e Tarefas", "Responsável", "Histórico" no processo) ganhou a animação de abrir/fechar em 250ms (altura + opacidade) que o guia pede pra "janela flutuante".
+
+## 2026-10-29 · Etapa 4 — Redesenho visual: Detalhe do processo e Relatório
+Continuação da Etapa 4 (interrompida uma vez pelo pedido de largura da BarraTopo, retomada em seguida).
+
+**`app/processos/[id]/abas.tsx`:** a aba "Contrato" virou duas — "Resumo" e "Andamentos" — como o guia pede (Resumo/Andamentos/Relatório). "Relatório" continua exatamente como era: uma aba aqui dentro, nunca um menu global. Nenhuma das três perde o carregamento preguiçoso (só monta o conteúdo da aba na primeira vez que a pessoa clica nela, igual já funcionava antes com "Relatório").
+
+**`app/processos/[id]/conteudo.tsx`:** o antigo conteúdo único da aba "Contrato" foi dividido sem mudar nenhum componente por dentro, só reagrupando:
+- **Resumo:** Dados principais, Cronograma de entregas, Dados do processo, Gestão e fiscalização, Responsável, Concluir contrato.
+- **Andamentos:** Andamento e Tarefas (etapa atual + checklist + andamentos), Histórico.
+
+As 5 seções da pré-visualização do Relatório (Quadro resumitivo, Cronograma de entrega, Execução do contrato, Ocorrências, Conclusões) viraram `CartaoColapsavel` (abertas por padrão — nada fica escondido do que já aparecia) em vez de cards fixos, virando as "janelas flutuantes" que o guia pede pra essas seções especificamente.
+
+**`app/processos/[id]/relatorio/pauta-distribuicao.tsx`:** grade de UF nova — um resumo visual (UF + quantidade total) acima da tabela de edição de sempre, só aparece quando a entrega é descentralizada (mais de uma UF cadastrada). A tabela em si (adicionar/editar/excluir UF) não mudou nada.
+
+**Decisões de escopo, registradas pra não perder de vista:**
+- **"Todo dado e tabela do relatório usa CampoComCopiar":** já é verdade na maior parte (o Quadro Resumitivo já usa botão de copiar extensivamente desde a rodada de SEI/D.O.U). Não fiz uma auditoria campo a campo de `cronograma-relatorio.tsx`, `dados-entrega.tsx` e `ocorrencias.tsx` nesta rodada — essa checagem fica pra Etapa 6 (revisão final) ou se o Caio pedir antes.
+- **Medidor semicircular pro percentual de transcurso:** não implementado. Hoje o transcurso é uma coluna de porcentagem por linha de entrega (um valor por parcela, não um total único) — um medidor semicircular faz mais sentido pra um número agregado só. Fica pra decidir com o Caio onde exatamente esse resumo agregado apareceria antes de construir o medidor.
+
+Build e `tsc --noEmit` limpos. Sem migração, sem mudança de dado — só reorganização visual da tela mais usada do sistema (testar com calma antes de aprovar, por ser a de maior uso). Parado aqui, aguardando "Etapa 4 aprovada" antes de seguir pra Etapa 5 (Agenda e Tags).
 
 **Ajuste no mesmo dia — paleta azul-marinho:** Caio mandou uma paleta de referência (preta-azulada #021024 a azul clarinho #C1E8FF) e perguntou se encaixava. Recomendei usar só nos elementos escuros do redesenho novo (não trocar texto/fundo do sistema inteiro, que usa um neutro quente já aprovado) — ele topou. `cor.escuro` (cinza quente `#2D2B2B`) virou `#021024` (só afeta os componentes do redesenho: card "Ação do dia", cápsula ativa da BarraTopo, trilho de visões — nada de telas antigas, confirmado por grep antes de trocar). Novo token `cor.azulClaroDestaque` (`#C1E8FF`) para o destaque de arraste no Kanban (coluna que recebe o card fica com esse azul claro em vez do azul padrão de botão, mais vivo).

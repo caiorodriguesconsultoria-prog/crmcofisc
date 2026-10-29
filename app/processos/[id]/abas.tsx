@@ -3,23 +3,33 @@
 import { useState } from "react";
 import { cor } from "@/lib/theme";
 
+const ROTULOS = { resumo: "Resumo", andamentos: "Andamentos", relatorio: "Relatório" } as const;
+type AbaId = keyof typeof ROTULOS;
+
+// Cartão único do processo com as abas Resumo/Andamentos/Relatório (Etapa 4
+// do redesenho) — o Relatório continua sendo uma aba daqui, nunca um menu
+// global (regra que já valia antes e segue valendo). "Resumo" e "Andamentos"
+// são a mesma tela de antes ("Contrato"), só dividida em duas pra não ficar
+// uma rolagem só gigante.
 export default function Abas({
-  processo,
+  resumo,
+  andamentos,
   relatorio,
   eventosAtivos,
   statusTags,
 }: {
-  processo: React.ReactNode;
+  resumo: React.ReactNode;
+  andamentos: React.ReactNode;
   relatorio: React.ReactNode;
   eventosAtivos?: React.ReactNode;
   statusTags?: React.ReactNode;
 }) {
-  const [aba, setAba] = useState<"processo" | "relatorio">("processo");
-  const [relatorioAberto, setRelatorioAberto] = useState(false);
+  const [aba, setAba] = useState<AbaId>("resumo");
+  const [jaAbriu, setJaAbriu] = useState<Record<AbaId, boolean>>({ resumo: true, andamentos: false, relatorio: false });
 
-  function irPara(a: "processo" | "relatorio") {
+  function irPara(a: AbaId) {
     setAba(a);
-    if (a === "relatorio") setRelatorioAberto(true);
+    setJaAbriu((atual) => (atual[a] ? atual : { ...atual, [a]: true }));
   }
 
   return (
@@ -35,7 +45,7 @@ export default function Abas({
             flex: "none",
           }}
         >
-          {(["processo", "relatorio"] as const).map((a) => (
+          {(Object.keys(ROTULOS) as AbaId[]).map((a) => (
             <button
               key={a}
               onClick={() => irPara(a)}
@@ -49,7 +59,7 @@ export default function Abas({
                 boxShadow: aba === a ? "0 1px 2px rgba(0,0,0,.08)" : "none",
               }}
             >
-              {a === "processo" ? "Contrato" : "Relatório"}
+              {ROTULOS[a]}
             </button>
           ))}
         </div>
@@ -59,10 +69,9 @@ export default function Abas({
 
       {statusTags && <div style={{ marginTop: -8, marginBottom: 16 }}>{statusTags}</div>}
 
-      <div style={{ display: aba === "processo" ? "block" : "none" }}>{processo}</div>
-      {relatorioAberto && (
-        <div style={{ display: aba === "relatorio" ? "block" : "none" }}>{relatorio}</div>
-      )}
+      <div style={{ display: aba === "resumo" ? "block" : "none" }}>{resumo}</div>
+      {jaAbriu.andamentos && <div style={{ display: aba === "andamentos" ? "block" : "none" }}>{andamentos}</div>}
+      {jaAbriu.relatorio && <div style={{ display: aba === "relatorio" ? "block" : "none" }}>{relatorio}</div>}
     </>
   );
 }
