@@ -900,4 +900,17 @@ As 5 seções da pré-visualização do Relatório (Quadro resumitivo, Cronogram
 
 Build e `tsc --noEmit` limpos. Sem migração, sem mudança de dado — só reorganização visual da tela mais usada do sistema (testar com calma antes de aprovar, por ser a de maior uso). Parado aqui, aguardando "Etapa 4 aprovada" antes de seguir pra Etapa 5 (Agenda e Tags).
 
+## 2026-10-29 · Etapa 5 — Redesenho visual: Agenda e Tags
+Caio aprovou a Etapa 4 e pediu pra seguir. As duas decisões de escopo da Etapa 4 (auditoria de CampoComCopiar, medidor de transcurso) continuam em aberto, aguardando resposta dele — não bloqueiam a Etapa 5.
+
+**BarraTopo chega em `/agenda` e `/tags`:** mesma migração tela por tela — `app/_nav/sidebar.tsx` ganhou mais dois pathnames na lista de exceções. "Tags" entrou como mais um item na linha de cápsulas da BarraTopo (ela já tinha virado uma lista plana depois do pedido de "tirar o Mais", então foi só adicionar mais um item).
+
+**Agenda (`app/agenda/semana.tsx`, novo):** faixa "Esta semana" acima do calendário mensal — 7 dias em linha, hoje em cápsula escura, cada compromisso/prazo do dia como um card escuro pequeno (contrato + tarefa/observação, exatamente como o guia pede). Usa os mesmos dados que o calendário mensal já carregava (`prazos`/`agendamentos`), nenhuma consulta nova. **O calendário mensal continua existindo embaixo, sem nenhuma mudança** — a faixa semanal é um resumo de relance, não substitui a navegação por mês que já existia. Lógica de integração com o Google Calendar (sync, feed .ics) não foi tocada, como o guia pede.
+
+**Tags (`/tags`, novo):** tela de cadastro que não existia antes — hoje só dava pra criar uma tag nova escondida dentro do filtro de `/processos`, sem nunca poder editar cor ou desativar. A tela nova lista Eventos e Forma de entrega (as duas categorias que existem na tabela `tags`) como `TagRotulo`, com um formulário "+ Nova" por categoria (mesmo insert que `/processos` já fazia, só exposto numa tela própria) e um botão pra desativar/reativar (campo `ativo` que já existia, nunca populava interface alguma). Cor só é editável nas de Evento (forma de entrega nunca teve cor em lugar nenhum do sistema). Coordenações não duplicam tela — fica um link pra `/coordenacoes`, que já tem a própria desde antes do redesenho.
+
+**Fora de escopo, como o guia pede:** nenhum canal de WhatsApp, nenhum monitoramento de SEI — ficam pras próprias fases, mais à frente.
+
+Build e `tsc --noEmit` limpos. Sem migração (campos `ativo`/`cor`/`categoria` já existiam na tabela `tags` desde migrações antigas). Parado aqui, aguardando "Etapa 5 aprovada" antes de seguir pra Etapa 6 (revisão final).
+
 **Ajuste no mesmo dia — paleta azul-marinho:** Caio mandou uma paleta de referência (preta-azulada #021024 a azul clarinho #C1E8FF) e perguntou se encaixava. Recomendei usar só nos elementos escuros do redesenho novo (não trocar texto/fundo do sistema inteiro, que usa um neutro quente já aprovado) — ele topou. `cor.escuro` (cinza quente `#2D2B2B`) virou `#021024` (só afeta os componentes do redesenho: card "Ação do dia", cápsula ativa da BarraTopo, trilho de visões — nada de telas antigas, confirmado por grep antes de trocar). Novo token `cor.azulClaroDestaque` (`#C1E8FF`) para o destaque de arraste no Kanban (coluna que recebe o card fica com esse azul claro em vez do azul padrão de botão, mais vivo).

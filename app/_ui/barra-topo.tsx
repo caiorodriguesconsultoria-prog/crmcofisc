@@ -23,6 +23,7 @@ const MAIS = [
   { href: "/processos/concluidos", label: "Concluídos" },
   { href: "/dados", label: "Dados" },
   { href: "/avisos", label: "Avisos" },
+  { href: "/tags", label: "Tags" },
   { href: "/coordenacoes", label: "Coordenações" },
   { href: "/gestores", label: "Gestores" },
   { href: "/fiscais", label: "Fiscais" },
