@@ -980,4 +980,16 @@ Build e `tsc --noEmit` limpos. Sem migração, sem alteração de dado — só o
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-10-29 · Fundo em degradê, fonte Urbanist e KPIs com cor (Painel)
+Caio mandou mais um print do site de referência (dashboard inteiro, não só a paleta) e pediu pra replicar o fundo e, se funcionar, aplicar em todo o sistema — confirmou que sim, aplicar em tudo, e disse que gostou da fonte do site.
+
+**Aplicado em todo o sistema de uma vez** (os dois são globais — `app/layout.tsx` — então não precisou tocar tela por tela):
+- **Fonte:** trocada de Manrope pra **Urbanist** (mesma do site de referência — baixei o CSS de novo e achei `--font:"Urbanist"` + o link do Google Fonts).
+- **Fundo da página:** era `cor.fundo` sólida, virou um degradê suave (`linear-gradient` azul-clarinho → areia), atrás de todos os painéis — mesmo efeito do site, sem copiar as ondas em SVG dele (só o degradê, que já dá a sensação).
+
+**Aplicado só no Painel por enquanto** (prototipagem, igual fizemos com o resto do redesenho):
+- Os 5 KPIs do topo deixaram de ser uma lista dentro de um card só e viraram **5 cards separados**, cada um com seu próprio degradê suave (azul/laranja/pêssego/vermelho/verde bem clarinhos, quase brancos) — igual aos cards "Open applications", "On offer now" etc. do site de referência.
+
+Build e `tsc --noEmit` limpos. Sem migração. Perguntei ao Caio se quer que eu estenda os cards com degradê pras outras telas, uma de cada vez (mesmo processo usado em todo o redesenho até aqui), já que fonte e fundo já cobrem o sistema inteiro.
+
 **Ajuste no mesmo dia — paleta azul-marinho:** Caio mandou uma paleta de referência (preta-azulada #021024 a azul clarinho #C1E8FF) e perguntou se encaixava. Recomendei usar só nos elementos escuros do redesenho novo (não trocar texto/fundo do sistema inteiro, que usa um neutro quente já aprovado) — ele topou. `cor.escuro` (cinza quente `#2D2B2B`) virou `#021024` (só afeta os componentes do redesenho: card "Ação do dia", cápsula ativa da BarraTopo, trilho de visões — nada de telas antigas, confirmado por grep antes de trocar). Novo token `cor.azulClaroDestaque` (`#C1E8FF`) para o destaque de arraste no Kanban (coluna que recebe o card fica com esse azul claro em vez do azul padrão de botão, mais vivo).

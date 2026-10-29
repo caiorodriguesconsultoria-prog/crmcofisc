@@ -106,29 +106,46 @@ export default function PainelDashboard({
     .map((ev) => ({ nome: ev.valor, valor: contagemPorEvento[ev.id] ?? 0, cor: corEvento(ev.id, ev.cor).texto }))
     .filter((d) => d.valor > 0);
 
+  // Cada KPI com seu próprio fundo em degradê suave — igual ao site de
+  // referência (cards de menta/pêssego/azul/laranja, não branco liso).
+  const kpis = [
+    { rotulo: "Contratos ativos", valor: ativos, corNumero: cor.azulEscuro, degrade: "linear-gradient(160deg, #EAF2FB 0%, #FFFFFF 70%)" },
+    {
+      rotulo: "Vencem em 7 dias",
+      valor: vencemEm7Dias,
+      corNumero: cor.laranja,
+      degrade: "linear-gradient(160deg, #FDF0E4 0%, #FFFFFF 70%)",
+      variacao: vencemEm7Dias > 0 ? { texto: "atenção à agenda", sentido: "negativo" as const } : undefined,
+    },
+    { rotulo: "Com ocorrência", valor: comOcorrencia, corNumero: cor.destaqueQuente, degrade: "linear-gradient(160deg, #FCECDD 0%, #FFFFFF 70%)" },
+    {
+      rotulo: "Vencendo hoje",
+      valor: vencendoHoje,
+      corNumero: cor.vermelhoEscuro,
+      degrade: "linear-gradient(160deg, #FBEAE8 0%, #FFFFFF 70%)",
+      variacao: vencendoHoje > 0 ? { texto: "agir hoje", sentido: "negativo" as const } : undefined,
+    },
+    { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, degrade: "linear-gradient(160deg, #E7F3EC 0%, #FFFFFF 70%)", href: "/processos/concluidos" },
+  ];
+
   return (
     <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
-      <CardBento indice={0}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 32 }}>
-          <Kpi rotulo="Contratos ativos" valor={ativos} corNumero={cor.azulEscuro} />
-          <Kpi
-            rotulo="Vencem em 7 dias"
-            valor={vencemEm7Dias}
-            corNumero={cor.laranja}
-            variacao={vencemEm7Dias > 0 ? { texto: "atenção à agenda", sentido: "negativo" } : undefined}
-          />
-          <Kpi rotulo="Com ocorrência" valor={comOcorrencia} corNumero={cor.destaqueQuente} />
-          <Kpi
-            rotulo="Vencendo hoje"
-            valor={vencendoHoje}
-            corNumero={cor.vermelhoEscuro}
-            variacao={vencendoHoje > 0 ? { texto: "agir hoje", sentido: "negativo" } : undefined}
-          />
-          <Link href="/processos/concluidos" style={{ textDecoration: "none" }}>
-            <Kpi rotulo="Concluídos" valor={concluidos} corNumero={cor.verdeEscuro} />
-          </Link>
-        </div>
-      </CardBento>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        {kpis.map((k, i) => {
+          const conteudo = (
+            <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} style={{ background: k.degrade, border: "none" }}>
+              <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} variacao={k.variacao} />
+            </CardBento>
+          );
+          return k.href ? (
+            <Link key={k.rotulo} href={k.href} style={{ textDecoration: "none" }}>
+              {conteudo}
+            </Link>
+          ) : (
+            conteudo
+          );
+        })}
+      </div>
 
       {acaoDoDia && (
         <Link href={acaoDoDia.href} style={{ textDecoration: "none" }}>
