@@ -19,9 +19,9 @@ export default function TagRotulo({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        fontSize: 11,
+        fontSize: 12.5,
         fontWeight: 600,
-        padding: "3px 9px",
+        padding: "4px 10px",
         borderRadius: raio.tag,
         border: `1px solid ${c}55`,
         color: c,

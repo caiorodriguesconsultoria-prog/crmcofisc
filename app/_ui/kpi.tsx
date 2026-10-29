@@ -55,16 +55,16 @@ export default function Kpi({
 
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: cor.textoTerciario }}>
+      <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: cor.textoTerciario }}>
         {rotulo}
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
-        <span style={{ fontSize: 40, fontWeight: 600, color: corNumero ?? cor.texto, lineHeight: 1 }}>
+        <span style={{ fontSize: 46, fontWeight: 600, color: corNumero ?? cor.texto, lineHeight: 1 }}>
           {exibido.toLocaleString("pt-BR")}
           {sufixo}
         </span>
         {variacao && (
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: corVariacao }}>{variacao.texto}</span>
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: corVariacao }}>{variacao.texto}</span>
         )}
       </div>
     </div>

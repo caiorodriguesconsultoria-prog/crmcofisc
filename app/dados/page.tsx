@@ -136,14 +136,13 @@ export default async function DadosPage() {
                 flex: "1 1 220px",
                 display: "flex",
                 flexDirection: "column",
-                background: kpi.fundo,
+                background: `linear-gradient(160deg, ${kpi.fundo} 0%, #FFFFFF 85%)`,
                 border: "none",
-                borderTop: `3px solid ${kpi.cor}`,
               }}
             >
               <span
                 style={{
-                  fontSize: 10.5,
+                  fontSize: 12,
                   textTransform: "uppercase",
                   color: cor.textoSecundario,
                   fontWeight: 600,
@@ -154,7 +153,7 @@ export default async function DadosPage() {
               >
                 {kpi.rotulo}
               </span>
-              <p style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0", color: kpi.cor }}>{kpi.valor}</p>
+              <p style={{ fontSize: 32, fontWeight: 700, margin: "4px 0 0", color: kpi.cor }}>{kpi.valor}</p>
             </div>
           ))}
         </div>
