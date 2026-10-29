@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { card, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import TelaComBarraTopo from "@/app/_ui/tela-com-barra-topo";
+import { getContextoBarraTopo } from "@/lib/contexto-barra-topo";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
@@ -42,15 +44,19 @@ export default async function FornecedorPage({
     notFound();
   }
 
-  const { data: contratos, error: erroContratos } = await supabase
-    .from("processos")
-    .select(
-      "id, numero_contrato, valor_global, vigencia_inicio, vigencia_fim, etapa_atual, situacao, coordenacoes(sigla)",
-    )
-    .eq("fornecedor_id", id)
-    .order("created_at", { ascending: false });
+  const [{ data: contratos, error: erroContratos }, contexto] = await Promise.all([
+    supabase
+      .from("processos")
+      .select(
+        "id, numero_contrato, valor_global, vigencia_inicio, vigencia_fim, etapa_atual, situacao, coordenacoes(sigla)",
+      )
+      .eq("fornecedor_id", id)
+      .order("created_at", { ascending: false }),
+    getContextoBarraTopo(supabase, user.email ?? null),
+  ]);
 
   return (
+    <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha={`Fornecedores > ${fornecedor.nome}`}>
     <Painel titulo={fornecedor.nome} voltarHref="/fornecedores" maxWidth={800}>
       <div style={{ ...card, display: "flex", flexDirection: "column", gap: 4 }}>
         <p style={{ color: cor.textoSecundario, margin: 0, fontSize: 13 }}>{fornecedor.cnpj}</p>
@@ -124,5 +130,6 @@ export default async function FornecedorPage({
         </div>
       </div>
     </Painel>
+    </TelaComBarraTopo>
   );
 }

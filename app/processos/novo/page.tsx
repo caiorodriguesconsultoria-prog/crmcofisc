@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import NovoProcessoForm from "./form";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import TelaComBarraTopo from "@/app/_ui/tela-com-barra-topo";
+import { getContextoBarraTopo } from "@/lib/contexto-barra-topo";
 import { getResponsaveis, getPapeisGestorFiscal } from "@/lib/dados-referencia";
 
 export default async function NovoProcessoPage() {
@@ -23,6 +25,7 @@ export default async function NovoProcessoPage() {
     responsaveis,
     papeis,
     { data: pessoaAtual },
+    contexto,
   ] = await Promise.all([
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
     supabase.from("fornecedores").select("id, nome").order("nome"),
@@ -30,6 +33,7 @@ export default async function NovoProcessoPage() {
     getResponsaveis(),
     getPapeisGestorFiscal(),
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
+    getContextoBarraTopo(supabase, user.email ?? null),
   ]);
 
   const erros = [
@@ -46,19 +50,21 @@ export default async function NovoProcessoPage() {
     .map((p: any) => ({ id: p.pessoa_id, nome: p.pessoas?.nome ?? "" }));
 
   return (
-    <Painel titulo="Novo contrato" voltarHref="/processos" maxWidth={480}>
-      {erros.length > 0 && (
-        <p style={{ color: cor.urgente }}>Erro ao carregar opções — {erros.join("; ")}</p>
-      )}
-      <NovoProcessoForm
-        coordenacoes={coordenacoes ?? []}
-        fornecedores={fornecedores ?? []}
-        tags={tags ?? []}
-        responsaveis={responsaveis}
-        gestores={gestores}
-        fiscais={fiscais}
-        isAdmin={pessoaAtual?.is_admin ?? false}
-      />
-    </Painel>
+    <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Contratos > Novo">
+      <Painel titulo="Novo contrato" voltarHref="/processos" maxWidth={480}>
+        {erros.length > 0 && (
+          <p style={{ color: cor.urgente }}>Erro ao carregar opções — {erros.join("; ")}</p>
+        )}
+        <NovoProcessoForm
+          coordenacoes={coordenacoes ?? []}
+          fornecedores={fornecedores ?? []}
+          tags={tags ?? []}
+          responsaveis={responsaveis}
+          gestores={gestores}
+          fiscais={fiscais}
+          isAdmin={pessoaAtual?.is_admin ?? false}
+        />
+      </Painel>
+    </TelaComBarraTopo>
   );
 }

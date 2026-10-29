@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import VisualizacoesProcessos from "./visualizacoes";
 import { botaoPrimario, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
 import BarraTopo from "@/app/_ui/barra-topo";
+import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
+import Atividades from "@/app/_nav/atividades";
 import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
 
 export default async function ProcessosPage({
@@ -172,6 +175,14 @@ export default async function ProcessosPage({
         }
       >
         {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
+
+        <div style={{ marginBottom: 16 }}>
+          <CartaoColapsavel titulo="Atalhos por etapa e evento" abertoInicial={false}>
+            <Suspense fallback={null}>
+              <Atividades />
+            </Suspense>
+          </CartaoColapsavel>
+        </div>
 
         <VisualizacoesProcessos
           processos={processosComAgendamento as any}

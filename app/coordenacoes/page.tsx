@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { botaoPrimario } from "@/lib/theme";
 import GradeCoordenacoes from "./grade";
 import Painel from "@/app/_ui/painel";
+import TelaComBarraTopo from "@/app/_ui/tela-com-barra-topo";
+import { getContextoBarraTopo } from "@/lib/contexto-barra-topo";
 
 export default async function CoordenacoesPage() {
   const supabase = await createClient();
@@ -16,7 +18,7 @@ export default async function CoordenacoesPage() {
     redirect("/login");
   }
 
-  const [{ data: pessoa }, { data: coordenacoes, error }, { data: papeis }] = await Promise.all([
+  const [{ data: pessoa }, { data: coordenacoes, error }, { data: papeis }, contexto] = await Promise.all([
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
     supabase
       .from("coordenacoes")
@@ -26,6 +28,7 @@ export default async function CoordenacoesPage() {
       .from("pessoa_papeis")
       .select("id, coordenacao_id, papel, pessoas(id, nome, email, ramal)")
       .in("papel", ["coordenador", "substituto", "equipe"]),
+    getContextoBarraTopo(supabase, user.email ?? null),
   ]);
 
   const isAdmin = pessoa?.is_admin ?? false;
@@ -49,22 +52,23 @@ export default async function CoordenacoesPage() {
   }));
 
   return (
-    <Painel
-      titulo="Coordenações"
-      subtitulo="Responsáveis, e-mails e ramais usados nas notificações do contrato."
-      voltarHref="/dashboard"
-      maxWidth={1100}
-      acao={
-        isAdmin && (
-          <Link href="/coordenacoes/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
-            + Nova coordenação
-          </Link>
-        )
-      }
-    >
-      {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
+    <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Coordenações">
+      <Painel
+        titulo="Coordenações"
+        subtitulo="Responsáveis, e-mails e ramais usados nas notificações do contrato."
+        maxWidth={1100}
+        acao={
+          isAdmin && (
+            <Link href="/coordenacoes/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
+              + Nova coordenação
+            </Link>
+          )
+        }
+      >
+        {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
 
-      <GradeCoordenacoes coordenacoes={grade} isAdmin={isAdmin} />
-    </Painel>
+        <GradeCoordenacoes coordenacoes={grade} isAdmin={isAdmin} />
+      </Painel>
+    </TelaComBarraTopo>
   );
 }

@@ -5,12 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Menu } from "lucide-react";
 import { cor, raio } from "@/lib/theme";
+import NotificacoesPush from "@/app/_nav/notificacoes-push";
 
-// Navegação do Painel, no formato de cápsulas do novo design (ver
-// design-system/REGRAS.md). Por enquanto só aparece em /dashboard — as
-// outras telas continuam com a gaveta lateral (app/_nav/sidebar.tsx) até
-// passarem pelo redesenho nas próprias etapas (3 em diante). Evita trocar a
-// navegação do sistema inteiro de uma vez só numa etapa que é só do Painel.
+// Navegação de todo o sistema autenticado, no formato de cápsulas do novo
+// design (ver design-system/REGRAS.md). Rolou tela por tela nas Etapas 2, 3
+// e 5 do redesenho; a gaveta lateral antiga (app/_nav/sidebar.tsx) foi
+// desligada por completo no fim da Etapa 6 — o arquivo continua existindo só
+// pelo tipo `Atividade` que app/_nav/grupos-atividades.tsx ainda usa.
 const ABAS = [
   { href: "/dashboard", label: "Painel" },
   { href: "/processos", label: "Contratos" },
@@ -215,6 +216,9 @@ export default function BarraTopo({
                 {m.label}
               </a>
             ))}
+            <div style={{ marginTop: 4, borderTop: `1px solid ${cor.borda}`, paddingTop: 6 }}>
+              <NotificacoesPush />
+            </div>
             <form action="/logout" method="post" style={{ marginTop: 4, borderTop: `1px solid ${cor.borda}`, paddingTop: 6 }}>
               <button
                 type="submit"

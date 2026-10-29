@@ -1,8 +1,5 @@
 import { Manrope } from "next/font/google";
-import { Suspense } from "react";
 import "./globals.css";
-import Sidebar from "./_nav/sidebar";
-import Atividades from "./_nav/atividades";
 import SentryUsuario from "./_sentry-usuario";
 import { cor } from "@/lib/theme";
 
@@ -38,11 +35,6 @@ export default function RootLayout({
         }}
       >
         <SentryUsuario />
-        <Sidebar>
-          <Suspense fallback={null}>
-            <Atividades />
-          </Suspense>
-        </Sidebar>
         <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
         {modal}
       </body>

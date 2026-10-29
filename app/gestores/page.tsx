@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListaPessoasPapel from "../_pessoas-papel/lista";
+import TelaComBarraTopo from "@/app/_ui/tela-com-barra-topo";
+import { getContextoBarraTopo } from "@/lib/contexto-barra-topo";
 
 export default async function GestoresPage() {
   const supabase = await createClient();
@@ -13,12 +15,13 @@ export default async function GestoresPage() {
     redirect("/login");
   }
 
-  const [{ data: pessoa }, { data: papeis, error }] = await Promise.all([
+  const [{ data: pessoa }, { data: papeis, error }, contexto] = await Promise.all([
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
     supabase
       .from("pessoa_papeis")
       .select("pessoa_id, pessoas(id, nome, matricula, ausencia_inicio, ausencia_fim)")
       .eq("papel", "gestor"),
+    getContextoBarraTopo(supabase, user.email ?? null),
   ]);
 
   const itens = (papeis ?? [])
@@ -32,13 +35,15 @@ export default async function GestoresPage() {
     .sort((a, b) => a.nome.localeCompare(b.nome));
 
   return (
-    <ListaPessoasPapel
-      titulo="Gestores"
-      papel="gestor"
-      novoHref="/gestores/novo"
-      isAdmin={pessoa?.is_admin ?? false}
-      itens={itens}
-      erro={error?.message}
-    />
+    <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Gestores">
+      <ListaPessoasPapel
+        titulo="Gestores"
+        papel="gestor"
+        novoHref="/gestores/novo"
+        isAdmin={pessoa?.is_admin ?? false}
+        itens={itens}
+        erro={error?.message}
+      />
+    </TelaComBarraTopo>
   );
 }
