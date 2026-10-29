@@ -52,7 +52,9 @@ export default function BuscaGlobal({ valorInicial = "" }: { valorInicial?: stri
           borderRadius: raio.pilula,
           border: `1px solid ${cor.borda}`,
           background: cor.fundo,
-          fontSize: 14,
+          // 16px, não 14 — campo menor que isso faz o Safari no iPhone dar
+          // zoom automático ao focar (Etapa 6, revisão mobile).
+          fontSize: 16,
         }}
       />
       <kbd

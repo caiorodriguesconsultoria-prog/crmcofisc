@@ -140,6 +140,7 @@ export default function BarraTopo({
           <Link
             href="/avisos"
             aria-label={temAlerta ? "Avisos (há pendências)" : "Avisos"}
+            className="crm-barra-topo-alvo-toque"
             style={{ position: "relative", display: "flex", width: 34, height: 34, borderRadius: "50%", alignItems: "center", justifyContent: "center", background: cor.fundo, color: cor.textoSecundario }}
           >
             <Bell size={16} />
