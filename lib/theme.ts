@@ -28,7 +28,14 @@ export const cor = {
   urgenteFundo: "rgba(176,101,92,.14)",
   vermelhoEscuro: "#7A2E2E",
   vermelhoEscuroFundo: "rgba(122,46,46,.15)",
-  escuro: "#2D2B2B",
+  // Trocado de cinza quente (#2D2B2B) pra azul-marinho — paleta que o Caio
+  // escolheu pra reforçar "azul sobre azul" nos elementos escuros do
+  // redesenho novo (card de destaque, cápsula ativa da BarraTopo), em vez de
+  // misturar um neutro quente com o acento azul.
+  escuro: "#021024",
+  // Azul bem claro da mesma paleta — fundo de hover/destaque leve (ex.:
+  // coluna do Kanban recebendo o arraste), mais vivo que `destaqueFundo`.
+  azulClaroDestaque: "#C1E8FF",
   // Acento quente — só decorativo (card de destaque único no estilo
   // bento/dashboard), nunca usado pra indicar urgência/status. Ver
   // design-system/REGRAS.md.
