@@ -58,7 +58,7 @@ export default function KanbanProcessos({ processos, etapas }: { processos: Proc
           }}
           style={{
             flex: "0 0 240px",
-            background: colunaSobre === et.nome ? cor.destaqueFundo : cor.fundo,
+            background: colunaSobre === et.nome ? cor.azulClaroDestaque : cor.fundo,
             borderRadius: 16,
             padding: 12,
             minHeight: 160,
