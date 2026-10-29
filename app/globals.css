@@ -167,7 +167,10 @@ th {
 .crm-barra-topo {
   position: relative;
   width: 100%;
-  max-width: 1100px;
+  /* Mais larga que o painel de baixo (maxWidth 1100) de propósito — o Caio
+     pediu pra puxar pras laterais, com mais itens agora que o "Mais" virou
+     cápsulas soltas na própria barra. */
+  max-width: 1400px;
   margin: 0 auto 16px;
 }
 
@@ -185,6 +188,12 @@ th {
   display: flex;
   align-items: center;
   gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.crm-barra-topo-abas::-webkit-scrollbar {
+  display: none;
 }
 
 .crm-barra-topo-linha2 {
