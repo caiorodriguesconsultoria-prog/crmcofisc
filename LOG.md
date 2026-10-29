@@ -992,4 +992,15 @@ Caio mandou mais um print do site de referência (dashboard inteiro, não só a 
 
 Build e `tsc --noEmit` limpos. Sem migração. Perguntei ao Caio se quer que eu estenda os cards com degradê pras outras telas, uma de cada vez (mesmo processo usado em todo o redesenho até aqui), já que fonte e fundo já cobrem o sistema inteiro.
 
+## 2026-10-29 · Degradê mais forte, painel mais largo, fonte maior
+Caio mandou print da tela em produção dizendo que "continua a mesma" — a 1ª tentativa do degradê e dos cards coloridos ficou sutil demais, quase imperceptível, e pediu pra aplicar em todas as telas e aumentar a fonte.
+
+- **Fundo em degradê, de verdade colorido agora:** troquei os tons quase-brancos que eu tinha inventado pelos tons **reais** do site de referência (as mesmas variáveis `--sky1/--sky2/--sun/--w1-4` em oklch que eu já tinha extraído antes, convertidas pra hex) — `linear-gradient(135deg, #D7F3F8 0%, #FFE0B2 35%, #BCE8E7 65%, #83C1DD 100%)`. Isso é global (`app/layout.tsx`), já vale pro sistema inteiro.
+- **Cards de KPI com cor visível:** trocados os tons quase-brancos pelos mesmos tons `cor.*Fundo` (azulFundo, laranjaFundo etc.) que os badges de status já usam em todo o sistema — mais saturados, realmente coloridos, não só uma sugestão de cor.
+- **BarraTopo e Painel mais largos:** de 1400px pra `calc(100% - 48px)` até 1800px — mais perto do "full bleed" do site de referência em telas grandes, menos sensação de card flutuando numa moldura enorme.
+- **Fonte maior:** `button`/`input`/`select`/`textarea` (regra global, vale pro sistema inteiro) de 12,5px pra 14px; componentes do redesenho (`CardBento` título/subtítulo, `Kpi` rótulo/número/variação, `TagRotulo`, cápsulas da `BarraTopo`, botão "+ Novo contrato") também aumentados.
+- **`/dados`:** os KPIs já tinham fundo colorido e borda no topo — troquei pelo mesmo padrão de degradê do Painel (sem borda) e aumentei a fonte, como segunda tela já usando o padrão novo.
+
+Build e `tsc --noEmit` limpos. Sem migração. Ainda não toquei a fonte/tamanho de cada tabela e lista do sistema individualmente (são centenas de `fontSize` inline espalhados) — segui cobrindo primeiro o que é compartilhado (regra global + componentes do redesenho), que afeta a maior parte do que aparece na tela.
+
 **Ajuste no mesmo dia — paleta azul-marinho:** Caio mandou uma paleta de referência (preta-azulada #021024 a azul clarinho #C1E8FF) e perguntou se encaixava. Recomendei usar só nos elementos escuros do redesenho novo (não trocar texto/fundo do sistema inteiro, que usa um neutro quente já aprovado) — ele topou. `cor.escuro` (cinza quente `#2D2B2B`) virou `#021024` (só afeta os componentes do redesenho: card "Ação do dia", cápsula ativa da BarraTopo, trilho de visões — nada de telas antigas, confirmado por grep antes de trocar). Novo token `cor.azulClaroDestaque` (`#C1E8FF`) para o destaque de arraste no Kanban (coluna que recebe o card fica com esse azul claro em vez do azul padrão de botão, mais vivo).

@@ -249,7 +249,7 @@ export default async function DashboardPage() {
         atualizadoEm={atualizadoEm}
       />
 
-      <Painel titulo="Painel" conteudoTitulo={<BuscaGlobal />} maxWidth={1400}>
+      <Painel titulo="Painel" conteudoTitulo={<BuscaGlobal />} maxWidth={1800}>
         {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro.message}</p>}
 
         <PainelDashboard

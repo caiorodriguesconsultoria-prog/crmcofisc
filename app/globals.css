@@ -45,7 +45,7 @@ a {
 
 button {
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
   color: #201f1d;
   background: #fff;
@@ -68,7 +68,7 @@ input,
 select,
 textarea {
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 14px;
   color: #201f1d;
   background: #fff;
   border: 1px solid rgba(32, 31, 29, 0.14);
@@ -176,15 +176,14 @@ th {
   display: none;
 }
 
-/* BarraTopo (Etapa 2 do redesenho) — por enquanto só em /dashboard, ver
-   app/_ui/barra-topo.tsx e design-system/REGRAS.md. */
+/* BarraTopo — navegação de todo o sistema, ver app/_ui/barra-topo.tsx e
+   design-system/REGRAS.md. Largura alta de propósito: em tela grande, o
+   Caio quer que ocupe a maior parte da largura (perto do "full bleed" do
+   site de referência), não uma faixa estreita flutuando no meio. */
 .crm-barra-topo {
   position: relative;
-  width: 100%;
-  /* Mais larga que o painel de baixo (maxWidth 1100) de propósito — o Caio
-     pediu pra puxar pras laterais, com mais itens agora que o "Mais" virou
-     cápsulas soltas na própria barra. */
-  max-width: 1400px;
+  width: calc(100% - 48px);
+  max-width: 1800px;
   margin: 0 auto 16px;
 }
 

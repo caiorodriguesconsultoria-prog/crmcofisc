@@ -30,10 +30,11 @@ export default function RootLayout({
         style={{
           fontFamily: "var(--font-urbanist), system-ui, sans-serif",
           margin: 0,
-          // Fundo em degradê suave (pedido do Caio, igual ao site de
-          // referência) — antes era cor.fundo sólida. Ver globals.css pra o
-          // degradê mais forte atrás de cada painel (.crm-painel-fundo etc.).
-          background: `linear-gradient(160deg, #EAF4F7 0%, ${cor.fundo} 45%, #F3EFE7 100%)`,
+          // Fundo em degradê (pedido do Caio, igual ao site de referência —
+          // a 1ª tentativa ficou sutil demais, quase igual ao fundo sólido
+          // de antes; essas cores vêm direto do CSS do site, convertidas de
+          // oklch pra hex, pra garantir que fique visivelmente colorido).
+          background: "linear-gradient(135deg, #D7F3F8 0%, #FFE0B2 35%, #BCE8E7 65%, #83C1DD 100%)",
           backgroundAttachment: "fixed",
           color: cor.texto,
           minHeight: "100vh",

@@ -106,26 +106,29 @@ export default function PainelDashboard({
     .map((ev) => ({ nome: ev.valor, valor: contagemPorEvento[ev.id] ?? 0, cor: corEvento(ev.id, ev.cor).texto }))
     .filter((d) => d.valor > 0);
 
-  // Cada KPI com seu próprio fundo em degradê suave — igual ao site de
-  // referência (cards de menta/pêssego/azul/laranja, não branco liso).
+  // Cada KPI com seu próprio fundo em degradê — a 1ª versão usava tons
+  // quase brancos (ficou sutil demais, "igual a antes"); agora usa os
+  // mesmos tons de fundo que os badges de status já usam em todo o
+  // sistema (cor.*Fundo — mais saturados, visivelmente coloridos) com um
+  // degradê pra branco só na metade de baixo do card.
   const kpis = [
-    { rotulo: "Contratos ativos", valor: ativos, corNumero: cor.azulEscuro, degrade: "linear-gradient(160deg, #EAF2FB 0%, #FFFFFF 70%)" },
+    { rotulo: "Contratos ativos", valor: ativos, corNumero: cor.azulEscuro, degrade: `linear-gradient(160deg, ${cor.azulFundo} 0%, #FFFFFF 85%)` },
     {
       rotulo: "Vencem em 7 dias",
       valor: vencemEm7Dias,
       corNumero: cor.laranja,
-      degrade: "linear-gradient(160deg, #FDF0E4 0%, #FFFFFF 70%)",
+      degrade: `linear-gradient(160deg, ${cor.laranjaFundo} 0%, #FFFFFF 85%)`,
       variacao: vencemEm7Dias > 0 ? { texto: "atenção à agenda", sentido: "negativo" as const } : undefined,
     },
-    { rotulo: "Com ocorrência", valor: comOcorrencia, corNumero: cor.destaqueQuente, degrade: "linear-gradient(160deg, #FCECDD 0%, #FFFFFF 70%)" },
+    { rotulo: "Com ocorrência", valor: comOcorrencia, corNumero: cor.destaqueQuente, degrade: `linear-gradient(160deg, ${cor.destaqueQuenteFundo} 0%, #FFFFFF 85%)` },
     {
       rotulo: "Vencendo hoje",
       valor: vencendoHoje,
       corNumero: cor.vermelhoEscuro,
-      degrade: "linear-gradient(160deg, #FBEAE8 0%, #FFFFFF 70%)",
+      degrade: `linear-gradient(160deg, ${cor.vermelhoEscuroFundo} 0%, #FFFFFF 85%)`,
       variacao: vencendoHoje > 0 ? { texto: "agir hoje", sentido: "negativo" as const } : undefined,
     },
-    { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, degrade: "linear-gradient(160deg, #E7F3EC 0%, #FFFFFF 70%)", href: "/processos/concluidos" },
+    { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, degrade: `linear-gradient(160deg, ${cor.verdeEscuroFundo} 0%, #FFFFFF 85%)`, href: "/processos/concluidos" },
   ];
 
   return (
