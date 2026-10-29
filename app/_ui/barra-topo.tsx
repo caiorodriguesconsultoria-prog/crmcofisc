@@ -88,6 +88,7 @@ export default function BarraTopo({
               <Tag
                 key={a.href}
                 href={a.href}
+                className="crm-pilula-hover"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -126,6 +127,7 @@ export default function BarraTopo({
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto", flex: "none" }}>
           <a
             href="/processos/novo"
+            className="crm-pilula-hover"
             style={{
               padding: "9px 16px",
               borderRadius: raio.pilula,

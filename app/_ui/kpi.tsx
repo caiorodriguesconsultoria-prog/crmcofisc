@@ -12,6 +12,7 @@ export default function Kpi({
   valor,
   sufixo,
   variacao,
+  corNumero,
 }: {
   rotulo: string;
   /** Número puro — a formatação pt-BR (milhar) é feita aqui dentro. */
@@ -19,6 +20,9 @@ export default function Kpi({
   sufixo?: string;
   /** Texto da variação (ex. "+3 esta semana") e se é positiva/negativa/neutra. */
   variacao?: { texto: string; sentido: "positivo" | "negativo" | "neutro" };
+  /** Cor do número — opcional, pra diferenciar KPIs lado a lado (pedido do
+   * Caio: "mais cores, algo mais vivo"). Sem isso, fica no neutro de sempre. */
+  corNumero?: string;
 }) {
   const reduzido = useReducedMotion();
   const [exibido, setExibido] = useState(reduzido ? valor : 0);
@@ -55,7 +59,7 @@ export default function Kpi({
         {rotulo}
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
-        <span style={{ fontSize: 40, fontWeight: 600, color: cor.texto, lineHeight: 1 }}>
+        <span style={{ fontSize: 40, fontWeight: 600, color: corNumero ?? cor.texto, lineHeight: 1 }}>
           {exibido.toLocaleString("pt-BR")}
           {sufixo}
         </span>

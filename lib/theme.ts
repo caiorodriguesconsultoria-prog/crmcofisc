@@ -82,6 +82,15 @@ export const movimento = {
   contagemKpi: 0.3,
 };
 
+// Paleta viva pra gráficos categóricos (pizza de etapas, por exemplo) —
+// pedido do Caio depois de ver o site de referência de novo ("mais cores,
+// algo mais vivo"): tons extraídos dos --c-hull/--c-cargo/--c-marina/etc.
+// do site (oklch convertido pra hex), mais saturados que o resto da
+// paleta do sistema. Eventos continuam usando `corEvento()` (cor própria
+// de cada tag, já usada em todo o app) — essa aqui é só pra quando não
+// existe uma cor própria por item, como nas etapas do Kanban.
+export const PALETA_VIVA = ["#3578B8", "#D19936", "#2D9570", "#C66846", "#7D9849", "#C66177", "#8A5CB8", "#3A7CA5"];
+
 export const sombraCard = "0 1px 2px rgba(32,31,29,.035)";
 export const sombraFlutuante = "0 1px 2px rgba(0,0,0,.07), 0 6px 16px rgba(0,0,0,.05)";
 

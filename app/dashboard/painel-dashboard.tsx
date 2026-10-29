@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Sparkles } from "lucide-react";
-import { card, cor, PALETA_EVENTOS } from "@/lib/theme";
+import { card, cor, PALETA_VIVA } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { corEtapa } from "@/lib/cor-etapa";
 import MedidorCircular from "@/app/_ui/medidor-circular";
@@ -38,20 +38,23 @@ type Etapa = { id: string; nome: string };
 type EntregaEmAtraso = { id: string; processoId: string; numeroContrato: string; numeroParcela: number; dias: number };
 type PrazoDaSemana = { id: string; numeroContrato: string; prazoData: string; dias: number };
 
-// Espaçamento maior que o original (Etapa 6: gráficos/cards ficaram
-// amontoados, ajuste pedido pelo Caio) — menos medidores por linha, mais
-// respiro entre eles.
-const grade: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))",
-  gap: 20,
-  marginTop: 14,
-};
-
 function nivelUrgenciaPorDias(dias: number): NivelUrgencia {
   if (dias <= 2) return "critico";
   if (dias <= 5) return "atencao";
   return "ok";
+}
+
+// Tooltip escuro padrão dos gráficos do Painel — só o nome e o valor, sem
+// nenhuma legenda fixa na tela (pedido do Caio: "não precisa colocar os
+// nomes nas cores, ao passar o mouse em cima o nome aparece").
+function TooltipPizza({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0];
+  return (
+    <div style={{ background: cor.escuro, color: "#fff", borderRadius: 10, padding: "6px 10px", fontSize: 12.5 }}>
+      <strong>{item.name}</strong>: {item.value}
+    </div>
+  );
 }
 
 export default function PainelDashboard({
@@ -95,26 +98,34 @@ export default function PainelDashboard({
     .filter((p) => p.diasParado !== null && p.diasParado >= limiteDias)
     .sort((a, b) => (b.diasParado ?? 0) - (a.diasParado ?? 0));
 
-  const dadosEtapas = etapas.map((et) => ({ nome: et.nome, total: contagemPorEtapa[et.nome] ?? 0 }));
+  const dadosEtapas = etapas
+    .map((et) => ({ nome: et.nome, valor: contagemPorEtapa[et.nome] ?? 0 }))
+    .filter((d) => d.valor > 0);
+
+  const dadosEventos = eventos
+    .map((ev) => ({ nome: ev.valor, valor: contagemPorEvento[ev.id] ?? 0, cor: corEvento(ev.id, ev.cor).texto }))
+    .filter((d) => d.valor > 0);
 
   return (
     <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
       <CardBento indice={0}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 32 }}>
-          <Kpi rotulo="Contratos ativos" valor={ativos} />
+          <Kpi rotulo="Contratos ativos" valor={ativos} corNumero={cor.azulEscuro} />
           <Kpi
             rotulo="Vencem em 7 dias"
             valor={vencemEm7Dias}
+            corNumero={cor.laranja}
             variacao={vencemEm7Dias > 0 ? { texto: "atenção à agenda", sentido: "negativo" } : undefined}
           />
-          <Kpi rotulo="Com ocorrência" valor={comOcorrencia} />
+          <Kpi rotulo="Com ocorrência" valor={comOcorrencia} corNumero={cor.destaqueQuente} />
           <Kpi
             rotulo="Vencendo hoje"
             valor={vencendoHoje}
+            corNumero={cor.vermelhoEscuro}
             variacao={vencendoHoje > 0 ? { texto: "agir hoje", sentido: "negativo" } : undefined}
           />
           <Link href="/processos/concluidos" style={{ textDecoration: "none" }}>
-            <Kpi rotulo="Concluídos" valor={concluidos} />
+            <Kpi rotulo="Concluídos" valor={concluidos} corNumero={cor.verdeEscuro} />
           </Link>
         </div>
       </CardBento>
@@ -149,164 +160,191 @@ export default function PainelDashboard({
         </Link>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
-        <CardBento titulo="Contratos por etapa" indice={2}>
-          <div style={{ width: "100%", height: 220 }}>
+      <CardBento titulo="Agenda de hoje" subtitulo="Contratos com tarefa ou agendamento marcado pra hoje" indice={2}>
+        {processosAtividadeHoje.length === 0 ? (
+          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Contrato</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>NUP</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Objeto</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Etapa</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Eventos</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Hoje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {processosAtividadeHoje.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
+                    <td style={{ padding: "9px 10px" }}>
+                      <Link href={`/processos/${p.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
+                        {p.numeroContrato}
+                      </Link>
+                    </td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {p.nup}
+                        <BotaoCopiar texto={p.nup} />
+                      </div>
+                    </td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5 }}>{p.objeto}</td>
+                    <td style={{ padding: "9px 10px" }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "3px 9px",
+                          borderRadius: 20,
+                          background: corEtapa(p.etapaAtual).fundo,
+                          color: corEtapa(p.etapaAtual).texto,
+                        }}
+                      >
+                        {p.etapaAtual}
+                      </span>
+                    </td>
+                    <td style={{ padding: "9px 10px" }}>
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {p.tags.map((t) => {
+                          const c = corEvento(t.id, t.cor);
+                          return (
+                            <span
+                              key={t.id}
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 600,
+                                color: c.texto,
+                                background: c.fundo,
+                                borderRadius: 7,
+                                padding: "2px 7px",
+                              }}
+                            >
+                              {t.valor}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </td>
+                    <td style={{ padding: "9px 10px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {p.itens.map((item, i) => (
+                          <span key={i} style={{ fontSize: 12 }}>
+                            {item.horario
+                              ? `${item.horario.slice(0, 5)} · `
+                              : item.periodo
+                                ? `${item.periodo === "manha" ? "Manhã" : "Tarde"} · `
+                                : ""}
+                            {item.rotulo}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardBento>
+
+      <CardBento titulo="Prazos da semana" subtitulo="Contratos ativos com prazo nos próximos 7 dias" indice={3}>
+        {prazosDaSemana.length === 0 ? (
+          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum prazo nos próximos 7 dias.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {prazosDaSemana.map((p) => (
+              <Link
+                key={p.id}
+                href={`/processos/${p.id}`}
+                style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: cor.texto, fontSize: 13 }}
+              >
+                <strong style={{ flex: "none" }}>{p.numeroContrato}</strong>
+                <span style={{ marginLeft: "auto" }}>
+                  <IndicadorUrgencia
+                    nivel={nivelUrgenciaPorDias(p.dias)}
+                    texto={p.dias === 0 ? "vence hoje" : `${p.dias} dia${p.dias > 1 ? "s" : ""}`}
+                  />
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </CardBento>
+
+      <CardBento titulo="Divisão por coordenação" subtitulo="Contratos ativos" indice={4}>
+        {divisaoPorCoordenacao.length === 0 ? (
+          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {divisaoPorCoordenacao.map((c, i) => (
+              <div key={c.sigla} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <TagRotulo texto={c.sigla} corTexto={PALETA_VIVA[i % PALETA_VIVA.length]} />
+                <div style={{ flex: 1, height: 6, borderRadius: 3, background: cor.fundo, overflow: "hidden" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${Math.round((c.total / Math.max(1, divisaoPorCoordenacao[0].total)) * 100)}%`,
+                      background: PALETA_VIVA[i % PALETA_VIVA.length],
+                      borderRadius: 3,
+                    }}
+                  />
+                </div>
+                <strong style={{ fontSize: 13, flex: "none" }}>{c.total}</strong>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardBento>
+
+      <CardBento titulo="Contratos por etapa" indice={5}>
+        {dadosEtapas.length === 0 ? (
+          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
+        ) : (
+          <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
-              <BarChart data={dadosEtapas} margin={{ left: -20 }}>
-                <XAxis dataKey="nome" tick={{ fontSize: 10.5, fill: cor.textoTerciario }} interval={0} angle={-20} textAnchor="end" height={50} />
-                <YAxis tick={{ fontSize: 11, fill: cor.textoTerciario }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ background: cor.escuro, border: "none", borderRadius: 10, color: "#fff", fontSize: 12.5 }}
-                  itemStyle={{ color: "#fff" }}
-                  cursor={{ fill: cor.fundo }}
-                />
-                <Bar dataKey="total" fill={cor.destaque} radius={[6, 6, 0, 0]} />
-              </BarChart>
+              <PieChart>
+                <Pie data={dadosEtapas} dataKey="valor" nameKey="nome" innerRadius="55%" outerRadius="88%" paddingAngle={2}>
+                  {dadosEtapas.map((_, i) => (
+                    <Cell key={i} fill={PALETA_VIVA[i % PALETA_VIVA.length]} stroke="none" />
+                  ))}
+                </Pie>
+                <Tooltip content={<TooltipPizza />} />
+              </PieChart>
             </ResponsiveContainer>
           </div>
-        </CardBento>
+        )}
+      </CardBento>
 
-        <CardBento titulo="Prazos da semana" subtitulo="Contratos ativos com prazo nos próximos 7 dias" indice={3}>
-          {prazosDaSemana.length === 0 ? (
-            <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum prazo nos próximos 7 dias.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {prazosDaSemana.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/processos/${p.id}`}
-                  style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: cor.texto, fontSize: 13 }}
-                >
-                  <strong style={{ flex: "none" }}>{p.numeroContrato}</strong>
-                  <span style={{ marginLeft: "auto" }}>
-                    <IndicadorUrgencia
-                      nivel={nivelUrgenciaPorDias(p.dias)}
-                      texto={p.dias === 0 ? "vence hoje" : `${p.dias} dia${p.dias > 1 ? "s" : ""}`}
-                    />
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardBento>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
-        <CardBento titulo="Agenda de hoje" subtitulo="Contratos com tarefa ou agendamento marcado pra hoje" indice={4}>
-          {processosAtividadeHoje.length === 0 ? (
-            <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
-                    <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Contrato</th>
-                    <th style={{ padding: "8px 10px", fontSize: 11.5 }}>NUP</th>
-                    <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Objeto</th>
-                    <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Etapa</th>
-                    <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Eventos</th>
-                    <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Hoje</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {processosAtividadeHoje.map((p) => (
-                    <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
-                      <td style={{ padding: "9px 10px" }}>
-                        <Link href={`/processos/${p.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
-                          {p.numeroContrato}
-                        </Link>
-                      </td>
-                      <td style={{ padding: "9px 10px", fontSize: 12.5 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {p.nup}
-                          <BotaoCopiar texto={p.nup} />
-                        </div>
-                      </td>
-                      <td style={{ padding: "9px 10px", fontSize: 12.5 }}>{p.objeto}</td>
-                      <td style={{ padding: "9px 10px" }}>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: "3px 9px",
-                            borderRadius: 20,
-                            background: corEtapa(p.etapaAtual).fundo,
-                            color: corEtapa(p.etapaAtual).texto,
-                          }}
-                        >
-                          {p.etapaAtual}
-                        </span>
-                      </td>
-                      <td style={{ padding: "9px 10px" }}>
-                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                          {p.tags.map((t) => {
-                            const c = corEvento(t.id, t.cor);
-                            return (
-                              <span
-                                key={t.id}
-                                style={{
-                                  fontSize: 10,
-                                  fontWeight: 600,
-                                  color: c.texto,
-                                  background: c.fundo,
-                                  borderRadius: 7,
-                                  padding: "2px 7px",
-                                }}
-                              >
-                                {t.valor}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </td>
-                      <td style={{ padding: "9px 10px" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                          {p.itens.map((item, i) => (
-                            <span key={i} style={{ fontSize: 12 }}>
-                              {item.horario
-                                ? `${item.horario.slice(0, 5)} · `
-                                : item.periodo
-                                  ? `${item.periodo === "manha" ? "Manhã" : "Tarde"} · `
-                                  : ""}
-                              {item.rotulo}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
+      <CardBento titulo="Eventos" subtitulo="Quantos contratos ativos têm cada evento agora" indice={6}>
+        {dadosEventos.length === 0 ? (
+          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo no momento.</p>
+        ) : (
+          <div style={{ width: "100%", height: 260 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={dadosEventos} dataKey="valor" nameKey="nome" innerRadius="55%" outerRadius="88%" paddingAngle={2}>
+                  {dadosEventos.map((d, i) => (
+                    <Cell key={i} fill={d.cor} stroke="none" />
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardBento>
-
-        <CardBento titulo="Divisão por coordenação" subtitulo="Contratos ativos" indice={5}>
-          {divisaoPorCoordenacao.length === 0 ? (
-            <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {divisaoPorCoordenacao.map((c) => (
-                <div key={c.sigla} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <TagRotulo texto={c.sigla} />
-                  <div style={{ flex: 1, height: 6, borderRadius: 3, background: cor.fundo, overflow: "hidden" }}>
-                    <div
-                      style={{
-                        height: "100%",
-                        width: `${Math.round((c.total / Math.max(1, divisaoPorCoordenacao[0].total)) * 100)}%`,
-                        background: cor.destaque,
-                        borderRadius: 3,
-                      }}
-                    />
-                  </div>
-                  <strong style={{ fontSize: 13, flex: "none" }}>{c.total}</strong>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardBento>
-      </div>
+                </Pie>
+                <Tooltip content={<TooltipPizza />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
+          <MedidorCircular
+            valor={emCoberturaFerias}
+            total={processos.length}
+            corPreenchido={cor.atencao}
+            corTrilha={cor.atencaoFundo}
+            rotulo="Cobertura de férias"
+            tamanho={72}
+          />
+        </div>
+      </CardBento>
 
       {entregasEmAtraso.length > 0 && (
         <div style={{ ...card, background: cor.urgenteFundo, border: "none", borderLeft: `4px solid ${cor.urgente}` }}>
@@ -371,71 +409,6 @@ export default function PainelDashboard({
               <span style={{ marginLeft: "auto", color: cor.textoTerciario }}>há {p.diasParado} dias</span>
             </Link>
           ))}
-        </div>
-      </div>
-
-      <div style={card}>
-        <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 7 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.laranja }} />
-          Contratos por etapa e evento
-        </strong>
-        <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 12px" }}>
-          Cada etapa e cada evento é um medidor à parte, com seu próprio total — um
-          contrato está em uma única etapa, mas pode ter vários eventos ao mesmo tempo.
-        </p>
-
-        <span style={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
-          Etapas
-        </span>
-        <div style={grade}>
-          {etapas.map((et, i) => {
-            const c = PALETA_EVENTOS[i % PALETA_EVENTOS.length];
-            return (
-              <MedidorCircular
-                key={et.id}
-                valor={contagemPorEtapa[et.nome] ?? 0}
-                total={processos.length}
-                corPreenchido={c.texto}
-                corTrilha={c.fundo}
-                rotulo={et.nome}
-                tamanho={80}
-              />
-            );
-          })}
-        </div>
-
-        <span style={{ display: "block", marginTop: 20, fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
-          Eventos
-        </span>
-        <div style={grade}>
-          {eventos.map((ev) => {
-            const c = corEvento(ev.id, ev.cor);
-            return (
-              <MedidorCircular
-                key={ev.id}
-                valor={contagemPorEvento[ev.id] ?? 0}
-                total={processos.length}
-                corPreenchido={c.texto}
-                corTrilha={c.fundo}
-                rotulo={ev.valor}
-                tamanho={80}
-              />
-            );
-          })}
-        </div>
-
-        <span style={{ display: "block", marginTop: 20, fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, color: cor.textoTerciario }}>
-          Cobertura
-        </span>
-        <div style={grade}>
-          <MedidorCircular
-            valor={emCoberturaFerias}
-            total={processos.length}
-            corPreenchido={cor.atencao}
-            corTrilha={cor.atencaoFundo}
-            rotulo="Cobertura de férias"
-            tamanho={80}
-          />
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ export default function TagRotulo({
   const c = corTexto ?? cor.textoSecundario;
   return (
     <span
+      className="crm-pilula-hover"
       style={{
         display: "inline-flex",
         alignItems: "center",
