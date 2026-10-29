@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import PainelDashboard from "./painel-dashboard";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import BarraTopo from "@/app/_ui/barra-topo";
+import BuscaGlobal from "@/app/_ui/busca-global";
 import { getTagsEvento, getEtapasKanban } from "@/lib/dados-referencia";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
 
@@ -18,6 +20,9 @@ export default async function DashboardPage() {
   }
 
   const hoje = new Date().toISOString().slice(0, 10);
+  const emSeteDias = new Date();
+  emSeteDias.setDate(emSeteDias.getDate() + 7);
+  const emSeteDiasStr = emSeteDias.toISOString().slice(0, 10);
 
   const [
     { data: processos, error: erroProcessos },
@@ -33,7 +38,7 @@ export default async function DashboardPage() {
     supabase
       .from("processos")
       .select(
-        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, titular_id, responsavel_atual_id, processo_tags(tags(id, valor, cor))",
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, titular_id, responsavel_atual_id, coordenacao_id, coordenacoes(sigla), processo_tags(tags(id, valor, cor))",
       ),
     supabase.from("processo_kanban_historico").select("id, processo_id, entrada_em").is("saida_em", null),
     supabase.from("processo_tag_historico").select("id, processo_id").is("fim_em", null),
@@ -70,6 +75,41 @@ export default async function DashboardPage() {
   const emCoberturaFerias = (processos ?? []).filter(
     (p) => p.titular_id && p.responsavel_atual_id && p.titular_id !== p.responsavel_atual_id,
   ).length;
+
+  // KPIs da Etapa 2 do redesenho (grade bento do Painel) — calculados a
+  // partir do mesmo `processos` já buscado acima, sem consulta nova.
+  const ativosProcessos = (processos ?? []).filter((p) => !p.conclusao_tipo);
+  const vencemEm7Dias = ativosProcessos.filter(
+    (p) => p.prazo_data && p.prazo_data >= hoje && p.prazo_data <= emSeteDiasStr,
+  ).length;
+  const comOcorrencia = ativosProcessos.filter((p) => (p.processo_tags ?? []).length > 0).length;
+
+  const prazosDaSemana = ativosProcessos
+    .filter((p) => p.prazo_data && p.prazo_data >= hoje && p.prazo_data <= emSeteDiasStr)
+    .map((p) => {
+      const dias = Math.round(
+        (new Date(`${p.prazo_data}T00:00:00`).getTime() - new Date(`${hoje}T00:00:00`).getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
+      return {
+        id: p.id,
+        numeroContrato: numeroContratoSemSei(p.numero_contrato),
+        prazoData: p.prazo_data as string,
+        dias,
+      };
+    })
+    .sort((a, b) => a.dias - b.dias);
+
+  const divisaoPorCoordenacao: { sigla: string; total: number }[] = (() => {
+    const contagem = new Map<string, number>();
+    for (const p of ativosProcessos) {
+      const sigla = (p as any).coordenacoes?.sigla ?? "Sem coordenação";
+      contagem.set(sigla, (contagem.get(sigla) ?? 0) + 1);
+    }
+    return Array.from(contagem.entries())
+      .map(([sigla, total]) => ({ sigla, total }))
+      .sort((a, b) => b.total - a.total);
+  })();
 
   const entradaPorProcesso = new Map((kanbanAtivo ?? []).map((k) => [k.processo_id, k.entrada_em]));
 
@@ -158,6 +198,20 @@ export default async function DashboardPage() {
     })
     .sort((a, b) => b.dias - a.dias);
 
+  // Ação do dia (card escuro de destaque, Etapa 2) — a entrega em atraso
+  // mais antiga tem prioridade; sem atraso, o prazo mais próximo da semana.
+  const acaoDoDia = entregasEmAtraso[0]
+    ? {
+        texto: `Entrega em atraso: CT ${entregasEmAtraso[0].numeroContrato} — ${entregasEmAtraso[0].dias} dia${entregasEmAtraso[0].dias > 1 ? "s" : ""}`,
+        href: `/processos/${entregasEmAtraso[0].processoId}`,
+      }
+    : prazosDaSemana[0]
+      ? {
+          texto: `Prazo mais próximo: CT ${prazosDaSemana[0].numeroContrato} em ${prazosDaSemana[0].dias} dia${prazosDaSemana[0].dias !== 1 ? "s" : ""}`,
+          href: `/processos/${prazosDaSemana[0].id}`,
+        }
+      : null;
+
   const processosAtividadeHoje = (processos ?? [])
     .filter((p) => atividadePorProcesso.has(p.id))
     .map((p) => ({
@@ -174,23 +228,51 @@ export default async function DashboardPage() {
       ),
     }));
 
-  return (
-    <Painel titulo="Painel" subtitulo={`Logado como ${user.email}`} maxWidth={1100}>
-      {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro.message}</p>}
+  const iniciaisUsuario = (user.email ?? "?")
+    .split("@")[0]
+    .split(/[._-]/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join("") || "?";
 
-      <PainelDashboard
-        processos={processosComTempo}
-        contagemPorEtapa={contagemPorEtapa}
-        contagemPorEvento={contagemPorEvento}
-        ativos={ativos}
-        concluidos={concluidos}
-        vencendoHoje={vencendoHoje}
-        emCoberturaFerias={emCoberturaFerias}
-        processosAtividadeHoje={processosAtividadeHoje}
-        entregasEmAtraso={entregasEmAtraso}
-        eventos={eventos ?? []}
-        etapas={etapas ?? []}
+  const atualizadoEm = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div className="crm-painel-fundo" style={{ flexDirection: "column", alignItems: "center" }}>
+      <BarraTopo
+        contagemProcessosAtivos={ativos}
+        contagemAgendaHoje={processosAtividadeHoje.length}
+        temAlerta={entregasEmAtraso.length > 0}
+        iniciaisUsuario={iniciaisUsuario}
+        emailUsuario={user.email ?? undefined}
+        atualizadoEm={atualizadoEm}
       />
-    </Painel>
+
+      <Painel titulo="Painel" conteudoTitulo={<BuscaGlobal />} maxWidth={1100}>
+        {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro.message}</p>}
+
+        <PainelDashboard
+          processos={processosComTempo}
+          contagemPorEtapa={contagemPorEtapa}
+          contagemPorEvento={contagemPorEvento}
+          ativos={ativos}
+          concluidos={concluidos}
+          vencendoHoje={vencendoHoje}
+          vencemEm7Dias={vencemEm7Dias}
+          comOcorrencia={comOcorrencia}
+          emCoberturaFerias={emCoberturaFerias}
+          acaoDoDia={acaoDoDia}
+          prazosDaSemana={prazosDaSemana}
+          divisaoPorCoordenacao={divisaoPorCoordenacao}
+          processosAtividadeHoje={processosAtividadeHoje}
+          entregasEmAtraso={entregasEmAtraso}
+          eventos={eventos ?? []}
+          etapas={etapas ?? []}
+        />
+      </Painel>
+
+      <div className="crm-barra-topo-espaco-mobile" />
+    </div>
   );
 }

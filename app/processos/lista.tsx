@@ -98,7 +98,7 @@ export default function ListaProcessos({
   const [eventoId, setEventoId] = useState(() => searchParams.get("evento") ?? "");
   const [responsavelId, setResponsavelId] = useState("");
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
-  const [busca, setBusca] = useState("");
+  const [busca, setBusca] = useState(() => searchParams.get("q") ?? "");
   const [aba, setAba] = useState<"ativos" | "concluidos">("ativos");
   const [somenteAtrasados, setSomenteAtrasados] = useState(false);
   const [somenteDesatualizados, setSomenteDesatualizados] = useState(false);
@@ -158,6 +158,7 @@ export default function ListaProcessos({
   useEffect(() => {
     setEtapa(searchParams.get("etapa") ?? "");
     setEventoId(searchParams.get("evento") ?? "");
+    setBusca(searchParams.get("q") ?? "");
   }, [searchParams]);
 
   const filtrados = useMemo(() => {

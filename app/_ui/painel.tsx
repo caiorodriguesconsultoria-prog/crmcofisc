@@ -8,6 +8,7 @@ export default function Painel({
   voltarHref,
   maxWidth = 900,
   acao,
+  conteudoTitulo,
   children,
 }: {
   titulo: string;
@@ -15,16 +16,23 @@ export default function Painel({
   voltarHref?: string;
   maxWidth?: number;
   acao?: React.ReactNode;
+  // Troca o título grande por outro conteúdo (ex.: a busca do Painel na
+  // Etapa 2 do redesenho) sem mudar nenhuma outra tela que não passe isso.
+  conteudoTitulo?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="crm-painel-fundo">
       <div className="crm-painel" style={{ maxWidth }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
-          <div>
-            <TituloDestaque fontSize={20}>{titulo}</TituloDestaque>
-            {subtitulo && (
-              <p style={{ fontSize: 12.5, color: cor.textoSecundario, margin: "4px 0 0" }}>{subtitulo}</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {conteudoTitulo ?? (
+              <>
+                <TituloDestaque fontSize={20}>{titulo}</TituloDestaque>
+                {subtitulo && (
+                  <p style={{ fontSize: 12.5, color: cor.textoSecundario, margin: "4px 0 0" }}>{subtitulo}</p>
+                )}
+              </>
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
