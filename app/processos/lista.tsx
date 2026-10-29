@@ -33,13 +33,14 @@ function abrirComTransicao(
   });
 }
 
-type Processo = {
+export type Processo = {
   id: string;
   numero_contrato: string;
   nup_principal: string;
   objeto: string;
   etapa_atual: string;
   situacao: string;
+  prazo_data: string | null;
   coordenacao_id: string | null;
   coordenacoes: { sigla: string } | null;
   fornecedores: { nome: string } | null;

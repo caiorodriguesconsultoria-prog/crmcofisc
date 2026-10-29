@@ -256,6 +256,54 @@ th {
   }
 }
 
+/* Trilho de visões de Processos (Etapa 3 do redesenho) — ver
+   app/processos/visualizacoes.tsx e design-system/REGRAS.md. */
+.crm-trilho-processos {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.crm-trilho-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: sticky;
+  top: 16px;
+  flex: none;
+  background: #fff;
+  border: 1px solid rgba(32, 31, 29, 0.07);
+  border-radius: 16px;
+  padding: 6px;
+}
+
+.crm-trilho-mobile {
+  display: none;
+}
+
+.crm-trilho-conteudo {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .crm-trilho-processos {
+    flex-direction: column;
+  }
+  .crm-trilho-rail {
+    display: none;
+  }
+  .crm-trilho-mobile {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    background: #fff;
+    border: 1px solid rgba(32, 31, 29, 0.07);
+    border-radius: 999px;
+    padding: 4px;
+  }
+}
+
 .crm-painel-alto-fundo {
   padding: 28px 32px 40px;
   display: flex;
