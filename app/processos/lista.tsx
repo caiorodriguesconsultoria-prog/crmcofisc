@@ -419,12 +419,18 @@ export default function ListaProcessos({
                     <Link
                       href={`/processos/${p.id}`}
                       onClick={(e) => abrirComTransicao(e, router, `/processos/${p.id}`)}
+                      className="crm-pilula-hover"
                       style={
                         {
-                          fontSize: 15,
-                          fontWeight: 600,
+                          fontSize: 14,
+                          fontWeight: 700,
                           textDecoration: "none",
                           viewTransitionName: `processo-${p.id}`,
+                          display: "inline-block",
+                          padding: "5px 12px",
+                          borderRadius: 999,
+                          background: cor.destaqueFundo,
+                          color: cor.destaque,
                         } as React.CSSProperties
                       }
                     >
@@ -433,11 +439,12 @@ export default function ListaProcessos({
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                       {p.entregaAtrasada && (
                         <span
+                          className="crm-pilula-hover"
                           style={{
                             fontSize: 9.5,
                             fontWeight: 700,
-                            padding: "2px 7px",
-                            borderRadius: 10,
+                            padding: "3px 9px",
+                            borderRadius: 999,
                             color: cor.urgente,
                             background: cor.urgenteFundo,
                             whiteSpace: "nowrap",
@@ -447,11 +454,12 @@ export default function ListaProcessos({
                         </span>
                       )}
                       <span
+                        className="crm-pilula-hover"
                         style={{
                           fontSize: 9.5,
                           fontWeight: 700,
-                          padding: "2px 7px",
-                          borderRadius: 10,
+                          padding: "3px 9px",
+                          borderRadius: 999,
                           color: p.relatorioDesatualizado ? cor.vermelhoEscuro : cor.verdeEscuro,
                           background: p.relatorioDesatualizado ? cor.vermelhoEscuroFundo : cor.verdeEscuroFundo,
                           whiteSpace: "nowrap",

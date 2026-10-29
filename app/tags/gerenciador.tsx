@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cor, raio } from "@/lib/theme";
 import CardBento from "@/app/_ui/card-bento";
-import TagRotulo from "@/app/_ui/tag-rotulo";
 
 type Tag = { id: string; categoria: "evento" | "forma_entrega"; valor: string; cor: string | null; ativo: boolean };
 
@@ -19,9 +19,24 @@ export default function Gerenciador({ tags }: { tags: Tag[] }) {
   const [novaCor, setNovaCor] = useState<Record<string, string>>({});
   const [criando, setCriando] = useState<string | null>(null);
 
-  async function alternarAtivo(tag: Tag) {
+  // Tenta apagar de verdade; se a tag já foi usada em algum contrato, o
+  // banco recusa (chave estrangeira) — nesse caso só desativa, pra não
+  // quebrar o histórico de quem já usou. Mesmo comportamento que o "apagar
+  // evento" que já existia nos atalhos de /processos.
+  async function excluir(tag: Tag) {
+    if (!confirm(`Excluir "${tag.valor}"? Se já tiver sido usada em algum contrato, só vai ficar desativada.`)) return;
     setSalvandoId(tag.id);
-    await supabase.from("tags").update({ ativo: !tag.ativo }).eq("id", tag.id);
+    const { error } = await supabase.from("tags").delete().eq("id", tag.id);
+    if (error) {
+      await supabase.from("tags").update({ ativo: false }).eq("id", tag.id);
+    }
+    setSalvandoId(null);
+    router.refresh();
+  }
+
+  async function reativar(tag: Tag) {
+    setSalvandoId(tag.id);
+    await supabase.from("tags").update({ ativo: true }).eq("id", tag.id);
     setSalvandoId(null);
     router.refresh();
   }
@@ -54,49 +69,83 @@ export default function Gerenciador({ tags }: { tags: Tag[] }) {
         const dessaCategoria = tags.filter((t) => t.categoria === categoria);
         return (
           <CardBento key={categoria} titulo={ROTULO_CATEGORIA[categoria]} indice={indice}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-              {dessaCategoria.length === 0 && (
-                <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma ainda.</p>
-              )}
-              {dessaCategoria.map((tag) => (
-                <div
-                  key={tag.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    opacity: tag.ativo ? 1 : 0.45,
-                  }}
-                >
-                  <TagRotulo texto={tag.valor} corTexto={tag.cor ?? undefined} />
-                  {categoria === "evento" && (
-                    <input
-                      type="color"
-                      value={tag.cor ?? "#2F5FDB"}
-                      onChange={(e) => mudarCor(tag, e.target.value)}
-                      disabled={salvandoId === tag.id}
-                      title="Cor da tag"
-                      style={{ width: 24, height: 24, padding: 0, border: "none", background: "none" }}
-                    />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => alternarAtivo(tag)}
-                    disabled={salvandoId === tag.id}
+            {dessaCategoria.length === 0 ? (
+              <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma ainda.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {dessaCategoria.map((tag) => (
+                  <div
+                    key={tag.id}
                     style={{
-                      fontSize: 10.5,
-                      padding: "3px 8px",
-                      borderRadius: raio.pilula,
-                      border: "none",
-                      background: "rgba(96,93,93,.10)",
-                      color: cor.textoSecundario,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "9px 0",
+                      borderBottom: `1px solid ${cor.borda}`,
+                      opacity: tag.ativo ? 1 : 0.5,
                     }}
                   >
-                    {tag.ativo ? "Desativar" : "Reativar"}
-                  </button>
-                </div>
-              ))}
-            </div>
+                    {categoria === "evento" && (
+                      <input
+                        type="color"
+                        value={tag.cor ?? "#2F5FDB"}
+                        onChange={(e) => mudarCor(tag, e.target.value)}
+                        disabled={salvandoId === tag.id}
+                        title="Cor da tag"
+                        style={{ width: 20, height: 20, padding: 0, border: "none", background: "none", flex: "none" }}
+                      />
+                    )}
+                    <span style={{ fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0 }}>{tag.valor}</span>
+                    {!tag.ativo && (
+                      <span style={{ fontSize: 10.5, color: cor.textoTerciario, flex: "none" }}>desativada</span>
+                    )}
+                    {tag.ativo ? (
+                      <button
+                        type="button"
+                        onClick={() => excluir(tag)}
+                        disabled={salvandoId === tag.id}
+                        aria-label={`Excluir ${tag.valor}`}
+                        title="Excluir"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          padding: "5px 10px",
+                          borderRadius: raio.pilula,
+                          border: "none",
+                          background: cor.urgenteFundo,
+                          color: cor.urgente,
+                          flex: "none",
+                        }}
+                      >
+                        <Trash2 size={12} />
+                        Excluir
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => reativar(tag)}
+                        disabled={salvandoId === tag.id}
+                        style={{
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          padding: "5px 10px",
+                          borderRadius: raio.pilula,
+                          border: "none",
+                          background: "rgba(96,93,93,.10)",
+                          color: cor.textoSecundario,
+                          flex: "none",
+                        }}
+                      >
+                        Reativar
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}>
               <input
