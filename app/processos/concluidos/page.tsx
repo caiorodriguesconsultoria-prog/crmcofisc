@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import ListaProcessos from "../lista";
 import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import TelaComBarraTopo from "@/app/_ui/tela-com-barra-topo";
+import { getContextoBarraTopo } from "@/lib/contexto-barra-topo";
 import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
 
 export default async function ProcessosConcluidosPage() {
@@ -25,6 +27,7 @@ export default async function ProcessosConcluidosPage() {
     etapas,
     { data: pessoaAtual },
     { data: andamentosRaw },
+    contexto,
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -44,6 +47,7 @@ export default async function ProcessosConcluidosPage() {
       .select("processo_id, texto, data")
       .neq("tipo", "Tarefa concluída")
       .order("data", { ascending: false }),
+    getContextoBarraTopo(supabase, user.email ?? null),
   ]);
 
   const ultimoAndamentoPorProcesso = new Map<string, string>();
@@ -62,18 +66,20 @@ export default async function ProcessosConcluidosPage() {
   }));
 
   return (
-    <Painel titulo="Concluídos" subtitulo="Contratos" voltarHref="/dashboard" maxWidth={1300}>
-      {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
+    <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Contratos > Concluídos">
+      <Painel titulo="Concluídos" subtitulo="Contratos" maxWidth={1300}>
+        {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
-      <ListaProcessos
-        processos={processosSemAgendamento as any}
-        coordenacoes={coordenacoes ?? []}
-        formasEntrega={formasEntrega ?? []}
-        eventos={eventos ?? []}
-        responsaveis={responsaveis ?? []}
-        etapas={etapas ?? []}
-        minhaPessoaId={pessoaAtual?.id ?? null}
-      />
-    </Painel>
+        <ListaProcessos
+          processos={processosSemAgendamento as any}
+          coordenacoes={coordenacoes ?? []}
+          formasEntrega={formasEntrega ?? []}
+          eventos={eventos ?? []}
+          responsaveis={responsaveis ?? []}
+          etapas={etapas ?? []}
+          minhaPessoaId={pessoaAtual?.id ?? null}
+        />
+      </Painel>
+    </TelaComBarraTopo>
   );
 }

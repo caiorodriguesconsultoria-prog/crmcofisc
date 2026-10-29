@@ -942,4 +942,19 @@ Build e `tsc --noEmit` limpos. Sem migração (campos `ativo`/`cor`/`categoria` 
 
 Build e `tsc --noEmit` limpos. Sem migração, sem funcionalidade nova. Essa é a última etapa do guia original — a partir daqui, é manutenção e os ajustes que ficaram pendentes desde a Etapa 2/3 ("Contratos" ✓ já corrigido, barra sumindo no celular ao trocar de tela, gráficos amontoados no Painel).
 
+## 2026-10-29 · Pós-Etapa 6 — BarraTopo em todo o sistema + ajustes finais pedidos
+Caio aprovou a Etapa 6 (última do guia). Com o redesenho tecnicamente completo, resolvi as duas pendências que ele pediu pra deixar pro final.
+
+**Barra sumindo no celular ao trocar de tela — resolvido de vez:** a `BarraTopo` agora aparece em **todas** as telas autenticadas (antes só Painel/Contratos/Agenda/Tags), e a gaveta lateral antiga (`app/_nav/sidebar.tsx`) foi desligada por completo — `app/layout.tsx` não renderiza mais `<Sidebar>`. Telas migradas nesta rodada: Avisos, Dados, Coordenações (+ Nova coordenação), Gestores (+ Novo gestor), Fiscais (+ Novo fiscal), Fornecedores (+ página de cada fornecedor + Novo fornecedor), Concluídos, Novo contrato, e o **Detalhe do contrato em tela cheia** (`/processos/[id]`, quando acessado direto por URL — a versão em **modal**, que abre ao clicar num contrato numa lista, continua sem BarraTopo de propósito, porque já aparece flutuando sobre uma tela que já tem a barra por baixo).
+
+Pra não repetir a mesma consulta de contagem e o mesmo cálculo de iniciais em 11 arquivos diferentes, criei `lib/contexto-barra-topo.ts` (helper único) e `app/_ui/tela-com-barra-topo.tsx` (envelope visual único) — reaproveitados em cada `page.tsx` novo, sem duplicar lógica.
+
+**Duas coisas que a gaveta antiga tinha e que eu precisava não perder** (checado item por item antes de desligar o `<Sidebar>`, pra não violar a regra de nunca tirar funcionalidade que já existia):
+- **Atalhos por etapa/evento** (contadores clicáveis tipo "Aguardando assinatura — 4", que filtravam `/processos`): o componente `app/_nav/atividades.tsx` (e `grupos-atividades.tsx`) não mudou nada por dentro — só ganhou uma casa nova, dentro de um `CartaoColapsavel` fechado por padrão em `/processos`, acima do trilho Kanban/Lista/Por prazo.
+- **Botão de ativar notificações push**: `NotificacoesPush` (mesmo componente de sempre) mudou de lugar, da gaveta pro menu "Mais" da `BarraTopo`, ao lado de "Sair".
+
+**Gráficos/cards do Painel amontoados — ajustado:** `painel-dashboard.tsx` ganhou mais espaço entre os elementos — o espaçamento vertical entre blocos foi de 16 pra 20px, os 3 KPIs do topo de 24 pra 32px de vão (e cartões um pouco maiores, 140→160px mínimo), os pares de cards lado a lado (gráfico/prazos, agenda/coordenação) de 16 pra 20px, e a grade de medidores circulares (etapas/eventos/cobertura) de 14 pra 20px de vão com medidores um pouco mais largos (88→104px mínimo) — menos itens espremidos por linha.
+
+Build e `tsc --noEmit` limpos. Sem migração, sem alteração de dado — só navegação (mesmas 2 consultas leves de contagem que o Painel já fazia, repetidas em cada tela nova) e espaçamento visual.
+
 **Ajuste no mesmo dia — paleta azul-marinho:** Caio mandou uma paleta de referência (preta-azulada #021024 a azul clarinho #C1E8FF) e perguntou se encaixava. Recomendei usar só nos elementos escuros do redesenho novo (não trocar texto/fundo do sistema inteiro, que usa um neutro quente já aprovado) — ele topou. `cor.escuro` (cinza quente `#2D2B2B`) virou `#021024` (só afeta os componentes do redesenho: card "Ação do dia", cápsula ativa da BarraTopo, trilho de visões — nada de telas antigas, confirmado por grep antes de trocar). Novo token `cor.azulClaroDestaque` (`#C1E8FF`) para o destaque de arraste no Kanban (coluna que recebe o card fica com esse azul claro em vez do azul padrão de botão, mais vivo).

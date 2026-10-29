@@ -38,11 +38,14 @@ type Etapa = { id: string; nome: string };
 type EntregaEmAtraso = { id: string; processoId: string; numeroContrato: string; numeroParcela: number; dias: number };
 type PrazoDaSemana = { id: string; numeroContrato: string; prazoData: string; dias: number };
 
+// Espaçamento maior que o original (Etapa 6: gráficos/cards ficaram
+// amontoados, ajuste pedido pelo Caio) — menos medidores por linha, mais
+// respiro entre eles.
 const grade: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))",
-  gap: 14,
-  marginTop: 10,
+  gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))",
+  gap: 20,
+  marginTop: 14,
 };
 
 function nivelUrgenciaPorDias(dias: number): NivelUrgencia {
@@ -95,9 +98,9 @@ export default function PainelDashboard({
   const dadosEtapas = etapas.map((et) => ({ nome: et.nome, total: contagemPorEtapa[et.nome] ?? 0 }));
 
   return (
-    <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
       <CardBento indice={0}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 32 }}>
           <Kpi rotulo="Contratos ativos" valor={ativos} />
           <Kpi
             rotulo="Vencem em 7 dias"
@@ -146,7 +149,7 @@ export default function PainelDashboard({
         </Link>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
         <CardBento titulo="Contratos por etapa" indice={2}>
           <div style={{ width: "100%", height: 220 }}>
             <ResponsiveContainer>
@@ -189,7 +192,7 @@ export default function PainelDashboard({
         </CardBento>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
         <CardBento titulo="Agenda de hoje" subtitulo="Contratos com tarefa ou agendamento marcado pra hoje" indice={4}>
           {processosAtividadeHoje.length === 0 ? (
             <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>

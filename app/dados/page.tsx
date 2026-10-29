@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { cor, card } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import Painel from "@/app/_ui/painel";
+import TelaComBarraTopo from "@/app/_ui/tela-com-barra-topo";
+import { getContextoBarraTopo } from "@/lib/contexto-barra-topo";
 import MedidorCircular from "@/app/_ui/medidor-circular";
 import { getTagsEvento } from "@/lib/dados-referencia";
 import { calcularDerivadosEntregas } from "@/lib/entregas-derivados";
@@ -38,6 +40,7 @@ export default async function DadosPage() {
     { data: assinaturaHistorico },
     { data: entregas },
     { data: pautaTodas },
+    contexto,
   ] = await Promise.all([
     supabase.from("processos").select("id, created_at, updated_at, conclusao_tipo"),
     supabase.from("processos").select("id", { count: "exact", head: true }),
@@ -52,6 +55,7 @@ export default async function DadosPage() {
       .from("processo_entregas")
       .select("id, processo_id, local_entrega, quantidade, data_entrega, data_fabricacao, data_validade"),
     supabase.from("processo_pauta_distribuicao").select("processo_id, uf, quantidade, data_entrega"),
+    getContextoBarraTopo(supabase, user.email ?? null),
   ]);
 
   const total = totalProcessos ?? 0;
@@ -110,7 +114,8 @@ export default async function DadosPage() {
   const mediaAtraso = media(diasAtrasoTodos);
 
   return (
-    <Painel titulo="Dados" subtitulo="KPIs de contratos" voltarHref="/dashboard" maxWidth={1000}>
+    <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Dados">
+    <Painel titulo="Dados" subtitulo="KPIs de contratos" maxWidth={1000}>
       <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           {[
@@ -186,5 +191,6 @@ export default async function DadosPage() {
         </div>
       </div>
     </Painel>
+    </TelaComBarraTopo>
   );
 }
