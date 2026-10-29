@@ -29,6 +29,20 @@ a {
   color: #2f5fdb;
 }
 
+/* Hover bem perceptível pra elementos em formato de pílula (cápsulas de
+   navegação, tags de coordenação etc.) — o Caio não notava diferença no
+   hover antes disso existir. Só dispara com mouse de verdade, nunca "preso"
+   depois de um toque. */
+.crm-pilula-hover {
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease, background 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .crm-pilula-hover:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 6px 16px rgba(32, 31, 29, 0.14);
+  }
+}
+
 button {
   font-family: inherit;
   font-size: 12.5px;

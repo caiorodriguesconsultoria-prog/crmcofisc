@@ -41,13 +41,18 @@ export default function CardBento({
         delay: reduzido ? 0 : indice * movimento.escalonado,
         ease: [0.22, 1, 0.36, 1],
       }}
-      whileHover={clicavel && !reduzido && podeHover ? { y: -4, transition: { duration: movimento.hover } } : undefined}
+      whileHover={
+        clicavel && !reduzido && podeHover
+          ? { y: -6, boxShadow: "0 14px 32px rgba(32,31,29,.16)", transition: { duration: movimento.hover } }
+          : undefined
+      }
       style={{
         background: cor.branco,
         borderRadius: pequeno ? raio.cardPequeno : raio.card,
         border: `1px solid ${cor.borda}`,
         padding: 24,
         cursor: clicavel ? "pointer" : undefined,
+        boxShadow: "0 0px 0px rgba(32,31,29,0)",
         ...style,
       }}
     >
