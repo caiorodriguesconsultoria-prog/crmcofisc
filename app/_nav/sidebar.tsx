@@ -29,10 +29,12 @@ export default function Sidebar({ children }: { children?: React.ReactNode }) {
     setAberta(false);
   }, [pathname]);
 
-  // /dashboard tem a própria navegação agora (BarraTopo, Etapa 2 do
-  // redesenho) — ver app/_ui/barra-topo.tsx e design-system/REGRAS.md. As
-  // outras telas continuam com a gaveta até passarem pelas próprias etapas.
-  if (pathname === "/login" || pathname === "/" || pathname === "/dashboard") return null;
+  // /dashboard e /processos já têm a própria navegação (BarraTopo, Etapas 2
+  // e 3 do redesenho) — ver app/_ui/barra-topo.tsx e design-system/REGRAS.md.
+  // As outras telas continuam com a gaveta até passarem pelas próprias etapas.
+  if (pathname === "/login" || pathname === "/" || pathname === "/dashboard" || pathname === "/processos") {
+    return null;
+  }
 
   return (
     <>

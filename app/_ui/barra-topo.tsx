@@ -13,7 +13,7 @@ import { cor, raio } from "@/lib/theme";
 // navegação do sistema inteiro de uma vez só numa etapa que é só do Painel.
 const ABAS = [
   { href: "/dashboard", label: "Painel" },
-  { href: "/processos", label: "Processos" },
+  { href: "/processos", label: "Contratos" },
   { href: "/agenda", label: "Agenda" },
 ];
 
@@ -36,6 +36,7 @@ export default function BarraTopo({
   iniciaisUsuario,
   emailUsuario,
   atualizadoEm,
+  migalha,
 }: {
   contagemProcessosAtivos: number;
   contagemAgendaHoje: number;
@@ -43,9 +44,12 @@ export default function BarraTopo({
   iniciaisUsuario: string;
   emailUsuario?: string;
   atualizadoEm: string;
+  /** Texto da trilha de navegação (2ª linha, só desktop). Padrão: nome da aba ativa. */
+  migalha?: string;
 }) {
   const pathname = usePathname();
   const [maisAberto, setMaisAberto] = useState(false);
+  const abaAtiva = ABAS.find((a) => pathname === a.href || pathname.startsWith(a.href + "/"));
 
   const contadores: Record<string, number> = {
     "/processos": contagemProcessosAtivos,
@@ -184,7 +188,7 @@ export default function BarraTopo({
       </div>
 
       <div className="crm-barra-topo-linha2">
-        <span style={{ color: cor.textoTerciario }}>Painel</span>
+        <span style={{ color: cor.textoTerciario }}>{migalha ?? abaAtiva?.label ?? "Painel"}</span>
         <span style={{ marginLeft: "auto", color: cor.textoTerciario }}>Atualizado às {atualizadoEm}</span>
       </div>
 

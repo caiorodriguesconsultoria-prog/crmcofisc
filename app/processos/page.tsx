@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import ListaProcessos from "./lista";
+import VisualizacoesProcessos from "./visualizacoes";
 import { botaoPrimario, cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
+import BarraTopo from "@/app/_ui/barra-topo";
 import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
 
 export default async function ProcessosPage({
@@ -39,7 +40,7 @@ export default async function ProcessosPage({
     supabase
       .from("processos")
       .select(
-        "id, numero_contrato, nup_principal, objeto, etapa_atual, situacao, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, titular_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor)), relatorio_atualizado_em",
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, situacao, prazo_data, coordenacao_id, coordenacoes(sigla), fornecedores(nome), forma_entrega_tag_id, titular_id, responsavel_atual_id, responsavel:pessoas!processos_responsavel_atual_id_fkey(nome), processo_eletronico_numero, processo_tags(tags(id, valor, cor)), relatorio_atualizado_em",
       )
       .order("created_at", { ascending: false }),
     supabase.from("coordenacoes").select("id, sigla").order("sigla"),
@@ -128,34 +129,62 @@ export default async function ProcessosPage({
   const eventoSelecionado = sp.evento ? (eventos ?? []).find((e) => e.id === sp.evento) : null;
   const titulo = sp.etapa || eventoSelecionado?.valor || "Contratos";
 
-  return (
-    <Painel
-      titulo={titulo}
-      subtitulo={titulo !== "Contratos" ? "Contratos" : undefined}
-      voltarHref="/dashboard"
-      maxWidth={1300}
-      // <a> normal (não o <Link> do Next) de propósito — /processos/novo tem o
-      // mesmo formato de URL que a rota interceptada do modal /processos/[id],
-      // e navegação client-side acaba caindo no modal tratando "novo" como id.
-      // Um <a> força navegação completa (recarrega a página), que resolve
-      // certo pelo lado do servidor.
-      acao={
-        <a href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
-          + Novo contrato
-        </a>
-      }
-    >
-      {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
+  // Contadores da BarraTopo — reaproveitam o que esta página já buscou (sem
+  // consulta nova): ativos vem do mesmo `processos`, agenda de hoje vem do
+  // mesmo `agendamentosRaw` que a página já pedia pra calcular o próximo
+  // agendamento de cada contrato.
+  const contagemProcessosAtivos = (processos ?? []).filter((p) => p.situacao !== "concluido").length;
+  const contagemAgendaHoje = (agendamentosRaw ?? []).filter((a) => a.data === hoje).length;
+  const iniciaisUsuario = (user.email ?? "?")
+    .split("@")[0]
+    .split(/[._-]/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join("") || "?";
+  const atualizadoEm = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-      <ListaProcessos
-        processos={processosComAgendamento as any}
-        coordenacoes={coordenacoes ?? []}
-        formasEntrega={formasEntrega ?? []}
-        eventos={eventos ?? []}
-        responsaveis={responsaveis ?? []}
-        etapas={etapas ?? []}
-        minhaPessoaId={pessoaAtual?.id ?? null}
+  return (
+    <div className="crm-painel-fundo" style={{ flexDirection: "column", alignItems: "center" }}>
+      <BarraTopo
+        contagemProcessosAtivos={contagemProcessosAtivos}
+        contagemAgendaHoje={contagemAgendaHoje}
+        temAlerta={processosComEntregaAtrasada.size > 0}
+        iniciaisUsuario={iniciaisUsuario}
+        emailUsuario={user.email ?? undefined}
+        atualizadoEm={atualizadoEm}
+        migalha={titulo !== "Contratos" ? `Contratos > ${titulo}` : undefined}
       />
-    </Painel>
+
+      <Painel
+        titulo={titulo}
+        subtitulo={titulo !== "Contratos" ? "Contratos" : undefined}
+        maxWidth={1300}
+        // <a> normal (não o <Link> do Next) de propósito — /processos/novo tem o
+        // mesmo formato de URL que a rota interceptada do modal /processos/[id],
+        // e navegação client-side acaba caindo no modal tratando "novo" como id.
+        // Um <a> força navegação completa (recarrega a página), que resolve
+        // certo pelo lado do servidor.
+        acao={
+          <a href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
+            + Novo contrato
+          </a>
+        }
+      >
+        {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
+
+        <VisualizacoesProcessos
+          processos={processosComAgendamento as any}
+          coordenacoes={coordenacoes ?? []}
+          formasEntrega={formasEntrega ?? []}
+          eventos={eventos ?? []}
+          responsaveis={responsaveis ?? []}
+          etapas={etapas ?? []}
+          minhaPessoaId={pessoaAtual?.id ?? null}
+        />
+      </Painel>
+
+      <div className="crm-barra-topo-espaco-mobile" />
+    </div>
   );
 }
