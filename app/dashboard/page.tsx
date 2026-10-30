@@ -200,10 +200,13 @@ export default async function DashboardPage() {
 
   // Ação do dia (card escuro de destaque, Etapa 2) — a entrega em atraso
   // mais antiga tem prioridade; sem atraso, o prazo mais próximo da semana.
+  // entregaDestacadaId marca qual item já apareceu aqui, pra lista "Entregas
+  // em atraso" logo abaixo não repetir o mesmo item (pedido do Caio).
   const acaoDoDia = entregasEmAtraso[0]
     ? {
         texto: `Entrega em atraso: CT ${entregasEmAtraso[0].numeroContrato} — ${entregasEmAtraso[0].dias} dia${entregasEmAtraso[0].dias > 1 ? "s" : ""}`,
         href: `/processos/${entregasEmAtraso[0].processoId}`,
+        entregaDestacadaId: entregasEmAtraso[0].id,
       }
     : prazosDaSemana[0]
       ? {
