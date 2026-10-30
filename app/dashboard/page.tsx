@@ -239,7 +239,9 @@ export default async function DashboardPage() {
   const atualizadoEm = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="crm-painel-fundo" style={{ flexDirection: "column", alignItems: "center" }}>
+    // alignItems default (stretch) de propósito — ver comentário em
+    // app/_ui/tela-com-barra-topo.tsx, mesmo bug de largura.
+    <div className="crm-painel-fundo" style={{ flexDirection: "column" }}>
       <BarraTopo
         contagemProcessosAtivos={ativos}
         contagemAgendaHoje={processosAtividadeHoje.length}

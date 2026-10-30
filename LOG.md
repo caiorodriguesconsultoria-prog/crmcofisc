@@ -1003,4 +1003,15 @@ Caio mandou print da tela em produção dizendo que "continua a mesma" — a 1ª
 
 Build e `tsc --noEmit` limpos. Sem migração. Ainda não toquei a fonte/tamanho de cada tabela e lista do sistema individualmente (são centenas de `fontSize` inline espalhados) — segui cobrindo primeiro o que é compartilhado (regra global + componentes do redesenho), que afeta a maior parte do que aparece na tela.
 
+## 2026-10-30 · Causa real do painel "tamanho de celular" (não era cache nem dispositivo)
+Caio reportou que o Painel continuava no formato estreito mesmo depois de eu aumentar o `maxWidth` pra 1800 — tanto no navegador do computador quanto no app instalado (PWA). Achei a causa raiz, que não tinha nada a ver com o `maxWidth` em si.
+
+O wrapper que toda tela com `BarraTopo` usa (`app/_ui/tela-com-barra-topo.tsx`, e a mesma estrutura duplicada em `app/dashboard/page.tsx`) tinha `alignItems: "center"` no container flex externo. Isso faz o `.crm-painel-fundo` que o `Painel` renderiza por dentro (que não tem largura própria definida em CSS) encolher pro tamanho do próprio conteúdo em vez de esticar pra largura disponível — e sem uma largura definida chegando até ele, a grade de KPIs (`repeat(auto-fit, minmax(200px, 1fr))`) colapsa pra **uma única coluna estreita** (comportamento do CSS Grid quando o contêiner não tem largura definida: o `auto-fit` resolve como se só existisse 1 coluna). Daí a aparência de "tela de celular" — não era cache, nem o dispositivo, nem o `maxWidth` insuficiente: a largura nunca chegava a se propagar pra baixo na árvore, então aumentar o `maxWidth` não tinha nenhum efeito.
+
+Corrigido removendo o `alignItems: "center"` (volta pro padrão do flexbox, que é `stretch`) em `app/_ui/tela-com-barra-topo.tsx` e `app/dashboard/page.tsx`. A centralização visual continua igual, porque já vem de outros lugares (margin auto do `.crm-barra-topo`, justify-content do `.crm-painel-fundo` interno) — isso não dependia do `align-items` do pai.
+
+Esse wrapper é usado em todas as telas migradas pra `BarraTopo` (`/dashboard`, `/processos`, `/agenda`, `/tags`, e mais que usam `TelaComBarraTopo`), então a correção vale pra todas elas de uma vez, não só o Painel.
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 **Ajuste no mesmo dia — paleta azul-marinho:** Caio mandou uma paleta de referência (preta-azulada #021024 a azul clarinho #C1E8FF) e perguntou se encaixava. Recomendei usar só nos elementos escuros do redesenho novo (não trocar texto/fundo do sistema inteiro, que usa um neutro quente já aprovado) — ele topou. `cor.escuro` (cinza quente `#2D2B2B`) virou `#021024` (só afeta os componentes do redesenho: card "Ação do dia", cápsula ativa da BarraTopo, trilho de visões — nada de telas antigas, confirmado por grep antes de trocar). Novo token `cor.azulClaroDestaque` (`#C1E8FF`) para o destaque de arraste no Kanban (coluna que recebe o card fica com esse azul claro em vez do azul padrão de botão, mais vivo).

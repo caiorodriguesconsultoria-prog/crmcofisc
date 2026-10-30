@@ -24,7 +24,14 @@ export default function TelaComBarraTopo({
   children: React.ReactNode;
 }) {
   return (
-    <div className="crm-painel-fundo" style={{ flexDirection: "column", alignItems: "center" }}>
+    // alignItems default (stretch) de propósito — "center" fazia o filho
+    // (o .crm-painel-fundo que o Painel renderiza por dentro) encolher pro
+    // tamanho do próprio conteúdo em vez de esticar, e aí o width:100%/
+    // maxWidth do painel não tinha largura nenhuma pra resolver contra;
+    // ficava sempre no tamanho mínimo possível, parecendo tela de celular
+    // mesmo em desktop. Centralização já vem do justify-content/margin auto
+    // das classes .crm-painel-fundo e .crm-barra-topo.
+    <div className="crm-painel-fundo" style={{ flexDirection: "column" }}>
       <BarraTopo
         contagemProcessosAtivos={contagemProcessosAtivos}
         contagemAgendaHoje={contagemAgendaHoje}
