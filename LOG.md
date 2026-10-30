@@ -1015,3 +1015,10 @@ Esse wrapper é usado em todas as telas migradas pra `BarraTopo` (`/dashboard`, 
 Build e `tsc --noEmit` limpos. Sem migração.
 
 **Ajuste no mesmo dia — paleta azul-marinho:** Caio mandou uma paleta de referência (preta-azulada #021024 a azul clarinho #C1E8FF) e perguntou se encaixava. Recomendei usar só nos elementos escuros do redesenho novo (não trocar texto/fundo do sistema inteiro, que usa um neutro quente já aprovado) — ele topou. `cor.escuro` (cinza quente `#2D2B2B`) virou `#021024` (só afeta os componentes do redesenho: card "Ação do dia", cápsula ativa da BarraTopo, trilho de visões — nada de telas antigas, confirmado por grep antes de trocar). Novo token `cor.azulClaroDestaque` (`#C1E8FF`) para o destaque de arraste no Kanban (coluna que recebe o card fica com esse azul claro em vez do azul padrão de botão, mais vivo).
+
+## 2026-10-30 · Tirar duplicação entre "Ação do dia" e "Entregas em atraso"
+Caio mandou print mostrando a mesma entrega (CT 234/2026, 53 dias em atraso) aparecendo duas vezes no Painel: uma no card escuro "Ação do dia" (destaque único, topo da página) e outra de novo na lista "Entregas em atraso" logo abaixo. Perguntei como ele queria resolver — escolheu manter os dois cards, só tirando da lista o item que já apareceu no destaque.
+
+`entregasEmAtraso[0]` (a mais atrasada) é sempre o item escolhido pra "Ação do dia" quando existe atraso — agora o `acaoDoDia` carrega o `id` dessa entrega (`entregaDestacadaId`), e a lista "Entregas em atraso" filtra esse id antes de renderizar. Se só sobrar aquela entrega (nenhuma outra em atraso), o card da lista nem aparece mais — fica só o destaque.
+
+Build e `tsc --noEmit` limpos. Sem migração.

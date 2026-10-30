@@ -84,7 +84,7 @@ export default function PainelDashboard({
   vencemEm7Dias: number;
   comOcorrencia: number;
   emCoberturaFerias: number;
-  acaoDoDia: { texto: string; href: string } | null;
+  acaoDoDia: { texto: string; href: string; entregaDestacadaId?: string } | null;
   prazosDaSemana: PrazoDaSemana[];
   divisaoPorCoordenacao: { sigla: string; total: number }[];
   processosAtividadeHoje: ProcessoAtividadeHoje[];
@@ -366,11 +366,15 @@ export default function PainelDashboard({
         </div>
       </CardBento>
 
-      {entregasEmAtraso.length > 0 && (
+      {(() => {
+        // A entrega já destacada em "Ação do dia" (acima) não repete aqui —
+        // pedido do Caio depois de ver as duas num mesmo print.
+        const entregasRestantes = entregasEmAtraso.filter((e) => e.id !== acaoDoDia?.entregaDestacadaId);
+        return entregasRestantes.length > 0 && (
         <div style={{ ...card, background: cor.urgenteFundo, border: "none", borderLeft: `4px solid ${cor.urgente}` }}>
           <strong style={{ fontSize: 13, color: cor.urgente }}>Entregas em atraso</strong>
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-            {entregasEmAtraso.map((e) => (
+            {entregasRestantes.map((e) => (
               <Link
                 key={e.id}
                 href={`/processos/${e.processoId}`}
@@ -381,7 +385,8 @@ export default function PainelDashboard({
             ))}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
