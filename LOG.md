@@ -1110,3 +1110,18 @@ Caio confirmou que queria trazer de volta o checklist por evento, achado na inve
 Faz parte do mesmo commit dos itens 6/7, ainda aguardando o Caio rodar as duas migrações antes do merge pra `main`.
 
 Build e `tsc --noEmit` limpos. Sem migração nova (reaproveita o que já existia).
+
+## 2026-11-21 · Protótipo: tema escuro + paleta de marrons só no Painel
+Caio mandou referência visual (vídeo "Furniture CRM" da nuvio.on — fundo bem escuro, cards claros flutuando sem container por baixo, faixa colorida lateral por card) + uma paleta de marrons (print de conta de design no Instagram: #1A120E a #D5C4AE, mais um cinza #4A4A46). Pediu pra aplicar no CRM.
+
+Como é uma virada de tema grande (reconstrução visual, não um ajuste), confirmei com ele antes: prototipar só no Painel primeiro, não no sistema inteiro.
+
+- Novo `lib/tema-escuro.ts`: paleta isolada (`corEscura`), não mexe em `lib/theme.ts`.
+- `Painel` (app/_ui/painel.tsx) ganhou prop opcional `temaEscuro` — só muda o fundo da página pro escuro e remove o "cartão branco" grande que envolve tudo (fica transparente), deixando os CardBento (que continuam brancos) flutuarem diretamente sobre o fundo escuro — igual à referência. Nenhuma outra tela usa essa prop, nada muda pra elas.
+- `CardBento` ganhou prop opcional `corAcento` — pinta uma faixa de 5px na borda esquerda do card, imitando a faixa colorida por categoria do vídeo de referência.
+- `app/dashboard/page.tsx`: passa `temaEscuro` pro Painel.
+- `app/dashboard/painel-dashboard.tsx`: cada KPI e cada seção (Agenda de hoje, Prazos da semana, Divisão por coordenação, Contratos por etapa, Eventos) ganha uma cor de acento diferente, ciclando pela paleta de marrons.
+
+Fonte: mantive a Urbanist que já está em uso (pesos mais fortes já disponíveis) em vez de trocar de fonte — se o Caio quiser bater mais fiel com a fonte do vídeo, preciso que ele identifique/mande o nome dela (não dá pra ter certeza só pelo print).
+
+Build e `tsc --noEmit` limpos. Sem migração.

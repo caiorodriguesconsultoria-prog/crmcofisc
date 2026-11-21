@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Sparkles } from "lucide-react";
 import { card, cor, PALETA_VIVA } from "@/lib/theme";
+import { corEscura } from "@/lib/tema-escuro";
 import { corEvento } from "@/lib/cores-evento";
 import { corEtapa } from "@/lib/cor-etapa";
 import MedidorCircular from "@/app/_ui/medidor-circular";
@@ -134,7 +135,7 @@ export default function PainelDashboard({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
         {kpis.map((k, i) => {
           const conteudo = (
-            <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href}>
+            <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} corAcento={corEscura.acentos[i % corEscura.acentos.length]}>
               <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} variacao={k.variacao} />
             </CardBento>
           );
@@ -178,7 +179,7 @@ export default function PainelDashboard({
         </Link>
       )}
 
-      <CardBento titulo="Agenda de hoje" subtitulo="Contratos com tarefa ou agendamento marcado pra hoje" indice={2}>
+      <CardBento titulo="Agenda de hoje" subtitulo="Contratos com tarefa ou agendamento marcado pra hoje" indice={2} corAcento={corEscura.acentos[2 % corEscura.acentos.length]}>
         {processosAtividadeHoje.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
         ) : (
@@ -267,7 +268,7 @@ export default function PainelDashboard({
         )}
       </CardBento>
 
-      <CardBento titulo="Prazos da semana" subtitulo="Contratos ativos com prazo nos próximos 7 dias" indice={3}>
+      <CardBento titulo="Prazos da semana" subtitulo="Contratos ativos com prazo nos próximos 7 dias" indice={3} corAcento={corEscura.acentos[3 % corEscura.acentos.length]}>
         {prazosDaSemana.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum prazo nos próximos 7 dias.</p>
         ) : (
@@ -291,7 +292,7 @@ export default function PainelDashboard({
         )}
       </CardBento>
 
-      <CardBento titulo="Divisão por coordenação" subtitulo="Contratos ativos" indice={4}>
+      <CardBento titulo="Divisão por coordenação" subtitulo="Contratos ativos" indice={4} corAcento={corEscura.acentos[4 % corEscura.acentos.length]}>
         {divisaoPorCoordenacao.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
         ) : (
@@ -316,7 +317,7 @@ export default function PainelDashboard({
         )}
       </CardBento>
 
-      <CardBento titulo="Contratos por etapa" indice={5}>
+      <CardBento titulo="Contratos por etapa" indice={5} corAcento={corEscura.acentos[0]}>
         {dadosEtapas.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
         ) : (
@@ -335,7 +336,7 @@ export default function PainelDashboard({
         )}
       </CardBento>
 
-      <CardBento titulo="Eventos" subtitulo="Quantos contratos ativos têm cada evento agora" indice={6}>
+      <CardBento titulo="Eventos" subtitulo="Quantos contratos ativos têm cada evento agora" indice={6} corAcento={corEscura.acentos[1]}>
         {dadosEventos.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo no momento.</p>
         ) : (

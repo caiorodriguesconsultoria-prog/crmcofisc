@@ -17,6 +17,7 @@ export default function CardBento({
   indice = 0,
   children,
   style,
+  corAcento,
 }: {
   titulo?: string;
   subtitulo?: string;
@@ -28,6 +29,9 @@ export default function CardBento({
   indice?: number;
   children?: React.ReactNode;
   style?: React.CSSProperties;
+  /** Faixa colorida na borda esquerda (protótipo do tema escuro/Furniture
+   * CRM) — opcional, não usado no resto do sistema. */
+  corAcento?: string;
 }) {
   const reduzido = useReducedMotion();
   const podeHover = usarPodeHover();
@@ -58,6 +62,7 @@ export default function CardBento({
         padding: 24,
         cursor: clicavel ? "pointer" : undefined,
         boxShadow: "0 0px 0px rgba(32,31,29,0)",
+        ...(corAcento ? { borderLeft: `5px solid ${corAcento}` } : null),
         ...style,
       }}
     >
