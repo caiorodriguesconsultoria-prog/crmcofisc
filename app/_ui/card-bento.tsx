@@ -18,6 +18,7 @@ export default function CardBento({
   children,
   style,
   corAcento,
+  vidro,
 }: {
   titulo?: string;
   subtitulo?: string;
@@ -32,6 +33,12 @@ export default function CardBento({
   /** Faixa colorida na borda esquerda (protótipo do tema escuro/Furniture
    * CRM) — opcional, não usado no resto do sistema. */
   corAcento?: string;
+  /** Material "vidro" (Liquid Glass) — branco translúcido + blur, em vez de
+   * opaco. Pedido do Caio pra imitar o material do sistema operacional novo
+   * da Apple. Fica melhor sobre fundo escuro/colorido (ver temaEscuro no
+   * Painel) — texto escuro continua legível porque o vidro aqui é claro
+   * (frosted), não invertido pra escuro. */
+  vidro?: boolean;
 }) {
   const reduzido = useReducedMotion();
   const podeHover = usarPodeHover();
@@ -55,6 +62,7 @@ export default function CardBento({
           ? { scale: 0.97, transition: movimento.springPress }
           : undefined
       }
+      className={vidro ? "crm-cartao-vidro" : undefined}
       style={{
         background: cor.branco,
         borderRadius: pequeno ? raio.cardPequeno : raio.card,
