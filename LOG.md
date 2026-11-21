@@ -1125,3 +1125,12 @@ Como é uma virada de tema grande (reconstrução visual, não um ajuste), confi
 Fonte: mantive a Urbanist que já está em uso (pesos mais fortes já disponíveis) em vez de trocar de fonte — se o Caio quiser bater mais fiel com a fonte do vídeo, preciso que ele identifique/mande o nome dela (não dá pra ter certeza só pelo print).
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Protótipo: widgets em vidro (Liquid Glass) no Painel
+Continuação do protótipo de tema escuro — Caio pediu o material "vidro" do sistema operacional novo da Apple nos widgets/listas.
+
+- `CardBento` ganha prop opcional `vidro`: fundo branco translúcido (55% de opacidade) + blur (`backdrop-filter: blur(20px) saturate(160%)`), borda clara com o topo mais brilhante (luz "pegando" a borda de cima, como no material real da Apple), sombra mais funda (`0 8px 32px`) — regra em `.crm-cartao-vidro` no CSS, não inline, justamente pra poder ter `@media (prefers-reduced-transparency: reduce)`: quem pediu menos transparência no sistema recebe o card praticamente sólido, sem blur, em vez do vidro.
+- Mantive o vidro **claro** (não invertido pra escuro) de propósito: o texto de dentro dos cards continua com as mesmas cores escuras de sempre (`cor.texto` etc.) e continua legível, porque o "vidro" aqui é um branco borrado, não um vidro escuro — evita ter que reescrever a cor de cada texto dentro do Painel pra uma variante clara.
+- Aplicado nos mesmos cards que já tinham `corAcento` (KPIs, Agenda de hoje, Prazos da semana, Divisão por coordenação, Contratos por etapa, Eventos) — todos no mesmo lote, já que fazem parte do mesmo protótipo de tema escuro.
+
+Build e `tsc --noEmit` limpos. Sem migração.
