@@ -1090,3 +1090,14 @@ Item 8 do pedido do Caio.
 - **Mesma lacuna da Agenda, encontrada aqui também**: o cálculo de "próximo agendamento" de cada contrato só considerava tarefas de origem "evento" (ignorava tarefa criada dentro do grupo "Kanban" com data marcada) e nunca considerava andamentos com data marcada. Corrigido do mesmo jeito que na Agenda — sem isso, o próprio recurso de "evento hoje primeiro" ficaria incompleto pelas mesmas causas.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Etapas do contrato (checklist c/ data) + tags em tarefas — AGUARDANDO MIGRAÇÃO
+Itens 6 e 7 do pedido do Caio. Depende de duas migrações novas que ele precisa rodar manualmente no Supabase antes do merge pra `main` (`supabase/migrations/0046_processo_etapas.sql` e `0047_tarefa_tags.sql`).
+
+**Item 6 — lista de etapas do contrato**: nova tabela `processo_etapas` (nome, data opcional, concluída, ordem), independente da etapa única do Kanban (`processos.etapa_atual` não foi tocado — continua controlando o quadro sozinho). Criadas na mão, uma a uma, sem lista padrão automática — confirmado com o Caio via pergunta direta. Nova seção "Etapas do contrato" na tela do processo, componente novo `app/processos/[id]/etapas.tsx`, no mesmo padrão visual/interação do checklist de tarefas que já existia (arrastar pra reordenar, marcar concluída, data opcional por item).
+
+**Item 7 — tags em tarefas manuais**: nova tabela `tarefa_tags` (mesmo padrão de `andamento_tags`, migração 0023). Tarefas criadas no checklist agora podem ser marcadas com tag(s) de evento — aparecem **coladas antes do texto da tarefa** (pedido específico do Caio, diferente de andamentos, onde as tags aparecem depois do texto).
+
+**Achado à parte, não mexido ainda**: ao investigar isso, percebi que tarefas de origem "evento" (quando um evento é ativado no contrato) são geradas no banco mas **nunca aparecem na tela** — só o grupo "Tarefas" do Kanban é renderizado em `checklist.tsx`; os grupos de evento são computados em `conteudo.tsx` (variável `gruposTarefas`) mas não têm nenhum lugar que os exiba. Parece um checklist "invisível" — vale conversar com o Caio se isso deveria aparecer em algum lugar.
+
+Build e `tsc --noEmit` limpos. **NÃO mergeado pra `main`** — aguardando o Caio confirmar que rodou as duas migrações no Supabase.

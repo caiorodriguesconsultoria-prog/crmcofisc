@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
 import { sincronizarGoogle } from "@/lib/google-sync-cliente";
+import { corEvento } from "@/lib/cores-evento";
+
+type Tag = { id: string; valor: string; cor?: string | null };
 
 type Tarefa = {
   id: string;
@@ -12,6 +15,7 @@ type Tarefa = {
   concluida: boolean;
   agendamentoData: string | null;
   googleEventId: string | null;
+  tags: Tag[];
 };
 type Grupo = { origemId: string; origemTipo: string; nome: string; tarefas: Tarefa[] };
 type Observacao = { id: string; texto: string; autor: string | null; criadoEm: string };
@@ -111,6 +115,26 @@ function ListaTarefas({
                 color: t.concluida ? cor.textoTerciario : cor.texto,
               }}
             >
+              {t.tags.map((tag) => {
+                const c = corEvento(tag.id, tag.cor);
+                return (
+                  <span
+                    key={tag.id}
+                    style={{
+                      display: "inline-block",
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      color: c.texto,
+                      background: c.fundo,
+                      borderRadius: 7,
+                      padding: "1px 6px",
+                      marginRight: 5,
+                    }}
+                  >
+                    {tag.valor}
+                  </span>
+                );
+              })}
               {t.label}
             </span>
             <button
@@ -218,11 +242,13 @@ export default function Checklist({
   autorId,
   numeroContrato,
   grupos,
+  tagsDisponiveis,
 }: {
   processoId: string;
   autorId: string | null;
   numeroContrato: string;
   grupos: Grupo[];
+  tagsDisponiveis: Tag[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -232,6 +258,7 @@ export default function Checklist({
   const [novaTarefaEm, setNovaTarefaEm] = useState<string | null>(null);
   const [tarefaLabel, setTarefaLabel] = useState("");
   const [tarefaData, setTarefaData] = useState("");
+  const [tarefaTagIds, setTarefaTagIds] = useState<string[]>([]);
   const [modalTarefaId, setModalTarefaId] = useState<string | null>(null);
   const [modalObservacoes, setModalObservacoes] = useState<Observacao[] | null>(null);
   const [novaObs, setNovaObs] = useState("");
@@ -334,6 +361,11 @@ export default function Checklist({
       setErro(error.message);
       return;
     }
+    if (criada && tarefaTagIds.length > 0) {
+      await supabase
+        .from("tarefa_tags")
+        .insert(tarefaTagIds.map((tagId) => ({ tarefa_id: criada.id, tag_id: tagId })));
+    }
     if (criada && tarefaData) {
       sincronizarGoogle({
         tipo: "tarefa",
@@ -349,6 +381,7 @@ export default function Checklist({
     setNovaTarefaEm(null);
     setTarefaLabel("");
     setTarefaData("");
+    setTarefaTagIds([]);
     router.refresh();
   }
 
@@ -387,31 +420,81 @@ export default function Checklist({
       <div
         style={{
           display: "flex",
-          flexWrap: "wrap",
+          flexDirection: "column",
           gap: 8,
           padding: 10,
           background: cor.fundo,
           borderRadius: 10,
-          alignItems: "center",
         }}
       >
-        <input
-          placeholder="O que precisa ser feito?"
-          value={tarefaLabel}
-          onChange={(e) => setTarefaLabel(e.target.value)}
-          style={{ padding: 6, flex: 1, minWidth: 160 }}
-        />
-        <input type="date" value={tarefaData} onChange={(e) => setTarefaData(e.target.value)} style={{ padding: 6 }} />
-        <button
-          onClick={() => adicionarTarefa(grupo)}
-          disabled={carregando === "nova-tarefa" || !tarefaLabel.trim()}
-          style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}
-        >
-          Salvar
-        </button>
-        <button onClick={() => setNovaTarefaEm(null)} disabled={carregando === "nova-tarefa"} style={{ fontSize: 11 }}>
-          Cancelar
-        </button>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          <input
+            placeholder="O que precisa ser feito?"
+            value={tarefaLabel}
+            onChange={(e) => setTarefaLabel(e.target.value)}
+            style={{ padding: 6, flex: 1, minWidth: 160 }}
+          />
+          <input type="date" value={tarefaData} onChange={(e) => setTarefaData(e.target.value)} style={{ padding: 6 }} />
+          <button
+            onClick={() => adicionarTarefa(grupo)}
+            disabled={carregando === "nova-tarefa" || !tarefaLabel.trim()}
+            style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}
+          >
+            Salvar
+          </button>
+          <button onClick={() => setNovaTarefaEm(null)} disabled={carregando === "nova-tarefa"} style={{ fontSize: 11 }}>
+            Cancelar
+          </button>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) setTarefaTagIds((ids) => [...ids, e.target.value]);
+            }}
+            style={{ padding: 6, fontSize: 12 }}
+          >
+            <option value="">+ Marcar tag de evento...</option>
+            {tagsDisponiveis
+              .filter((t) => !tarefaTagIds.includes(t.id))
+              .map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.valor}
+                </option>
+              ))}
+          </select>
+          {tarefaTagIds.map((id) => {
+            const t = tagsDisponiveis.find((x) => x.id === id);
+            if (!t) return null;
+            const c = corEvento(t.id, t.cor);
+            return (
+              <span
+                key={id}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: c.texto,
+                  background: c.fundo,
+                  borderRadius: 7,
+                  padding: "2px 7px",
+                }}
+              >
+                {t.valor}
+                <button
+                  type="button"
+                  onClick={() => setTarefaTagIds((ids) => ids.filter((x) => x !== id))}
+                  aria-label={`Remover ${t.valor}`}
+                  style={{ border: "none", background: "transparent", color: c.texto, fontSize: 10, cursor: "pointer", padding: 0 }}
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
+        </div>
       </div>
     ) : (
       <button

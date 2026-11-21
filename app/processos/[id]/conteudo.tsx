@@ -7,6 +7,7 @@ import Cobertura from "./cobertura";
 import ConcluirCoberturaBotao from "./concluir-cobertura-botao";
 import ConcluirContratoBotao from "./concluir-contrato-botao";
 import Checklist from "./checklist";
+import Etapas from "./etapas";
 import GestaoFiscalizacao from "./gestao-fiscalizacao";
 import DadosPrincipais from "./dados-principais";
 import DadosProcesso from "./dados-processo";
@@ -210,9 +211,15 @@ export async function carregarProcesso(id: string) {
     nomeOrigem.set(t.id, (t as any).tags?.valor ?? "Evento");
   }
 
+  const { data: etapasRaw } = await supabase
+    .from("processo_etapas")
+    .select("id, nome, data, concluida")
+    .eq("processo_id", id)
+    .order("ordem");
+
   const { data: tarefasRaw } = await supabase
     .from("processo_tarefas")
-    .select("id, origem_tipo, origem_id, ordem, label, concluida, agendamento_data, google_event_id")
+    .select("id, origem_tipo, origem_id, ordem, label, concluida, agendamento_data, google_event_id, tarefa_tags(tags(id, valor, cor))")
     .eq("processo_id", id)
     .in("origem_id", origensAtivas.length > 0 ? origensAtivas : ["00000000-0000-0000-0000-000000000000"])
     .order("ordem");
@@ -223,6 +230,7 @@ export async function carregarProcesso(id: string) {
     concluida: boolean;
     agendamentoData: string | null;
     googleEventId: string | null;
+    tags: { id: string; valor: string; cor: string | null }[];
   };
 
   const CHAVE_KANBAN_MERGE = "kanban-tarefas";
@@ -243,6 +251,9 @@ export async function carregarProcesso(id: string) {
       concluida: t.concluida,
       agendamentoData: t.agendamento_data,
       googleEventId: t.google_event_id,
+      tags: ((t as any).tarefa_tags ?? [])
+        .map((tt: any) => tt.tags)
+        .filter((tag: any): tag is { id: string; valor: string; cor: string | null } => !!tag),
     });
     acc.set(chave, grupo);
     return acc;
@@ -431,6 +442,11 @@ export async function carregarProcesso(id: string) {
 
   const conteudoAndamentos = (
     <div>
+      <CartaoColapsavel titulo="Etapas do contrato" abertoInicial={true}>
+        <Etapas processoId={p.id} etapas={etapasRaw ?? []} />
+      </CartaoColapsavel>
+
+      <div style={{ marginTop: 16 }}>
       <CartaoColapsavel titulo="Andamento e Tarefas" abertoInicial={true}>
         <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${cor.borda}` }}>
           <EtapaAtual processoId={p.id} etapaAtual={p.etapa_atual} etapasDisponiveis={etapasDisponiveis ?? []} />
@@ -441,6 +457,7 @@ export async function carregarProcesso(id: string) {
             autorId={pessoaAtual?.id ?? null}
             numeroContrato={numeroContratoSemSei(p.numero_contrato)}
             grupos={gruposTarefas}
+            tagsDisponiveis={tagsDisponiveis ?? []}
           />
         </div>
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${cor.borda}` }}>
@@ -452,6 +469,7 @@ export async function carregarProcesso(id: string) {
           />
         </div>
       </CartaoColapsavel>
+      </div>
 
       <div style={{ marginTop: 16 }}>
         <CartaoColapsavel titulo="Histórico" abertoInicial={false}>
