@@ -1064,3 +1064,12 @@ Caio pediu explicitamente pra aplicar a skill "unslop" (comunidade), mesmo saben
 **Não mexi** na paleta viva dos gráficos (`PALETA_VIVA`, pizza de etapas/eventos) nem no gradiente do selo "COFISC" na BarraTopo/ícones do PWA — são dado categórico (precisa de cor diferenciada por categoria pra ser legível) e marca, respectivamente, não "chrome" de tela — mas fica registrado caso o Caio queira que eu mexa neles também.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Bug corrigido: Agenda não mostrava eventos vindos de andamentos
+Caio reportou que "Eventos de hoje" (Painel) e "agenda da semana" (tela Agenda) não mostravam tudo — só alguns eventos apareciam.
+
+Causa: a tela de Agenda (`app/agenda/page.tsx`, usada pelos componentes `Semana` e `Calendario`) só buscava `processo_agendamentos` e `processo_tarefas` — nunca buscou a tabela `andamentos` com `agendamento_data`/`agendamento_horario` preenchidos. O Painel (`app/dashboard/page.tsx`) já incluía andamentos agendados no card "Agenda de hoje" há tempos; a Agenda de verdade nunca incluiu. Resultado: um andamento com data marcada aparecia no Painel mas sumia na Agenda — exatamente o "só alguns aparecem" que ele descreveu.
+
+Corrigido: adicionada a mesma busca de `andamentos` (filtrando só `agendamento_data` preenchido) em `app/agenda/page.tsx`, mesclada no array `agendamentos` que já alimenta `Semana` e `Calendario` — sem mudar nenhum dos dois componentes, só a fonte de dados.
+
+Build e `tsc --noEmit` limpos. Sem migração.

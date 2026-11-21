@@ -40,6 +40,7 @@ export default async function AgendaPage({
     { data: processos, error },
     { data: agendamentosRaw },
     { data: tarefasAgendadasRaw },
+    { data: andamentosAgendadosRaw },
     { count: contagemProcessosAtivosRaw },
   ] = await Promise.all([
     supabase
@@ -59,6 +60,14 @@ export default async function AgendaPage({
       .from("processo_tarefas")
       .select("id, label, agendamento_data, processos(id, numero_contrato)")
       .eq("concluida", false)
+      .not("agendamento_data", "is", null)
+      .order("agendamento_data"),
+    // Andamentos com data/horário marcado — já apareciam em "Agenda de hoje"
+    // no Painel, mas nunca tinham entrado aqui na Agenda de verdade (semana
+    // e calendário), o que fazia parecer que "só alguns" eventos apareciam.
+    supabase
+      .from("andamentos")
+      .select("id, processo_id, texto, agendamento_data, agendamento_horario, processos(id, numero_contrato)")
       .not("agendamento_data", "is", null)
       .order("agendamento_data"),
     // Pra BarraTopo — mesmo cálculo simples já usado em /dashboard e
@@ -98,6 +107,16 @@ export default async function AgendaPage({
         data: t.agendamento_data as string,
         horario: HORARIO_TAREFA,
         observacao: t.label as string | null,
+      })),
+    ...(andamentosAgendadosRaw ?? [])
+      .filter((a: any) => a.processos)
+      .map((a: any) => ({
+        id: a.id,
+        processoId: a.processos.id,
+        numeroContrato: numeroContratoSemSei(a.processos.numero_contrato),
+        data: a.agendamento_data as string,
+        horario: (a.agendamento_horario as string) || HORARIO_TAREFA,
+        observacao: a.texto as string | null,
       })),
   ];
 
