@@ -163,8 +163,9 @@ export default function ListaProcessos({
   }, [searchParams]);
 
   const filtrados = useMemo(() => {
+    const hoje = new Date().toISOString().slice(0, 10);
     const termo = busca.trim().toLowerCase();
-    return processos.filter((p) => {
+    const lista = processos.filter((p) => {
       const concluido = p.situacao === "concluido";
       if (aba === "ativos" && concluido) return false;
       if (aba === "concluidos" && !concluido) return false;
@@ -184,6 +185,11 @@ export default function ListaProcessos({
         return false;
       return true;
     });
+    // Contrato com evento agendado pra hoje sobe pro topo da lista (pedido
+    // do Caio) — sort é estável (Array.prototype.sort em todo navegador
+    // moderno), então quem não tem evento hoje mantém a ordem que já tinha.
+    const comEventoHoje = (p: Processo) => p.proximoAgendamento?.data === hoje;
+    return [...lista].sort((a, b) => Number(comEventoHoje(b)) - Number(comEventoHoje(a)));
   }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, somenteAtrasados, somenteDesatualizados, busca, aba]);
 
   const totalConcluidos = useMemo(() => processos.filter((p) => p.situacao === "concluido").length, [processos]);
