@@ -1101,3 +1101,12 @@ Itens 6 e 7 do pedido do Caio. Depende de duas migrações novas que ele precisa
 **Achado à parte, não mexido ainda**: ao investigar isso, percebi que tarefas de origem "evento" (quando um evento é ativado no contrato) são geradas no banco mas **nunca aparecem na tela** — só o grupo "Tarefas" do Kanban é renderizado em `checklist.tsx`; os grupos de evento são computados em `conteudo.tsx` (variável `gruposTarefas`) mas não têm nenhum lugar que os exiba. Parece um checklist "invisível" — vale conversar com o Caio se isso deveria aparecer em algum lugar.
 
 Build e `tsc --noEmit` limpos. **NÃO mergeado pra `main`** — aguardando o Caio confirmar que rodou as duas migrações no Supabase.
+
+## 2026-11-21 · Checklist de evento voltou a aparecer na tela
+Caio confirmou que queria trazer de volta o checklist por evento, achado na investigação anterior.
+
+`checklist.tsx` renderizava só o grupo "Tarefas" do Kanban (`grupoKanban`), ignorando os demais grupos recebidos via prop (`grupos`) — os checklists gerados automaticamente quando um evento é ativado ficavam só no banco, nunca em tela. Generalizei o render pra percorrer TODOS os grupos (`grupos.map(...)`), cada um com seu próprio cabeçalho recolhível (nome do evento, ou "Tarefas" pro Kanban) e progresso — estado de aberto/fechado agora por grupo (`Set` com os que o Caio fechou manualmente), não um único booleano fixo.
+
+Faz parte do mesmo commit dos itens 6/7, ainda aguardando o Caio rodar as duas migrações antes do merge pra `main`.
+
+Build e `tsc --noEmit` limpos. Sem migração nova (reaproveita o que já existia).

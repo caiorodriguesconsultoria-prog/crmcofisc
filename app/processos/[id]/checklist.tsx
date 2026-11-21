@@ -254,7 +254,9 @@ export default function Checklist({
   const supabase = createClient();
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState<string | null>(null);
-  const [abertoTarefas, setAbertoTarefas] = useState(true);
+  // Fechado por padrão nenhum grupo — cada grupo (Kanban + um por evento
+  // ativo) começa aberto; guarda só quem o Caio fechou manualmente.
+  const [gruposFechados, setGruposFechados] = useState<Set<string>>(new Set());
   const [novaTarefaEm, setNovaTarefaEm] = useState<string | null>(null);
   const [tarefaLabel, setTarefaLabel] = useState("");
   const [tarefaData, setTarefaData] = useState("");
@@ -263,8 +265,6 @@ export default function Checklist({
   const [modalObservacoes, setModalObservacoes] = useState<Observacao[] | null>(null);
   const [novaObs, setNovaObs] = useState("");
   const [salvandoObs, setSalvandoObs] = useState(false);
-
-  const grupoKanban = grupos.find((g) => g.origemTipo === "kanban");
 
   async function alternar(tarefa: Tarefa) {
     setErro(null);
@@ -507,34 +507,46 @@ export default function Checklist({
     );
   }
 
+  function alternarGrupo(origemId: string) {
+    setGruposFechados((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(origemId)) novo.delete(origemId);
+      else novo.add(origemId);
+      return novo;
+    });
+  }
+
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {grupoKanban && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <CabecalhoRecolhivel titulo="Tarefas" aberto={abertoTarefas} onToggle={() => setAbertoTarefas((a) => !a)} />
-            <div style={{ flex: 1 }}>
-              <Progresso
-                concluidas={grupoKanban.tarefas.filter((t) => t.concluida).length}
-                total={grupoKanban.tarefas.length}
-              />
+      {grupos.map((grupo) => {
+        const aberto = !gruposFechados.has(grupo.origemId);
+        return (
+          <div key={grupo.origemId} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <CabecalhoRecolhivel titulo={grupo.nome} aberto={aberto} onToggle={() => alternarGrupo(grupo.origemId)} />
+              <div style={{ flex: 1 }}>
+                <Progresso
+                  concluidas={grupo.tarefas.filter((t) => t.concluida).length}
+                  total={grupo.tarefas.length}
+                />
+              </div>
             </div>
+            {aberto && (
+              <>
+                <ListaTarefas
+                  tarefas={grupo.tarefas}
+                  carregando={carregando}
+                  onAlternar={alternar}
+                  onAgendar={agendar}
+                  onReordenar={reordenar}
+                  onObservar={abrirObservacoes}
+                />
+                {formularioNovaTarefa(grupo)}
+              </>
+            )}
           </div>
-          {abertoTarefas && (
-            <>
-              <ListaTarefas
-                tarefas={grupoKanban.tarefas}
-                carregando={carregando}
-                onAlternar={alternar}
-                onAgendar={agendar}
-                onReordenar={reordenar}
-                onObservar={abrirObservacoes}
-              />
-              {formularioNovaTarefa(grupoKanban)}
-            </>
-          )}
-        </div>
-      )}
+        );
+      })}
 
       {erro && <p style={{ color: cor.urgente, margin: 0 }}>{erro}</p>}
 
