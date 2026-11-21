@@ -33,14 +33,22 @@ a {
    navegação, tags de coordenação etc.) — o Caio não notava diferença no
    hover antes disso existir. Só dispara com mouse de verdade, nunca "preso"
    depois de um toque. */
+/* Curva com leve "ultrapassar e voltar" (aproxima o efeito de mola do
+   framer-motion em CSS puro, onde não dá pra usar spring de verdade) — ver
+   movimento.springHover em lib/theme.ts, usado nos mesmos elementos que têm
+   JS (CardBento). */
 .crm-pilula-hover {
-  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease, background 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, background 0.15s ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .crm-pilula-hover:hover {
     transform: translateY(-2px) scale(1.04);
     box-shadow: 0 6px 16px rgba(32, 31, 29, 0.14);
   }
+}
+.crm-pilula-hover:active {
+  transform: scale(0.96);
+  transition-duration: 0.1s;
 }
 
 button {
@@ -53,10 +61,23 @@ button {
   border-radius: 10px;
   padding: 8px 14px;
   cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 button:hover {
   background: #f8f4f4;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* :focus-visible (não :focus) — o anel só aparece pra quem navega pelo
+   teclado; clique de mouse não acende o anel, igual ao padrão da Apple e
+   do resto do sistema (inputs já faziam isso). */
+button:focus-visible {
+  outline: 2px solid rgba(47, 95, 219, 0.35);
+  outline-offset: 1px;
 }
 
 button:disabled {
