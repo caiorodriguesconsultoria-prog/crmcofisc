@@ -162,7 +162,7 @@ export default async function ProcessosPage({
       <Painel
         titulo={titulo}
         subtitulo={titulo !== "Contratos" ? "Contratos" : undefined}
-        maxWidth={1300}
+        maxWidth={1800}
         // <a> normal (não o <Link> do Next) de propósito — /processos/novo tem o
         // mesmo formato de URL que a rota interceptada do modal /processos/[id],
         // e navegação client-side acaba caindo no modal tratando "novo" como id.

@@ -1073,3 +1073,12 @@ Causa: a tela de Agenda (`app/agenda/page.tsx`, usada pelos componentes `Semana`
 Corrigido: adicionada a mesma busca de `andamentos` (filtrando só `agendamento_data` preenchido) em `app/agenda/page.tsx`, mesclada no array `agendamentos` que já alimenta `Semana` e `Calendario` — sem mudar nenhum dos dois componentes, só a fonte de dados.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Contratos: tela mais larga, fonte maior, linha "levanta" no hover
+Itens 1, 2 e 3 do pedido do Caio, agrupados por serem todos na tela de Contratos.
+
+- **Largura**: `/processos` e `/processos/concluidos` de `maxWidth={1300}` pra `1800` — mesmo padrão já usado no Painel.
+- **Fonte**: regra global `table` (13px→14px) e `th` (11px→12px) — vale pra toda tabela do sistema, não só Contratos. Nos badges específicos da lista de Contratos (Entrega Atrasada, Relatório, Etapa, tags de evento, próximo agendamento), que estavam ainda menores que isso (9.5 a 11px), bumped pra 11-13.5px.
+- **Hover "levanta"**: linha da tabela ganhou `.crm-linha-hover` — como a tabela usa `border-collapse`, o efeito (leve subida + sombra, mesma curva com "ultrapassar e voltar" das pílulas) vai aplicado no `<td>`, não na `<tr>` diretamente (box-shadow/transform em `<tr>` não funciona bem com collapse). Visualmente a linha inteira sobe junto.
+
+Build e `tsc --noEmit` limpos. Sem migração.
