@@ -20,7 +20,7 @@ export default function TituloDestaque({
         borderRadius: 12,
       }}
     >
-      <span style={{ fontSize, fontWeight: 800, color: cor.texto, letterSpacing: -0.3, lineHeight: 1 }}>
+      <span style={{ fontSize, fontWeight: 700, color: cor.texto, letterSpacing: -0.3, lineHeight: 1 }}>
         {children}
       </span>
     </h1>
