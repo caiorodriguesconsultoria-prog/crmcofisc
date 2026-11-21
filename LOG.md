@@ -1053,3 +1053,14 @@ Build e `tsc --noEmit` limpos. Sem migração.
 Os botões globais (`button` nativo) já herdam automaticamente o feedback de clique e o anel de foco da rodada 1 em qualquer tela nova, sem precisar editar arquivo por arquivo — confirmado checando onClick em telas como fornecedores e coordenações.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Reversão do degradê — aplicando regras de cor da "unslop"
+Caio pediu explicitamente pra aplicar a skill "unslop" (comunidade), mesmo sabendo que ela desfaz o degradê de fundo e os KPIs coloridos aprovados antes — perguntei de novo pra confirmar e ele escolheu desfazer. Em vez de instalar o plugin de verdade dentro da sessão (rodar `claude plugin install` aninhado é arriscado/instável neste tipo de ambiente), apliquei as regras de cor dela diretamente — mesmo resultado visual, sem o risco.
+
+- **Fundo (`app/layout.tsx`)**: degradê multi-tom → `cor.fundo` (cor plana neutra, já usada em todo o resto do sistema).
+- **KPIs do Painel (`app/dashboard/painel-dashboard.tsx`)**: cada card tinha seu próprio fundo colorido/degradê (5 tons de "chrome" diferentes na mesma tela) — voltou pro branco padrão do `CardBento`; a cor virou só do número (`corNumero`), que já existia. Regra da unslop: cor fica no conteúdo, não espalhada pelo fundo.
+- **KPIs de `/dados`**: mesmo ajuste — fundo em degradê → fundo plano do `card`, cor só no número.
+
+**Não mexi** na paleta viva dos gráficos (`PALETA_VIVA`, pizza de etapas/eventos) nem no gradiente do selo "COFISC" na BarraTopo/ícones do PWA — são dado categórico (precisa de cor diferenciada por categoria pra ser legível) e marca, respectivamente, não "chrome" de tela — mas fica registrado caso o Caio queira que eu mexa neles também.
+
+Build e `tsc --noEmit` limpos. Sem migração.

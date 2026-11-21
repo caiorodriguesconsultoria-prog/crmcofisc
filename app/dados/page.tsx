@@ -119,15 +119,14 @@ export default async function DadosPage() {
       <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           {[
-            { rotulo: "Tempo médio aguardando assinatura", valor: formatarDias(mediaAssinatura), cor: cor.amarelo, fundo: cor.amareloFundo },
-            { rotulo: "Tempo médio de conclusão", valor: formatarDias(mediaConclusao), cor: cor.positivo, fundo: cor.positivoFundo },
+            { rotulo: "Tempo médio aguardando assinatura", valor: formatarDias(mediaAssinatura), cor: cor.amarelo },
+            { rotulo: "Tempo médio de conclusão", valor: formatarDias(mediaConclusao), cor: cor.positivo },
             {
               rotulo: "Contratos entregues com atraso",
               valor: String(processosComAtraso),
               cor: processosComAtraso > 0 ? cor.urgente : cor.textoSecundario,
-              fundo: processosComAtraso > 0 ? cor.urgenteFundo : cor.fundo,
             },
-            { rotulo: "Tempo médio de atraso (dos que atrasaram)", valor: formatarDias(mediaAtraso), cor: cor.laranja, fundo: cor.laranjaFundo },
+            { rotulo: "Tempo médio de atraso (dos que atrasaram)", valor: formatarDias(mediaAtraso), cor: cor.laranja },
           ].map((kpi) => (
             <div
               key={kpi.rotulo}
@@ -136,8 +135,6 @@ export default async function DadosPage() {
                 flex: "1 1 220px",
                 display: "flex",
                 flexDirection: "column",
-                background: `linear-gradient(160deg, ${kpi.fundo} 0%, #FFFFFF 85%)`,
-                border: "none",
               }}
             >
               <span

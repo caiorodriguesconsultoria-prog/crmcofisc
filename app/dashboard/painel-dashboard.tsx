@@ -106,29 +106,27 @@ export default function PainelDashboard({
     .map((ev) => ({ nome: ev.valor, valor: contagemPorEvento[ev.id] ?? 0, cor: corEvento(ev.id, ev.cor).texto }))
     .filter((d) => d.valor > 0);
 
-  // Cada KPI com seu próprio fundo em degradê — a 1ª versão usava tons
-  // quase brancos (ficou sutil demais, "igual a antes"); agora usa os
-  // mesmos tons de fundo que os badges de status já usam em todo o
-  // sistema (cor.*Fundo — mais saturados, visivelmente coloridos) com um
-  // degradê pra branco só na metade de baixo do card.
+  // Fundo do card em branco plano, igual a todos os outros cards do
+  // sistema — cada KPI tinha um fundo colorido/degradê diferente (5 tons de
+  // "chrome" diferentes na mesma tela), que é exatamente o padrão que a
+  // auditoria de design pede pra evitar: cor deve ficar no conteúdo (o
+  // número, via corNumero), não espalhada pelo fundo do card.
   const kpis = [
-    { rotulo: "Contratos ativos", valor: ativos, corNumero: cor.azulEscuro, degrade: `linear-gradient(160deg, ${cor.azulFundo} 0%, #FFFFFF 85%)` },
+    { rotulo: "Contratos ativos", valor: ativos, corNumero: cor.azulEscuro },
     {
       rotulo: "Vencem em 7 dias",
       valor: vencemEm7Dias,
       corNumero: cor.laranja,
-      degrade: `linear-gradient(160deg, ${cor.laranjaFundo} 0%, #FFFFFF 85%)`,
       variacao: vencemEm7Dias > 0 ? { texto: "atenção à agenda", sentido: "negativo" as const } : undefined,
     },
-    { rotulo: "Com ocorrência", valor: comOcorrencia, corNumero: cor.destaqueQuente, degrade: `linear-gradient(160deg, ${cor.destaqueQuenteFundo} 0%, #FFFFFF 85%)` },
+    { rotulo: "Com ocorrência", valor: comOcorrencia, corNumero: cor.destaqueQuente },
     {
       rotulo: "Vencendo hoje",
       valor: vencendoHoje,
       corNumero: cor.vermelhoEscuro,
-      degrade: `linear-gradient(160deg, ${cor.vermelhoEscuroFundo} 0%, #FFFFFF 85%)`,
       variacao: vencendoHoje > 0 ? { texto: "agir hoje", sentido: "negativo" as const } : undefined,
     },
-    { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, degrade: `linear-gradient(160deg, ${cor.verdeEscuroFundo} 0%, #FFFFFF 85%)`, href: "/processos/concluidos" },
+    { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, href: "/processos/concluidos" },
   ];
 
   return (
@@ -136,7 +134,7 @@ export default function PainelDashboard({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
         {kpis.map((k, i) => {
           const conteudo = (
-            <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} style={{ background: k.degrade, border: "none" }}>
+            <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href}>
               <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} variacao={k.variacao} />
             </CardBento>
           );
