@@ -111,7 +111,10 @@ export const card: React.CSSProperties = {
 };
 
 export const botaoPrimario: React.CSSProperties = {
-  background: `linear-gradient(180deg, #4C7EF0, ${cor.azul})`,
+  // Cor plana — gradiente em botão é um dos sinais mais comuns de "cara de
+  // IA" (ver auditoria de design, rodada 2); cor sólida com peso tipográfico
+  // já comunica hierarquia sem precisar de efeito.
+  background: cor.azul,
   color: "#fff",
   fontSize: 13,
   fontWeight: 700,
@@ -127,16 +130,6 @@ export const pill: React.CSSProperties = {
   borderRadius: 20,
   padding: "4px 10px",
   display: "inline-block",
-};
-
-// Título em destaque (gradiente azul) — usado nos cabeçalhos dos painéis
-// (Painel/PainelAlto/PainelAltoModal), pra dar mais vida ao topo de cada tela.
-export const tituloDestaque: React.CSSProperties = {
-  backgroundImage: `linear-gradient(90deg, ${cor.azulEscuro}, ${cor.azul} 55%, #6C93F5)`,
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  color: "transparent",
-  letterSpacing: -0.3,
 };
 
 // Lista de cores pra distinguir tags de evento entre si (Kanban, Painel do

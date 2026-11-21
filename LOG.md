@@ -1036,3 +1036,11 @@ Primeira rodada (itens de menor risco, maior efeito "sensação física"):
 Deixei de fora, por enquanto, o que mexe em mais telas ou é decisão de paleta já tomada por ele: botão primário e título dos painéis em gradiente azul (trocar por cor plana — próxima rodada), ícones Lucide, z-index sem escala central.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Rodada 2 Apple-like: botão primário sem gradiente
+Continuação da auditoria de design — item que tinha ficado pra uma rodada separada por mexer em mais telas.
+
+- **`botaoPrimario` (lib/theme.ts)**: gradiente azul → cor plana (`cor.azul`). É aplicado via um único objeto de estilo em ~18 arquivos (botão "Entrar", "+ Nova coordenação" etc.), então a troca é no ponto central — nenhum arquivo precisou ser tocado individualmente.
+- **`tituloDestaque` (lib/theme.ts)**: removido — era um estilo de título em gradiente de texto que não tinha nenhum uso real no código (`TituloDestaque` em `app/_ui/titulo.tsx`, o componente de verdade usado nos painéis, já usa texto em cor sólida sobre uma pílula de fundo — nunca precisou do gradiente). Código morto, confirmado por busca antes de remover.
+
+Build e `tsc --noEmit` limpos. Sem migração.
