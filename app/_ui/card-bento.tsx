@@ -43,7 +43,12 @@ export default function CardBento({
       }}
       whileHover={
         clicavel && !reduzido && podeHover
-          ? { y: -6, boxShadow: "0 14px 32px rgba(32,31,29,.16)", transition: { duration: movimento.hover } }
+          ? { y: -6, boxShadow: "0 14px 32px rgba(32,31,29,.16)", transition: movimento.springHover }
+          : undefined
+      }
+      whileTap={
+        clicavel && !reduzido
+          ? { scale: 0.97, transition: movimento.springPress }
           : undefined
       }
       style={{

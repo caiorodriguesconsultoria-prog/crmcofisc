@@ -1022,3 +1022,17 @@ Caio mandou print mostrando a mesma entrega (CT 234/2026, 53 dias em atraso) apa
 `entregasEmAtraso[0]` (a mais atrasada) é sempre o item escolhido pra "Ação do dia" quando existe atraso — agora o `acaoDoDia` carrega o `id` dessa entrega (`entregaDestacadaId`), e a lista "Entregas em atraso" filtra esse id antes de renderizar. Se só sobrar aquela entrega (nenhuma outra em atraso), o card da lista nem aparece mais — fica só o destaque.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Primeira rodada "Apple-like": feedback físico, mola, foco
+Caio pediu pra deixar o visual mais profissional, com movimento mais suave e estrutura parecida com a da Apple. Pesquisei a skill "unslop" (comunidade, não é oficial Anthropic) e vi que boa parte das regras dela colide com decisões já aprovadas (degradê do fundo/KPIs). Em vez de aplicar ela sem filtro, usei as skills de design já disponíveis (apple-design, dieter-rams-principles, emil-design-eng, redesign-existing-projects, animation-performance) pra auditar a base compartilhada do sistema e priorizar só o que não desfaz trabalho já aprovado.
+
+Primeira rodada (itens de menor risco, maior efeito "sensação física"):
+- **Feedback de clique (`:active`)** — não existia em lugar nenhum do sistema. Adicionado em `button` (globals.css, `scale(0.97)`) e em `.crm-pilula-hover` (`scale(0.96)`, as cápsulas de navegação/tags).
+- **Física de mola (spring) no `CardBento`** — hover e clique (`whileTap`) agora usam `type: "spring"` do framer-motion (`movimento.springHover`/`springPress` em `lib/theme.ts`) em vez de duração fixa — dá o leve "passar do ponto e voltar" que lê como objeto físico reagindo. Não mexi na contagem de número do `Kpi`: spring faria o número oscilar antes de assentar, o que é errado pra um contador.
+- **`.crm-pilula-hover` em CSS puro** não pode usar spring de verdade (não é JS), então troquei a curva de easing do hover por uma com leve "ultrapassar e voltar" (`cubic-bezier(0.34, 1.56, 0.64, 1)`), que aproxima visualmente o efeito sem precisar de framer-motion em elementos que hoje são `<Link>`/`<a>` simples.
+- **`button` ganhou `transition`** — antes o hover mudava de cor instantaneamente (sem suavização), diferente das pílulas que já tinham.
+- **`button:focus-visible`** — anel de foco visível só pra quem navega por teclado (clique de mouse não acende), igual ao padrão que os campos de formulário já tinham. Antes nenhum botão do sistema tinha indicador de foco.
+
+Deixei de fora, por enquanto, o que mexe em mais telas ou é decisão de paleta já tomada por ele: botão primário e título dos painéis em gradiente azul (trocar por cor plana — próxima rodada), ícones Lucide, z-index sem escala central.
+
+Build e `tsc --noEmit` limpos. Sem migração.

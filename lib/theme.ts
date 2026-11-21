@@ -80,6 +80,14 @@ export const movimento = {
   // sem perder a sensação de contagem, e menos tempo com número "errado"
   // na tela antes de chegar no valor final.
   contagemKpi: 0.3,
+  // Física de mola (spring), não duração fixa — pro feedback de toque em
+  // elementos interativos (CardBento, pílulas): um leve "passar do ponto e
+  // voltar" que lê como objeto físico reagindo, em vez de uma animação
+  // calculada. Reservado pra hover/press (gestos); contagem de número e
+  // entrada de card continuam com duração fixa, que é o certo pra textos
+  // e números — spring faria o número oscilar antes de assentar.
+  springHover: { type: "spring" as const, stiffness: 400, damping: 30 },
+  springPress: { type: "spring" as const, stiffness: 500, damping: 25 },
 };
 
 // Paleta viva pra gráficos categóricos (pizza de etapas, por exemplo) —
