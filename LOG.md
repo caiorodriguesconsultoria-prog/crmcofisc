@@ -1044,3 +1044,12 @@ Continuação da auditoria de design — item que tinha ficado pra uma rodada se
 - **`tituloDestaque` (lib/theme.ts)**: removido — era um estilo de título em gradiente de texto que não tinha nenhum uso real no código (`TituloDestaque` em `app/_ui/titulo.tsx`, o componente de verdade usado nos painéis, já usa texto em cor sólida sobre uma pílula de fundo — nunca precisou do gradiente). Código morto, confirmado por busca antes de remover.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Rodada 3 Apple-like: peso do título mais contido
+Última rodada da auditoria de design por enquanto — depois de revisar transições genéricas, animação em propriedades pesadas (top/left/width), consistência de ícones (só Lucide, stroke uniforme) e hover de linha de tabela, não achei mais nada que valesse a pena mexer sem risco de ficar só "gosto pessoal" sem ganho real.
+
+- **`TituloDestaque` (app/_ui/titulo.tsx)**: `fontWeight: 800` → `700` — os títulos das telas (`<Painel titulo="...">`) ficam menos "gritados", dentro da faixa de peso que a linha Apple/Rams usa (400–700). Pesos 800 continuam só nos lugares que são marca mesmo (badge "COFISC" na BarraTopo, ícones do PWA), não em texto de interface.
+
+Os botões globais (`button` nativo) já herdam automaticamente o feedback de clique e o anel de foco da rodada 1 em qualquer tela nova, sem precisar editar arquivo por arquivo — confirmado checando onClick em telas como fornecedores e coordenações.
+
+Build e `tsc --noEmit` limpos. Sem migração.
