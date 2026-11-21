@@ -36,6 +36,7 @@ export default async function ProcessosPage({
     etapas,
     { data: agendamentosRaw },
     { data: tarefasAgendadasRaw },
+    { data: andamentosAgendadosRaw },
     { data: pessoaAtual },
     { data: andamentosRaw },
     { data: execucoesPendentesRaw },
@@ -52,11 +53,20 @@ export default async function ProcessosPage({
     getPessoasAtivas(),
     getEtapasKanban(),
     supabase.from("processo_agendamentos").select("processo_id, data, horario").gte("data", hoje),
+    // Antes só contava tarefa de origem "evento" — tarefa criada dentro do
+    // grupo "Kanban" (origem_tipo "kanban") também pode ter data marcada e
+    // ficava de fora do cálculo de "próximo evento" de cada contrato.
     supabase
       .from("processo_tarefas")
       .select("processo_id, agendamento_data")
-      .eq("origem_tipo", "evento")
       .eq("concluida", false)
+      .not("agendamento_data", "is", null)
+      .gte("agendamento_data", hoje),
+    // Andamentos com data marcada — mesma lacuna já corrigida na Agenda
+    // (app/agenda/page.tsx): não entravam nesse cálculo de jeito nenhum.
+    supabase
+      .from("andamentos")
+      .select("processo_id, agendamento_data")
       .not("agendamento_data", "is", null)
       .gte("agendamento_data", hoje),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
@@ -98,6 +108,9 @@ export default async function ProcessosPage({
   }
   for (const t of tarefasAgendadasRaw ?? []) {
     considerar(t.processo_id, t.agendamento_data as string, null);
+  }
+  for (const a of andamentosAgendadosRaw ?? []) {
+    considerar(a.processo_id, a.agendamento_data as string, null);
   }
   // Último andamento de cada contrato — andamentosRaw já vem ordenado por
   // data desc, então a primeira ocorrência de cada processo_id é a mais

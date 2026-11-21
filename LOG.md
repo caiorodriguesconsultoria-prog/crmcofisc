@@ -1082,3 +1082,11 @@ Itens 1, 2 e 3 do pedido do Caio, agrupados por serem todos na tela de Contratos
 - **Hover "levanta"**: linha da tabela ganhou `.crm-linha-hover` — como a tabela usa `border-collapse`, o efeito (leve subida + sombra, mesma curva com "ultrapassar e voltar" das pílulas) vai aplicado no `<td>`, não na `<tr>` diretamente (box-shadow/transform em `<tr>` não funciona bem com collapse). Visualmente a linha inteira sobe junto.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-21 · Contratos com evento hoje aparecem primeiro + mais uma lacuna de dados corrigida
+Item 8 do pedido do Caio.
+
+- **Ordenação**: a lista de Contratos agora põe no topo quem tem evento agendado pra hoje (mesmo campo `proximoAgendamento` já calculado em `app/processos/page.tsx`), sem perder a ordem relativa de quem não tem (sort estável).
+- **Mesma lacuna da Agenda, encontrada aqui também**: o cálculo de "próximo agendamento" de cada contrato só considerava tarefas de origem "evento" (ignorava tarefa criada dentro do grupo "Kanban" com data marcada) e nunca considerava andamentos com data marcada. Corrigido do mesmo jeito que na Agenda — sem isso, o próprio recurso de "evento hoje primeiro" ficaria incompleto pelas mesmas causas.
+
+Build e `tsc --noEmit` limpos. Sem migração.
