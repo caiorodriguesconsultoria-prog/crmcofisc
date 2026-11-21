@@ -30,12 +30,13 @@ export default function RootLayout({
         style={{
           fontFamily: "var(--font-urbanist), system-ui, sans-serif",
           margin: 0,
-          // Fundo em degradê (pedido do Caio, igual ao site de referência —
-          // a 1ª tentativa ficou sutil demais, quase igual ao fundo sólido
-          // de antes; essas cores vêm direto do CSS do site, convertidas de
-          // oklch pra hex, pra garantir que fique visivelmente colorido).
-          background: "linear-gradient(135deg, #D7F3F8 0%, #FFE0B2 35%, #BCE8E7 65%, #83C1DD 100%)",
-          backgroundAttachment: "fixed",
+          // Fundo em cor plana (uma rampa neutra só) — o degradê multi-tom
+          // que tinha aqui (pra bater com o site de referência) foi retirado
+          // a pedido do Caio: gradiente de fundo é um dos sinais mais comuns
+          // de interface com "cara de IA" (auditoria de design, regras de
+          // cor). cor.fundo é o mesmo neutro já usado em todo o resto do
+          // sistema.
+          background: cor.fundo,
           color: cor.texto,
           minHeight: "100vh",
           display: "flex",
