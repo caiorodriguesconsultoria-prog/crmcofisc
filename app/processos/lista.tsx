@@ -413,7 +413,7 @@ export default function ListaProcessos({
           </thead>
           <tbody>
             {filtrados.map((p) => (
-              <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}`, background: corDeFundoLinha(p, minhaPessoaId) }}>
+              <tr key={p.id} className="crm-linha-hover" style={{ borderBottom: `1px solid ${cor.borda}`, background: corDeFundoLinha(p, minhaPessoaId) }}>
                 <td style={{ padding: "10px 12px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
                     <Link
@@ -441,7 +441,7 @@ export default function ListaProcessos({
                         <span
                           className="crm-pilula-hover"
                           style={{
-                            fontSize: 9.5,
+                            fontSize: 11,
                             fontWeight: 700,
                             padding: "3px 9px",
                             borderRadius: 999,
@@ -456,7 +456,7 @@ export default function ListaProcessos({
                       <span
                         className="crm-pilula-hover"
                         style={{
-                          fontSize: 9.5,
+                          fontSize: 11,
                           fontWeight: 700,
                           padding: "3px 9px",
                           borderRadius: 999,
@@ -486,7 +486,7 @@ export default function ListaProcessos({
                       return (
                         <span
                           style={{
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: 600,
                             padding: "3px 9px",
                             borderRadius: 20,
@@ -499,7 +499,7 @@ export default function ListaProcessos({
                       );
                     })()}
                     {p.proximoAgendamento && (
-                      <span style={{ fontSize: 11, color: cor.textoTerciario, whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 12, color: cor.textoTerciario, whiteSpace: "nowrap" }}>
                         {formatarDataAgendamento(p.proximoAgendamento.data)}{" "}
                         {p.proximoAgendamento.horario ? p.proximoAgendamento.horario.slice(0, 5) : ""}
                       </span>
@@ -517,7 +517,7 @@ export default function ListaProcessos({
                           <span
                             key={t.id}
                             style={{
-                              fontSize: 10,
+                              fontSize: 11.5,
                               fontWeight: 600,
                               color: c.texto,
                               background: c.fundo,
@@ -531,7 +531,7 @@ export default function ListaProcessos({
                       })}
                   </div>
                 </td>
-                <td style={{ padding: "10px 12px", fontSize: 12.5, color: cor.textoSecundario, maxWidth: 220 }}>
+                <td style={{ padding: "10px 12px", fontSize: 13.5, color: cor.textoSecundario, maxWidth: 220 }}>
                   {p.ultimoAndamento ?? "—"}
                 </td>
               </tr>
