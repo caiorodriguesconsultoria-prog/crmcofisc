@@ -1179,3 +1179,13 @@ Combinado com ele: aplicar a lógica primeiro na tabela atual (mais rápido de v
 A conversão visual pra widgets de vidro (com esse status, hover-lift, etc.) fica pro próximo passo.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-22 · Contratos convertido de tabela pra widgets em vidro
+Primeira tela convertida pro formato "widget" que o Caio pediu (Coordenações e Fornecedores ficam pra depois, mesmo ritmo de passos pequenos).
+
+- **Vidro CLARO novo** (`.crm-cartao-vidro-claro` em `app/globals.css`, prop `vidroClaro` no `CardBento`) — mesma ideia do vidro escuro do Painel, mas pra telas que continuam no fundo claro padrão do sistema (branco translúcido 72% + blur, em vez do escuro tingido). Texto continua com as cores normais do tema, sem precisar de variante clara/escura por dentro.
+- **`CardBento.corAcento` generalizado**: antes usava `borderLeft` (só aceita cor sólida); agora é uma faixa absoluta com `background` (aceita a cor sólida OU o degradê do status de entrega, que `border` não suporta).
+- **`app/processos/lista.tsx`**: a tabela virou uma grade (`repeat(auto-fill, minmax(320px,1fr))`) de `CardBento` com `vidroClaro` — cada card tem a faixa de status de entrega na lateral (antes na linha da tabela), número do contrato, badges (atraso/relatório), objeto, NUP com copiar, coordenação/fornecedor lado a lado, próximo evento, tags, último andamento (truncado em 2 linhas). `/processos/concluidos` ganha o mesmo visual automaticamente, por reaproveitar o mesmo componente.
+- Números com `tabular-nums` no NUP.
+
+Build e `tsc --noEmit` limpos. Sem migração.

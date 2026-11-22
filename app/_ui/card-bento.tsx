@@ -20,6 +20,7 @@ export default function CardBento({
   style,
   corAcento,
   vidro,
+  vidroClaro,
 }: {
   titulo?: string;
   subtitulo?: string;
@@ -31,14 +32,19 @@ export default function CardBento({
   indice?: number;
   children?: React.ReactNode;
   style?: React.CSSProperties;
-  /** Faixa colorida na borda esquerda (protótipo do tema escuro/Furniture
-   * CRM) — opcional, não usado no resto do sistema. */
+  /** Faixa colorida (ou degradê — aceita qualquer valor de `background`,
+   * não só cor sólida) na lateral esquerda. Usado pro acento do Painel e
+   * pro status de entrega em Contratos. */
   corAcento?: string;
-  /** Material "vidro" (Liquid Glass) — escuro tingido + blur, em vez de
-   * opaco. Pedido do Caio pra imitar o material do sistema operacional novo
-   * da Apple. O título/subtítulo viram texto claro automaticamente (vidro
-   * escuro com texto escuro ficava ilegível — foi o bug do 1º print). */
+  /** Material "vidro" (Liquid Glass) ESCURO — escuro tingido + blur, pro
+   * protótipo de tema escuro do Painel. O título/subtítulo viram texto
+   * claro automaticamente (vidro escuro com texto escuro ficava ilegível —
+   * foi o bug do 1º print). */
   vidro?: boolean;
+  /** Material "vidro" CLARO — mesma ideia, mas pras telas que continuam no
+   * fundo claro padrão (Contratos, Coordenações, Fornecedores). Texto
+   * continua com as cores normais do tema, sem precisar de variante. */
+  vidroClaro?: boolean;
 }) {
   const reduzido = useReducedMotion();
   const podeHover = usarPodeHover();
@@ -64,18 +70,20 @@ export default function CardBento({
           ? { scale: 0.97, transition: movimento.springPress }
           : undefined
       }
-      className={vidro ? "crm-cartao-vidro" : undefined}
+      className={vidro ? "crm-cartao-vidro" : vidroClaro ? "crm-cartao-vidro-claro" : undefined}
       style={{
+        position: "relative",
+        overflow: "hidden",
         background: cor.branco,
         borderRadius: pequeno ? raio.cardPequeno : raio.card,
         border: `1px solid ${cor.borda}`,
         padding: 24,
         cursor: clicavel ? "pointer" : undefined,
         boxShadow: "0 0px 0px rgba(32,31,29,0)",
-        ...(corAcento ? { borderLeft: `5px solid ${corAcento}` } : null),
         ...style,
       }}
     >
+      {corAcento && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 5, background: corAcento }} />}
       {(titulo || acao) && (
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: carregando ? 0 : 14 }}>
           <div style={{ minWidth: 0 }}>
