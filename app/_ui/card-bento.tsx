@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { cor, raio, movimento } from "@/lib/theme";
+import { corEscura } from "@/lib/tema-escuro";
 import { usarPodeHover } from "./usar-pode-hover";
 
 // Card base da grade bento — cabeçalho igual em todo lugar (título +
@@ -33,11 +34,10 @@ export default function CardBento({
   /** Faixa colorida na borda esquerda (protótipo do tema escuro/Furniture
    * CRM) — opcional, não usado no resto do sistema. */
   corAcento?: string;
-  /** Material "vidro" (Liquid Glass) — branco translúcido + blur, em vez de
+  /** Material "vidro" (Liquid Glass) — escuro tingido + blur, em vez de
    * opaco. Pedido do Caio pra imitar o material do sistema operacional novo
-   * da Apple. Fica melhor sobre fundo escuro/colorido (ver temaEscuro no
-   * Painel) — texto escuro continua legível porque o vidro aqui é claro
-   * (frosted), não invertido pra escuro. */
+   * da Apple. O título/subtítulo viram texto claro automaticamente (vidro
+   * escuro com texto escuro ficava ilegível — foi o bug do 1º print). */
   vidro?: boolean;
 }) {
   const reduzido = useReducedMotion();
@@ -53,8 +53,10 @@ export default function CardBento({
         ease: [0.22, 1, 0.36, 1],
       }}
       whileHover={
-        clicavel && !reduzido && podeHover
-          ? { y: -6, boxShadow: "0 14px 32px rgba(32,31,29,.16)", transition: movimento.springHover }
+        !reduzido && podeHover
+          ? clicavel
+            ? { y: -6, boxShadow: "0 14px 32px rgba(32,31,29,.16)", transition: movimento.springHover }
+            : { y: -3, boxShadow: "0 10px 24px rgba(32,31,29,.12)", transition: movimento.springHover }
           : undefined
       }
       whileTap={
@@ -77,8 +79,12 @@ export default function CardBento({
       {(titulo || acao) && (
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: carregando ? 0 : 14 }}>
           <div style={{ minWidth: 0 }}>
-            {titulo && <div style={{ fontSize: 18, fontWeight: 600, color: cor.texto }}>{titulo}</div>}
-            {subtitulo && <div style={{ fontSize: 13, color: cor.textoTerciario, marginTop: 2 }}>{subtitulo}</div>}
+            {titulo && <div style={{ fontSize: 18, fontWeight: 600, color: vidro ? corEscura.texto : cor.texto }}>{titulo}</div>}
+            {subtitulo && (
+              <div style={{ fontSize: 13, color: vidro ? corEscura.textoTerciario : cor.textoTerciario, marginTop: 2 }}>
+                {subtitulo}
+              </div>
+            )}
           </div>
           {acao && <div style={{ flex: "none" }}>{acao}</div>}
         </div>
