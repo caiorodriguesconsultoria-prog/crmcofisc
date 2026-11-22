@@ -74,16 +74,16 @@ function formatarMoeda(n: number) {
 
 // Total já lançado numa parcela (soma dos lançamentos total/parcial, cada um
 // podendo ter normal + avaria + desvio no mesmo registro). Lançamentos de
-// reposição de avaria NÃO entram aqui — a quantidade já foi contada no
-// lançamento original que eles estão corrigindo; somar de novo contaria em
-// dobro.
+// reposição (avaria OU desvio) NÃO entram aqui — a quantidade já foi
+// contada no lançamento original que eles estão corrigindo; somar de novo
+// contaria em dobro.
 function totalLancado(lancamentos: LancamentoEntrega[]): number {
   // Number(...) explícito em cada parcela da soma: colunas numeric do
   // Postgres podem chegar como string via PostgREST — sem isso, "+" em
   // string vira concatenação de texto em vez de soma, e o total sai
   // completamente errado sem erro nenhum aparecer.
   return lancamentos
-    .filter((l) => l.tipo !== "avaria")
+    .filter((l) => l.tipo !== "avaria" && l.tipo !== "desvio")
     .reduce(
       (soma, l) => soma + Number(l.quantidade_normal) + Number(l.quantidade_avaria) + Number(l.quantidade_desvio),
       0,
@@ -101,7 +101,7 @@ function nupPorTipo(nups: LancamentoEntrega["processo_nups"], tipo: "entrega" | 
 // Sem lançamento nenhum, cai no campo manual mesmo (comportamento antigo).
 function dataEntregaEfetiva(e: Execucao): string | null {
   const datas = (e.processo_entrega_lancamentos ?? [])
-    .filter((l) => l.tipo !== "avaria" && l.data_entrega)
+    .filter((l) => l.tipo !== "avaria" && l.tipo !== "desvio" && l.data_entrega)
     .map((l) => l.data_entrega as string)
     .sort();
   return datas[0] ?? e.data_entrega;

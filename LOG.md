@@ -1159,3 +1159,10 @@ Depende de migração manual no Supabase antes de ir pra produção: `supabase/m
 Ainda falta a parte visual (cor do card de Contrato por status de entrega + degradê quando há parcelas em estados diferentes) — é o próximo passo, depende dessa migração já estar rodada.
 
 Build e `tsc --noEmit` limpos. **NÃO mergeado pra `main`** — aguardando o Caio confirmar que rodou a migração.
+
+## 2026-11-22 · Falha corrigida: reposição de desvio contaria em dobro
+Ao generalizar o fluxo de reposição pra desvio de qualidade (ver entrada anterior), achei um bug que minha própria mudança teria introduzido se não corrigisse: `totalLancado()` (quanto já foi entregue de uma parcela) só excluía lançamentos com `tipo === "avaria"` da soma — lançamentos de reposição de desvio (`tipo === "desvio"`) entrariam na soma de novo, contando a mesma quantidade duas vezes (uma no lançamento original, outra na reposição). Mesma lógica em `dataEntregaEfetiva()`.
+
+Corrigido: os dois agora excluem `tipo !== "avaria" && tipo !== "desvio"`, simétrico ao que já valia só pra avaria.
+
+Build e `tsc --noEmit` limpos. Sem migração nova (já coberto pela 0048, que o Caio já confirmou ter rodado).
