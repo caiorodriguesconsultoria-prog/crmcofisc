@@ -8,7 +8,7 @@ import { BotaoCopiar } from "@/app/_ui/campo";
 import PopupNome from "@/app/_ui/popup-nome";
 
 type Nup = { id: string; tipo: "relatorio" | "pagamento"; valor: string };
-type TipoLancamento = "total" | "parcial" | "avaria";
+type TipoLancamento = "total" | "parcial" | "avaria" | "desvio";
 type LancamentoEntrega = {
   id: string;
   tipo: TipoLancamento;
@@ -417,7 +417,7 @@ export default function DadosPrincipais({
       {itensOrdenados.map((item) => {
         const execucoesDoItem = [...item.execucoes].sort((a, b) => a.numero - b.numero);
         const temLancamento = execucoesDoItem.some(
-          (exec) => (exec.processo_entrega_lancamentos ?? []).some((l) => l.tipo !== "avaria"),
+          (exec) => (exec.processo_entrega_lancamentos ?? []).some((l) => l.tipo !== "avaria" && l.tipo !== "desvio"),
         );
         if (!temLancamento) return null;
         return (
@@ -426,7 +426,7 @@ export default function DadosPrincipais({
               Item {item.numero} · {item.descricao}
             </span>
             {execucoesDoItem.map((exec) => {
-              const lancamentosTopo = (exec.processo_entrega_lancamentos ?? []).filter((l) => l.tipo !== "avaria");
+              const lancamentosTopo = (exec.processo_entrega_lancamentos ?? []).filter((l) => l.tipo !== "avaria" && l.tipo !== "desvio");
               if (lancamentosTopo.length === 0) return null;
               const avariasDe = (paiId: string) =>
                 (exec.processo_entrega_lancamentos ?? []).filter((l) => l.lancamento_pai_id === paiId);
@@ -487,7 +487,7 @@ export default function DadosPrincipais({
                       <div style={{ marginLeft: 16, display: "flex", flexDirection: "column", gap: 3 }}>
                         {avarias.map((a) => (
                           <span key={a.id} style={{ fontSize: 11, color: cor.urgente }}>
-                            Avaria — prazo: {formatarData(a.data_limite)} · quantidade: {a.quantidade_normal.toLocaleString("pt-BR")}
+                            {a.tipo === "desvio" ? "Desvio" : "Avaria"} — prazo: {formatarData(a.data_limite)} · quantidade: {a.quantidade_normal.toLocaleString("pt-BR")}
                           </span>
                         ))}
                       </div>
