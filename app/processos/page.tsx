@@ -8,6 +8,7 @@ import BarraTopo from "@/app/_ui/barra-topo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
 import Atividades from "@/app/_nav/atividades";
 import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
+import { statusContrato, gradienteOuSolido, type ParcelaStatus } from "@/lib/status-entrega";
 
 export default async function ProcessosPage({
   searchParams,
@@ -40,6 +41,7 @@ export default async function ProcessosPage({
     { data: pessoaAtual },
     { data: andamentosRaw },
     { data: execucoesPendentesRaw },
+    { data: execucoesComLancamentosRaw },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -81,6 +83,14 @@ export default async function ProcessosPage({
       .is("data_entrega", null)
       .not("data_prevista", "is", null)
       .lt("data_prevista", hoje),
+    // Pra cor do card por status de entrega (verde/amarelo/vermelho e o
+    // degradê quando as parcelas estão em estados diferentes) — precisa de
+    // TODAS as execuções com seus lançamentos, não só as atrasadas.
+    supabase
+      .from("processo_execucoes")
+      .select(
+        "processo_id, quantidade, data_prevista, processo_entrega_lancamentos(id, tipo, lancamento_pai_id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega)",
+      ),
   ]);
 
   // Agendamentos de entrega têm horário exato; tarefas são de dia inteiro
@@ -134,12 +144,36 @@ export default async function ProcessosPage({
     return dias > LIMITE_DIAS_RELATORIO;
   }
 
+  // Status de entrega por contrato (verde/amarelo/vermelho, ou degradê entre
+  // eles quando as parcelas estão em estados diferentes) — pedido do Caio.
+  // Ver lib/status-entrega.ts pra regra completa.
+  const parcelasPorProcesso = new Map<string, ParcelaStatus[]>();
+  for (const e of execucoesComLancamentosRaw ?? []) {
+    const lista = parcelasPorProcesso.get(e.processo_id) ?? [];
+    lista.push({
+      quantidade: Number(e.quantidade),
+      data_prevista: e.data_prevista,
+      lancamentos: (e.processo_entrega_lancamentos ?? []).map((l: any) => ({
+        id: l.id,
+        tipo: l.tipo,
+        lancamento_pai_id: l.lancamento_pai_id,
+        quantidade_normal: Number(l.quantidade_normal),
+        quantidade_avaria: Number(l.quantidade_avaria),
+        quantidade_desvio: Number(l.quantidade_desvio),
+        data_entrega: l.data_entrega,
+      })),
+    });
+    parcelasPorProcesso.set(e.processo_id, lista);
+  }
+  const corStatusEntrega = { vermelho: cor.urgente, amarelo: cor.atencao, verde: cor.verdeEscuro };
+
   const processosComAgendamento = (processos ?? []).map((p) => ({
     ...p,
     proximoAgendamento: proximoAgendamentoPorProcesso.get(p.id) ?? null,
     ultimoAndamento: ultimoAndamentoPorProcesso.get(p.id) ?? null,
     entregaAtrasada: processosComEntregaAtrasada.has(p.id),
     relatorioDesatualizado: relatorioDesatualizado(p.relatorio_atualizado_em),
+    corStatusEntrega: gradienteOuSolido(statusContrato(parcelasPorProcesso.get(p.id) ?? [], hoje), corStatusEntrega),
   }));
 
   const eventoSelecionado = sp.evento ? (eventos ?? []).find((e) => e.id === sp.evento) : null;

@@ -54,6 +54,10 @@ export type Processo = {
   ultimoAndamento: string | null;
   entregaAtrasada: boolean;
   relatorioDesatualizado: boolean;
+  /** Cor (ou degradê, quando as parcelas estão em estados diferentes) do
+   * status de entrega — null quando nenhuma parcela está num estado que
+   * mereça destaque. Ver lib/status-entrega.ts. */
+  corStatusEntrega: string | null;
 };
 
 // Cor de fundo da linha só quando o processo está de fato em cobertura de
@@ -407,6 +411,7 @@ export default function ListaProcessos({
         <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
+              <th style={{ padding: 0, width: 5 }} title="Status de entrega: verde (entregue no prazo), amarelo (prazo chegando ou avaria/desvio pendente), vermelho (atrasada)" />
               <th style={{ padding: "10px 12px" }}>Contrato</th>
               <th style={{ padding: "10px 12px" }}>NUP</th>
               <th style={{ padding: "10px 12px" }}>Objeto</th>
@@ -420,6 +425,7 @@ export default function ListaProcessos({
           <tbody>
             {filtrados.map((p) => (
               <tr key={p.id} className="crm-linha-hover" style={{ borderBottom: `1px solid ${cor.borda}`, background: corDeFundoLinha(p, minhaPessoaId) }}>
+                <td style={{ padding: 0, width: 5, background: p.corStatusEntrega ?? "transparent" }} />
                 <td style={{ padding: "10px 12px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
                     <Link
@@ -544,7 +550,7 @@ export default function ListaProcessos({
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
+                <td colSpan={9} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
                   Nenhum contrato encontrado com esses filtros.
                 </td>
               </tr>
