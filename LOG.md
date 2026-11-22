@@ -1134,3 +1134,16 @@ Continuação do protótipo de tema escuro — Caio pediu o material "vidro" do 
 - Aplicado nos mesmos cards que já tinham `corAcento` (KPIs, Agenda de hoje, Prazos da semana, Divisão por coordenação, Contratos por etapa, Eventos) — todos no mesmo lote, já que fazem parte do mesmo protótipo de tema escuro.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-22 · Corrigido: vidro escuro tingido + texto claro (causa raiz do contraste ruim)
+Caio mandou print confirmando "não ficou bom" — pediu pra eu atuar como especialista em Liquid Glass aplicado a CRM e apontar os pontos críticos antes de mexer em código. Diagnóstico: o vidro era BRANCO translúcido sobre fundo escuro — isso vira um cinza-lamacento (não vidro de verdade), e por cima disso o texto continuava usando as cores do tema claro (pensadas pra fundo branco), ficando quase invisível.
+
+Correção:
+- **Vidro escuro tingido** (`rgba(40,30,22,.55)` + blur+saturate), não mais branco — `app/globals.css` (`.crm-cartao-vidro`) e `lib/tema-escuro.ts` (novos tokens `vidroFundo`, `vidroBorda`, `vidroBordaTopo`, `borda`).
+- **Todo texto neutro dentro do vidro agora usa `corEscura.*`** (claro) em vez de `cor.*` (escuro, pra fundo branco) — rótulos de KPI, cabeçalho de tabela, bordas divisórias, trilho da barra de progresso, textos de estado vazio. Antes só o número do KPI (cor viva) e os badges (fundo próprio) ficavam legíveis; o resto desaparecia.
+- **`IndicadorUrgencia` e `MedidorCircular`** ganharam prop opcional (`textoEscuro`) — as versões "Texto" escurecidas (calibradas pra contraste contra BRANCO) ficavam com contraste ruim contra o vidro escuro; usam a versão "cheia" (mais clara) nesse modo.
+- **`Kpi`** ganhou prop `escuro` — mesmo motivo, rótulo e variação viravam ilegíveis.
+- **Números com `font-variant-numeric: tabular-nums`** (KPI grande, coordenação, número do contrato) — pedido explícito do Caio pra alinhamento numérico.
+- Hover com leve "levantar" (3px + sombra) estendido pra **todo** card do Painel, não só os clicáveis — outro pedido dele.
+
+Build e `tsc --noEmit` limpos. Sem migração.

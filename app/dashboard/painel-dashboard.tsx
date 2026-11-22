@@ -136,7 +136,7 @@ export default function PainelDashboard({
         {kpis.map((k, i) => {
           const conteudo = (
             <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} corAcento={corEscura.acentos[i % corEscura.acentos.length]} vidro>
-              <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} variacao={k.variacao} />
+              <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} variacao={k.variacao} escuro />
             </CardBento>
           );
           return k.href ? (
@@ -181,35 +181,35 @@ export default function PainelDashboard({
 
       <CardBento titulo="Agenda de hoje" subtitulo="Contratos com tarefa ou agendamento marcado pra hoje" indice={2} corAcento={corEscura.acentos[2 % corEscura.acentos.length]} vidro>
         {processosAtividadeHoje.length === 0 ? (
-          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
+          <p style={{ color: corEscura.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
-                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Contrato</th>
-                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>NUP</th>
-                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Objeto</th>
-                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Etapa</th>
-                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Eventos</th>
-                  <th style={{ padding: "8px 10px", fontSize: 11.5 }}>Hoje</th>
+                <tr style={{ textAlign: "left", borderBottom: `1px solid ${corEscura.borda}` }}>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5, color: corEscura.textoTerciario }}>Contrato</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5, color: corEscura.textoTerciario }}>NUP</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5, color: corEscura.textoTerciario }}>Objeto</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5, color: corEscura.textoTerciario }}>Etapa</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5, color: corEscura.textoTerciario }}>Eventos</th>
+                  <th style={{ padding: "8px 10px", fontSize: 11.5, color: corEscura.textoTerciario }}>Hoje</th>
                 </tr>
               </thead>
               <tbody>
                 {processosAtividadeHoje.map((p) => (
-                  <tr key={p.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
+                  <tr key={p.id} style={{ borderBottom: `1px solid ${corEscura.borda}` }}>
                     <td style={{ padding: "9px 10px" }}>
                       <Link href={`/processos/${p.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
                         {p.numeroContrato}
                       </Link>
                     </td>
-                    <td style={{ padding: "9px 10px", fontSize: 12.5 }}>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5, color: corEscura.texto }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         {p.nup}
                         <BotaoCopiar texto={p.nup} />
                       </div>
                     </td>
-                    <td style={{ padding: "9px 10px", fontSize: 12.5 }}>{p.objeto}</td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5, color: corEscura.texto }}>{p.objeto}</td>
                     <td style={{ padding: "9px 10px" }}>
                       <span
                         style={{
@@ -249,7 +249,7 @@ export default function PainelDashboard({
                     <td style={{ padding: "9px 10px" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                         {p.itens.map((item, i) => (
-                          <span key={i} style={{ fontSize: 12 }}>
+                          <span key={i} style={{ fontSize: 12, color: corEscura.texto }}>
                             {item.horario
                               ? `${item.horario.slice(0, 5)} · `
                               : item.periodo
@@ -270,20 +270,21 @@ export default function PainelDashboard({
 
       <CardBento titulo="Prazos da semana" subtitulo="Contratos ativos com prazo nos próximos 7 dias" indice={3} corAcento={corEscura.acentos[3 % corEscura.acentos.length]} vidro>
         {prazosDaSemana.length === 0 ? (
-          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum prazo nos próximos 7 dias.</p>
+          <p style={{ color: corEscura.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum prazo nos próximos 7 dias.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {prazosDaSemana.map((p) => (
               <Link
                 key={p.id}
                 href={`/processos/${p.id}`}
-                style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: cor.texto, fontSize: 13 }}
+                style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: corEscura.texto, fontSize: 13 }}
               >
-                <strong style={{ flex: "none" }}>{p.numeroContrato}</strong>
+                <strong style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{p.numeroContrato}</strong>
                 <span style={{ marginLeft: "auto" }}>
                   <IndicadorUrgencia
                     nivel={nivelUrgenciaPorDias(p.dias)}
                     texto={p.dias === 0 ? "vence hoje" : `${p.dias} dia${p.dias > 1 ? "s" : ""}`}
+                    textoEscuro
                   />
                 </span>
               </Link>
@@ -294,13 +295,13 @@ export default function PainelDashboard({
 
       <CardBento titulo="Divisão por coordenação" subtitulo="Contratos ativos" indice={4} corAcento={corEscura.acentos[4 % corEscura.acentos.length]} vidro>
         {divisaoPorCoordenacao.length === 0 ? (
-          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
+          <p style={{ color: corEscura.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {divisaoPorCoordenacao.map((c, i) => (
               <div key={c.sigla} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <TagRotulo texto={c.sigla} corTexto={PALETA_VIVA[i % PALETA_VIVA.length]} />
-                <div style={{ flex: 1, height: 6, borderRadius: 3, background: cor.fundo, overflow: "hidden" }}>
+                <div style={{ flex: 1, height: 6, borderRadius: 3, background: corEscura.borda, overflow: "hidden" }}>
                   <div
                     style={{
                       height: "100%",
@@ -310,7 +311,7 @@ export default function PainelDashboard({
                     }}
                   />
                 </div>
-                <strong style={{ fontSize: 13, flex: "none" }}>{c.total}</strong>
+                <strong style={{ fontSize: 13, flex: "none", color: corEscura.texto, fontVariantNumeric: "tabular-nums" }}>{c.total}</strong>
               </div>
             ))}
           </div>
@@ -319,7 +320,7 @@ export default function PainelDashboard({
 
       <CardBento titulo="Contratos por etapa" indice={5} corAcento={corEscura.acentos[0]} vidro>
         {dadosEtapas.length === 0 ? (
-          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
+          <p style={{ color: corEscura.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
         ) : (
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
@@ -338,7 +339,7 @@ export default function PainelDashboard({
 
       <CardBento titulo="Eventos" subtitulo="Quantos contratos ativos têm cada evento agora" indice={6} corAcento={corEscura.acentos[1]} vidro>
         {dadosEventos.length === 0 ? (
-          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo no momento.</p>
+          <p style={{ color: corEscura.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo no momento.</p>
         ) : (
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
@@ -358,9 +359,10 @@ export default function PainelDashboard({
             valor={emCoberturaFerias}
             total={processos.length}
             corPreenchido={cor.atencao}
-            corTrilha={cor.atencaoFundo}
+            corTrilha={corEscura.borda}
             rotulo="Cobertura de férias"
             tamanho={72}
+            textoEscuro
           />
         </div>
       </CardBento>
