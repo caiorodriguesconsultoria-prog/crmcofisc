@@ -7,7 +7,7 @@ import { cor } from "@/lib/theme";
 import { CampoMascarado } from "@/app/_ui/campo";
 
 type Periodo = "manha" | "tarde";
-type TipoLancamento = "total" | "parcial" | "avaria";
+type TipoLancamento = "total" | "parcial" | "avaria" | "desvio";
 type LancamentoEntrega = {
   id: string;
   tipo: TipoLancamento;
@@ -284,6 +284,9 @@ export default function Cronograma({
   // quantidade avariada — só precisa de prazo + quantidade, nunca tem NUP
   // próprio (reusa o NUP de entrega/pagamento do lançamento pai).
   const [lancandoAvariaDeId, setLancandoAvariaDeId] = useState<string | null>(null);
+  // Mesmo fluxo de reposição que a avaria já tinha, estendido pro desvio de
+  // qualidade (pedido do Caio) — só muda o "tipo" gravado no lançamento.
+  const [tipoReposicao, setTipoReposicao] = useState<"avaria" | "desvio">("avaria");
   const [avariaData, setAvariaData] = useState("");
   const [avariaQuantidade, setAvariaQuantidade] = useState("");
   const [salvandoAvaria, setSalvandoAvaria] = useState(false);
@@ -733,15 +736,17 @@ export default function Cronograma({
     router.refresh();
   }
 
-  function abrirLancamentoAvaria(lancamentoId: string) {
+  function abrirLancamentoAvaria(lancamentoId: string, tipo: "avaria" | "desvio") {
     setLancandoAvariaDeId(lancamentoId);
+    setTipoReposicao(tipo);
     setAvariaData("");
     setAvariaQuantidade("");
     setErro(null);
   }
 
-  // Reposição de avaria não tem NUP próprio — é a mesma entrega/pagamento do
-  // lançamento original, só corrigindo a quantidade que veio avariada.
+  // Reposição (avaria ou desvio de qualidade) não tem NUP próprio — é a
+  // mesma entrega/pagamento do lançamento original, só corrigindo a
+  // quantidade que veio avariada ou com desvio.
   async function criarAvaria(execucaoId: string, lancamentoPaiId: string) {
     const quantidade = paraNumero(avariaQuantidade);
     if (!avariaData || quantidade <= 0) return;
@@ -749,7 +754,7 @@ export default function Cronograma({
     setSalvandoAvaria(true);
     const { error } = await supabase.from("processo_entrega_lancamentos").insert({
       execucao_id: execucaoId,
-      tipo: "avaria",
+      tipo: tipoReposicao,
       lancamento_pai_id: lancamentoPaiId,
       quantidade_normal: quantidade,
       data_limite: avariaData,
@@ -1042,7 +1047,7 @@ export default function Cronograma({
             // Lançamentos de avaria não aparecem na lista principal — ficam
             // aninhados embaixo do lançamento total/parcial que corrigem.
             const lancamentos = todosLancamentos
-              .filter((l) => l.tipo !== "avaria")
+              .filter((l) => l.tipo !== "avaria" && l.tipo !== "desvio")
               .sort((a, b) => (a.data_entrega ?? "").localeCompare(b.data_entrega ?? ""));
             const avariasDe = (paiId: string) =>
               todosLancamentos.filter((l) => l.lancamento_pai_id === paiId);
@@ -1287,7 +1292,7 @@ export default function Cronograma({
                           <div style={{ marginTop: 6, marginLeft: 22, display: "flex", flexDirection: "column", gap: 4 }}>
                             {avarias.map((a) => (
                               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.5 }}>
-                                <span style={{ color: cor.urgente, fontWeight: 600 }}>Avaria</span>
+                                <span style={{ color: cor.urgente, fontWeight: 600 }}>{a.tipo === "desvio" ? "Desvio" : "Avaria"}</span>
                                 <span style={{ color: cor.textoTerciario }}>Prazo: {formatarData(a.data_limite)}</span>
                                 <span>Qtd.: <strong>{formatarQuantidade(a.quantidade_normal)}</strong></span>
                                 <button
@@ -1332,14 +1337,18 @@ export default function Cronograma({
                             </button>
                           </div>
                         ) : (
-                          l.quantidade_avaria > 0 && (
-                            <button
-                              onClick={() => abrirLancamentoAvaria(l.id)}
-                              style={{ fontSize: 10.5, marginTop: 6, marginLeft: 22 }}
-                            >
-                              + Lançar reposição de avaria
-                            </button>
-                          )
+                          <div style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 22 }}>
+                            {l.quantidade_avaria > 0 && (
+                              <button onClick={() => abrirLancamentoAvaria(l.id, "avaria")} style={{ fontSize: 10.5 }}>
+                                + Lançar reposição de avaria
+                              </button>
+                            )}
+                            {l.quantidade_desvio > 0 && (
+                              <button onClick={() => abrirLancamentoAvaria(l.id, "desvio")} style={{ fontSize: 10.5 }}>
+                                + Lançar reposição de desvio
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     );

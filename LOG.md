@@ -1147,3 +1147,15 @@ Correção:
 - Hover com leve "levantar" (3px + sombra) estendido pra **todo** card do Painel, não só os clicáveis — outro pedido dele.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-22 · Reposição de desvio de qualidade (mesmo fluxo da avaria) — AGUARDANDO MIGRAÇÃO
+Primeira parte do pedido de cor por status de entrega nos cards de Contratos: o botão "concluir" avaria/desvio. Caio confirmou que quer reaproveitar o fluxo de reposição que a avaria já tinha, estendido pro desvio de qualidade (em vez de um campo booleano simples) — mantém histórico real de quando/como foi resolvido.
+
+Depende de migração manual no Supabase antes de ir pra produção: `supabase/migrations/0048_reposicao_desvio.sql` (adiciona `'desvio'` ao `tipo` permitido em `processo_entrega_lancamentos`, generaliza as constraints que antes só falavam de avaria).
+
+- `cronograma.tsx`: o botão "+ Lançar reposição de avaria" virou dois botões independentes — um por avaria, outro por desvio — cada um lançando um registro filho com o `tipo` certo. Rótulo da reposição já lançada mostra "Avaria" ou "Desvio" conforme o tipo.
+- `dados-principais.tsx`: mesma generalização (tinha o mesmo padrão de filtro `tipo !== "avaria"`, que precisava excluir `"desvio"` também pra não aparecer solto na lista principal).
+
+Ainda falta a parte visual (cor do card de Contrato por status de entrega + degradê quando há parcelas em estados diferentes) — é o próximo passo, depende dessa migração já estar rodada.
+
+Build e `tsc --noEmit` limpos. **NÃO mergeado pra `main`** — aguardando o Caio confirmar que rodou a migração.
