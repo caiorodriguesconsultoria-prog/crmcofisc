@@ -1166,3 +1166,16 @@ Ao generalizar o fluxo de reposição pra desvio de qualidade (ver entrada anter
 Corrigido: os dois agora excluem `tipo !== "avaria" && tipo !== "desvio"`, simétrico ao que já valia só pra avaria.
 
 Build e `tsc --noEmit` limpos. Sem migração nova (já coberto pela 0048, que o Caio já confirmou ter rodado).
+
+## 2026-11-22 · Cor do status de entrega nos Contratos (ainda na tabela atual)
+Pedido do Caio: card do contrato colorido conforme o status das entregas — verde (entregue no prazo), amarelo (até 5 dias do prazo, ou avaria/desvio pendente), vermelho (atrasada ou entregue com atraso), com degradê quando as parcelas de um mesmo contrato estão em estados diferentes.
+
+Combinado com ele: aplicar a lógica primeiro na tabela atual (mais rápido de validar), deixando a conversão de Contratos pra cards/widgets em vidro como uma etapa visual separada depois.
+
+- **`lib/status-entrega.ts`** (novo, compartilhado): `statusParcela()` calcula o status de uma parcela (replica as mesmas regras de `cronograma.tsx` — `dataEntregaEfetiva`, `falta`/`totalLancado`, atraso atual vs. já entregue — não importado de lá porque `cronograma.tsx` é client component e esse módulo roda em server component também; qualquer mudança na regra de atraso precisa espelhar os dois lugares). `statusContrato()` agrega as parcelas de um contrato nas cores distintas presentes, na ordem vermelho→amarelo→verde. `gradienteOuSolido()` monta a string CSS (cor sólida se só um status, `linear-gradient` se mais de um).
+- **`app/processos/page.tsx`**: nova busca de todas as execuções + lançamentos de cada contrato (antes só buscava as atrasadas), computa `corStatusEntrega` por contrato.
+- **`app/processos/lista.tsx`**: faixa de 5px na lateral esquerda de cada linha com essa cor (como `background`, não `border` — border não aceita gradiente).
+
+A conversão visual pra widgets de vidro (com esse status, hover-lift, etc.) fica pro próximo passo.
+
+Build e `tsc --noEmit` limpos. Sem migração.
