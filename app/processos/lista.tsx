@@ -9,6 +9,7 @@ import { corEvento } from "@/lib/cores-evento";
 import { corEtapa } from "@/lib/cor-etapa";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
+import CardBento from "@/app/_ui/card-bento";
 
 type DocumentComTransicao = Document & {
   startViewTransition?: (callback: () => void | Promise<void>) => void;
@@ -406,28 +407,32 @@ export default function ListaProcessos({
         )}
       </div>
 
-      <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 6 }}>
-        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-        <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
-              <th style={{ padding: 0, width: 5 }} title="Status de entrega: verde (entregue no prazo), amarelo (prazo chegando ou avaria/desvio pendente), vermelho (atrasada)" />
-              <th style={{ padding: "10px 12px" }}>Contrato</th>
-              <th style={{ padding: "10px 12px" }}>NUP</th>
-              <th style={{ padding: "10px 12px" }}>Objeto</th>
-              <th style={{ padding: "10px 12px" }}>Coord.</th>
-              <th style={{ padding: "10px 12px" }}>Fornecedor</th>
-              <th style={{ padding: "10px 12px" }}>Etapa</th>
-              <th style={{ padding: "10px 12px" }}>Eventos</th>
-              <th style={{ padding: "10px 12px" }}>Último andamento</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtrados.map((p) => (
-              <tr key={p.id} className="crm-linha-hover" style={{ borderBottom: `1px solid ${cor.borda}`, background: corDeFundoLinha(p, minhaPessoaId) }}>
-                <td style={{ padding: 0, width: 5, background: p.corStatusEntrega ?? "transparent" }} />
-                <td style={{ padding: "10px 12px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+      {filtrados.length === 0 ? (
+        <div style={{ ...card, marginTop: 6 }}>
+          <p style={{ color: cor.textoTerciario, margin: 0 }}>Nenhum contrato encontrado com esses filtros.</p>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gap: 16,
+            marginTop: 6,
+          }}
+        >
+          {filtrados.map((p, i) => {
+            const etapaCor = corEtapa(p.etapa_atual);
+            const corFundoLinha = corDeFundoLinha(p, minhaPessoaId);
+            return (
+              <CardBento
+                key={p.id}
+                indice={i}
+                vidroClaro
+                corAcento={p.corStatusEntrega ?? undefined}
+                style={corFundoLinha ? { background: corFundoLinha } : undefined}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <Link
                       href={`/processos/${p.id}`}
                       onClick={(e) => abrirComTransicao(e, router, `/processos/${p.id}`)}
@@ -448,23 +453,24 @@ export default function ListaProcessos({
                     >
                       {numeroContratoSemSei(p.numero_contrato)}
                     </Link>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {p.entregaAtrasada && (
-                        <span
-                          className="crm-pilula-hover"
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            padding: "3px 9px",
-                            borderRadius: 999,
-                            color: cor.urgente,
-                            background: cor.urgenteFundo,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          Entrega Atrasada
-                        </span>
-                      )}
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: "3px 9px",
+                        borderRadius: 20,
+                        background: etapaCor.fundo,
+                        color: etapaCor.texto,
+                        flex: "none",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {p.etapa_atual}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {p.entregaAtrasada && (
                       <span
                         className="crm-pilula-hover"
                         style={{
@@ -472,93 +478,110 @@ export default function ListaProcessos({
                           fontWeight: 700,
                           padding: "3px 9px",
                           borderRadius: 999,
-                          color: p.relatorioDesatualizado ? cor.vermelhoEscuro : cor.verdeEscuro,
-                          background: p.relatorioDesatualizado ? cor.vermelhoEscuroFundo : cor.verdeEscuroFundo,
+                          color: cor.urgente,
+                          background: cor.urgenteFundo,
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {p.relatorioDesatualizado ? "Relatório Desatualizado" : "Relatório Atualizado"}
-                      </span>
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: "10px 12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {p.nup_principal}
-                    <BotaoCopiar texto={p.nup_principal} />
-                  </div>
-                </td>
-                <td style={{ padding: "10px 12px" }}>{p.objeto}</td>
-                <td style={{ padding: "10px 12px" }}>{p.coordenacoes?.sigla}</td>
-                <td style={{ padding: "10px 12px" }}>{p.fornecedores?.nome}</td>
-                <td style={{ padding: "10px 12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {(() => {
-                      const c = corEtapa(p.etapa_atual);
-                      return (
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            padding: "3px 9px",
-                            borderRadius: 20,
-                            background: c.fundo,
-                            color: c.texto,
-                          }}
-                        >
-                          {p.etapa_atual}
-                        </span>
-                      );
-                    })()}
-                    {p.proximoAgendamento && (
-                      <span style={{ fontSize: 12, color: cor.textoTerciario, whiteSpace: "nowrap" }}>
-                        {formatarDataAgendamento(p.proximoAgendamento.data)}{" "}
-                        {p.proximoAgendamento.horario ? p.proximoAgendamento.horario.slice(0, 5) : ""}
+                        Entrega Atrasada
                       </span>
                     )}
+                    <span
+                      className="crm-pilula-hover"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "3px 9px",
+                        borderRadius: 999,
+                        color: p.relatorioDesatualizado ? cor.vermelhoEscuro : cor.verdeEscuro,
+                        background: p.relatorioDesatualizado ? cor.vermelhoEscuroFundo : cor.verdeEscuroFundo,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {p.relatorioDesatualizado ? "Relatório Desatualizado" : "Relatório Atualizado"}
+                    </span>
                   </div>
-                </td>
-                <td style={{ padding: "10px 12px" }}>
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                    {p.processo_tags
-                      .map((pt) => pt.tags)
-                      .filter((t): t is { id: string; valor: string; cor: string | null } => !!t)
-                      .map((t) => {
-                        const c = corEvento(t.id, t.cor);
-                        return (
-                          <span
-                            key={t.id}
-                            style={{
-                              fontSize: 11.5,
-                              fontWeight: 600,
-                              color: c.texto,
-                              background: c.fundo,
-                              borderRadius: 7,
-                              padding: "2px 7px",
-                            }}
-                          >
-                            {t.valor}
-                          </span>
-                        );
-                      })}
+
+                  <p style={{ fontSize: 13.5, color: cor.texto, margin: 0, lineHeight: 1.4 }}>{p.objeto}</p>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: cor.textoSecundario }}>
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{p.nup_principal}</span>
+                    <BotaoCopiar texto={p.nup_principal} />
                   </div>
-                </td>
-                <td style={{ padding: "10px 12px", fontSize: 13.5, color: cor.textoSecundario, maxWidth: 220 }}>
-                  {p.ultimoAndamento ?? "—"}
-                </td>
-              </tr>
-            ))}
-            {filtrados.length === 0 && (
-              <tr>
-                <td colSpan={9} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
-                  Nenhum contrato encontrado com esses filtros.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12.5 }}>
+                    <div>
+                      <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                        Coordenação
+                      </div>
+                      <div style={{ color: cor.texto, marginTop: 1 }}>{p.coordenacoes?.sigla ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                        Fornecedor
+                      </div>
+                      <div style={{ color: cor.texto, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {p.fornecedores?.nome ?? "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {p.proximoAgendamento && (
+                    <div style={{ fontSize: 12, color: cor.textoTerciario }}>
+                      Próximo evento: {formatarDataAgendamento(p.proximoAgendamento.data)}{" "}
+                      {p.proximoAgendamento.horario ? p.proximoAgendamento.horario.slice(0, 5) : ""}
+                    </div>
+                  )}
+
+                  {p.processo_tags.filter((pt) => pt.tags).length > 0 && (
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {p.processo_tags
+                        .map((pt) => pt.tags)
+                        .filter((t): t is { id: string; valor: string; cor: string | null } => !!t)
+                        .map((t) => {
+                          const c = corEvento(t.id, t.cor);
+                          return (
+                            <span
+                              key={t.id}
+                              style={{
+                                fontSize: 11.5,
+                                fontWeight: 600,
+                                color: c.texto,
+                                background: c.fundo,
+                                borderRadius: 7,
+                                padding: "2px 7px",
+                              }}
+                            >
+                              {t.valor}
+                            </span>
+                          );
+                        })}
+                    </div>
+                  )}
+
+                  {p.ultimoAndamento && (
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        color: cor.textoSecundario,
+                        borderTop: `1px solid ${cor.borda}`,
+                        paddingTop: 8,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                      } as React.CSSProperties}
+                    >
+                      {p.ultimoAndamento}
+                    </div>
+                  )}
+                </div>
+              </CardBento>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }
