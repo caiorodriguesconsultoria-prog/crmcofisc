@@ -51,25 +51,58 @@ a {
   transition-duration: 0.1s;
 }
 
+/* Pedido do Caio: aplicar o visual "app do iPhone" (skill
+   visual-apps-apple-ios26) nos botões de dentro dos cards e das janelas —
+   e, de passagem, centralizar o conteúdo interno (ícone+texto) de todo
+   botão que ainda não fazia isso explicitamente (os botões redondos tipo
+   "×" de fechar modal, por exemplo, não tinham `display:flex`, o que
+   deixava o caractere desalinhado dentro do círculo). `display:flex` aqui
+   vira o padrão pra TODO botão do sistema; quem já setava flex no próprio
+   `style` inline simplesmente mantém, sem mudança. Isso contraria a regra
+   antiga de "sem gradiente em botão" (sinal comum de interface com cara
+   de IA) de propósito — esse gradiente é bem sutil e é pedido explícito
+   do Caio a partir de uma referência visual concreta (ícones de app),
+   não um gradiente decorativo por conta própria. */
 button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
   color: #201f1d;
-  background: #fff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 45%, rgba(32, 31, 29, 0.03) 100%), #fff;
   border: 1px solid rgba(32, 31, 29, 0.14);
+  border-top-color: rgba(255, 255, 255, 0.8);
   border-radius: 10px;
   padding: 8px 14px;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 1px 1px rgba(32, 31, 29, 0.05), 0 2px 6px rgba(32, 31, 29, 0.06);
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 
 button:hover {
-  background: #f8f4f4;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 45%, rgba(32, 31, 29, 0.03) 100%), #f8f4f4;
 }
 
 button:active:not(:disabled) {
   transform: scale(0.97);
+  box-shadow: 0 1px 1px rgba(32, 31, 29, 0.05);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  button {
+    background: #fff;
+  }
+  button:hover {
+    background: #f8f4f4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: background 0.15s ease;
+  }
 }
 
 /* :focus-visible (não :focus) — o anel só aparece pra quem navega pelo
@@ -438,6 +471,14 @@ th {
     max-height: none;
     border-radius: 0;
     box-shadow: none;
+    /* Fundo transparente aqui (era #fff opaco, igual ao desktop) — no
+       celular esse painel cobre a tela inteira, então o branco opaco
+       tapava por completo o fundo aurora do <body>. Os cards de dentro
+       (dados-principais, cronograma etc.) já viraram vidro translúcido;
+       vidro sobre branco sólido praticamente não aparece — era esse o
+       "card continua como a página anterior, informações soltas" que o
+       Caio reportou no vídeo. */
+    background: transparent;
   }
   .crm-painel-alto-topo {
     /* padding-top extra pra não ficar embaixo do botão ☰ flutuante */
@@ -524,8 +565,13 @@ th {
   /* Opacidade calibrada em .82 — .72 ficava quase da mesma cor do fundo
      aurora (pouco contraste, 1º print do Caio); .9 virava quase opaco e
      perdia o efeito vidro. Mesmo valor usado em `card` (lib/theme.ts) e na
-     barra de navegação. */
-  background: rgba(255, 255, 255, 0.82) !important;
+     barra de navegação. O degradê embutido no `background` (duas camadas)
+     é a luz "abaulada" da skill visual-apps-apple-ios26 — clara no topo,
+     um pouco mais escura embaixo — por cima do branco translúcido, sem
+     adicionar mais uma camada de translucidez (ver seção 5 da skill: não
+     empilha vidro com vidro, só a luz do material "app" por cima). */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 35%, rgba(32, 31, 29, 0.04) 100%),
+    rgba(255, 255, 255, 0.82) !important;
   /* Blur/saturate na faixa que a própria Apple usa nos materiais (skill
      apple-design, "Materials & depth": blur(20px) saturate(180%) no
      exemplo deles) — uma rodada anterior subiu pra 30px/200% achando que
@@ -533,17 +579,30 @@ th {
      era o problema (ver abaixo) e deixava a imagem meio lavada. */
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid rgba(32, 31, 29, 0.08) !important;
-  /* Borda de cima bem clara = a borda que "pega luz" no material, truque
-     que a própria Apple usa em vez de uma camada extra de brilho. */
+  border-left: 1px solid rgba(32, 31, 29, 0.05) !important;
+  border-right: 1px solid rgba(32, 31, 29, 0.09) !important;
+  border-bottom: 1px solid rgba(32, 31, 29, 0.1) !important;
+  /* Borda de cima bem clara = a borda que "pega luz" no material (truque
+     da Apple) — mais forte que as outras três, reforça o abaulado. */
   border-top: 1px solid rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 8px 28px rgba(32, 31, 29, 0.12) !important;
+  /* Duas sombras — contato curto (ancora a base) + elevação longa
+     (flutua) — em vez de uma só, que faz o card parecer colado em vez de
+     apoiado. Ver seção 2 da skill visual-apps-apple-ios26. */
+  box-shadow:
+    0 1px 2px rgba(32, 31, 29, 0.08),
+    0 8px 28px rgba(32, 31, 29, 0.12) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 @media (prefers-reduced-transparency: reduce) {
   .crm-cartao-vidro-claro {
     background: rgba(255, 255, 255, 0.98) !important;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crm-cartao-vidro-claro {
+    transition: none;
   }
 }
 

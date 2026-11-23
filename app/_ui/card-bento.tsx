@@ -67,6 +67,11 @@ export default function CardBento({
       style={{
         position: "relative",
         overflow: "hidden",
+        // Item de grid precisa de minWidth:0 explícito — sem isso, o
+        // conteúdo interno (texto que não quebra) define um mínimo maior
+        // que a coluna, e a grade acaba quebrando pra 1 coluna em telas
+        // estreitas em vez dos 2-3 widgets lado a lado esperados.
+        minWidth: 0,
         background: cor.branco,
         borderRadius: pequeno ? raio.cardPequeno : raio.card,
         border: `1px solid ${cor.borda}`,

@@ -63,7 +63,11 @@ export const cor = {
 export const raio = {
   campo: 14,
   tag: 8,
-  cardPequeno: 16,
+  // Subido de 16 pra 20 — widgets pequenos (KPI, Agenda de hoje, Divisão
+  // por coordenação) pedem a curva mais generosa do visual "ícone de app"
+  // (skill visual-apps-apple-ios26); 16px num card de ~120-220px de largura
+  // ainda lia como "quadrado com canto cortado".
+  cardPequeno: 20,
   card: 22,
   painel: 24,
   pilula: 999,
@@ -115,13 +119,23 @@ export const sombraFlutuante = "0 1px 2px rgba(0,0,0,.07), 0 6px 16px rgba(0,0,0
 // Limitação conhecida: por ser um objeto de inline style (não uma
 // classe), não tem o fallback de prefers-reduced-transparency que
 // .crm-cartao-vidro-claro tem — documentado, não resolvido nesta rodada.
+// Correção (vídeo do Caio): esse `card` também é usado dentro de telas com
+// fundo BRANCO OPACO (detalhe do contrato em tela cheia e no modal —
+// .crm-painel-alto/.crm-modal-painel, que de propósito continuam sólidas,
+// não viram vidro — ver o motivo da janela do modal continuar opaca
+// abaixo). Vidro translúcido sobre branco sólido não tem nada atrás pra
+// borrar — vira, na prática, quase indistinguível do fundo (a borda de
+// 8% de opacidade ficava invisível), e isso lia como "os cards sumiram,
+// as informações ficam soltas". Border e opacidade subidos um pouco pra
+// aguentar os dois cenários (aurora por trás OU branco sólido por trás)
+// sem depender de qual é qual.
 export const card: React.CSSProperties = {
-  background: "rgba(255,255,255,.82)",
+  background: "rgba(255,255,255,.88)",
   backdropFilter: "blur(22px) saturate(180%)",
   WebkitBackdropFilter: "blur(22px) saturate(180%)",
   borderRadius: 18,
   padding: "18px 20px",
-  border: "1px solid rgba(32,31,29,.08)",
+  border: "1px solid rgba(32,31,29,.12)",
   boxShadow: sombraCard,
 };
 

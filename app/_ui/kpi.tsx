@@ -54,7 +54,7 @@ export default function Kpi({
         : cor.textoTerciario;
 
   return (
-    <div>
+    <div style={{ minWidth: 0 }}>
       <div
         style={{
           fontSize: 12,
@@ -62,11 +62,15 @@ export default function Kpi({
           textTransform: "uppercase",
           letterSpacing: 0.5,
           color: cor.textoTerciario,
+          overflowWrap: "break-word",
         }}
       >
         {rotulo}
       </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
+      {/* flexWrap — "atenção à agenda"/"agir hoje" ao lado do número força o
+         card a crescer além da largura do widget (grade "esticando" em
+         telas estreitas) se não puder quebrar pra linha de baixo. */}
+      <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
         <span
           style={{
             fontSize: 46,

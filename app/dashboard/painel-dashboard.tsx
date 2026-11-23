@@ -29,6 +29,7 @@ type ProcessoAtividadeHoje = {
   nup: string;
   objeto: string;
   etapaAtual: string;
+  fornecedor: string | null;
   tags: { id: string; valor: string; cor: string | null }[];
   itens: ItemAtividade[];
 };
@@ -147,7 +148,7 @@ export default function PainelDashboard({
             </CardBento>
           );
           return k.href ? (
-            <Link key={k.rotulo} href={k.href} style={{ textDecoration: "none" }}>
+            <Link key={k.rotulo} href={k.href} style={{ textDecoration: "none", display: "block", minWidth: 0 }}>
               {conteudo}
             </Link>
           ) : (
@@ -163,9 +164,14 @@ export default function PainelDashboard({
         {processosAtividadeHoje.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 280px))", gap: 12, justifyContent: "start" }}>
+          // Centralizado — pedido do Caio, pra ficar bem no meio da tela do
+          // celular em vez de colado na esquerda (onde só cabe 1 por linha).
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 260px))", gap: 12, justifyContent: "center" }}>
             {processosAtividadeHoje.map((p, i) => (
               <CardBento key={p.id} indice={i} pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
+                {/* Card resumido — só identidade do contrato (pedido do
+                   Caio: "deixar somente uma parte do card"). Etapa, tags e
+                   os horários do dia ficam pra quando abre o contrato. */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <Link
@@ -199,36 +205,12 @@ export default function PainelDashboard({
                     </span>
                   </div>
                   <p style={{ fontSize: 12.5, color: cor.texto, margin: 0, lineHeight: 1.4 }}>{p.objeto}</p>
+                  {p.fornecedor && (
+                    <p style={{ fontSize: 12, color: cor.textoSecundario, margin: 0 }}>{p.fornecedor}</p>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: cor.textoSecundario }}>
                     <span style={{ fontVariantNumeric: "tabular-nums" }}>{p.nup}</span>
                     <BotaoCopiar texto={p.nup} />
-                  </div>
-                  {p.tags.length > 0 && (
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {p.tags.map((t) => {
-                        const c = corEvento(t.id, t.cor);
-                        return (
-                          <span
-                            key={t.id}
-                            style={{ fontSize: 10.5, fontWeight: 600, color: c.texto, background: c.fundo, borderRadius: 7, padding: "2px 7px" }}
-                          >
-                            {t.valor}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, borderTop: `1px solid ${cor.borda}`, paddingTop: 8 }}>
-                    {p.itens.map((item, idx) => (
-                      <span key={idx} style={{ fontSize: 12, color: cor.texto }}>
-                        {item.horario
-                          ? `${item.horario.slice(0, 5)} · `
-                          : item.periodo
-                            ? `${item.periodo === "manha" ? "Manhã" : "Tarde"} · `
-                            : ""}
-                        {item.rotulo}
-                      </span>
-                    ))}
                   </div>
                 </div>
               </CardBento>
@@ -342,7 +324,7 @@ export default function PainelDashboard({
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 220px))", gap: 12, justifyContent: "start" }}>
             {parados.map((p, i) => (
-              <Link key={p.id} href={`/processos/${p.id}`} style={{ textDecoration: "none" }}>
+              <Link key={p.id} href={`/processos/${p.id}`} style={{ textDecoration: "none", display: "block", minWidth: 0 }}>
                 <CardBento indice={i} clicavel pequeno vidroClaro corAcento={cor.atencao}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <strong style={{ fontSize: 14, color: cor.texto }}>{p.numeroContrato}</strong>
