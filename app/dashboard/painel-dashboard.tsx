@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Sparkles } from "lucide-react";
-import { card, cor, PALETA_VIVA } from "@/lib/theme";
+import { cor, PALETA_VIVA } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { corEtapa } from "@/lib/cor-etapa";
 import MedidorCircular from "@/app/_ui/medidor-circular";
@@ -130,8 +130,8 @@ export default function PainelDashboard({
   ];
 
   return (
-    <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
         {kpis.map((k, i) => {
           const conteudo = (
             <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} corAcento={PALETA_VIVA[i % PALETA_VIVA.length]} vidroClaro>
@@ -179,15 +179,15 @@ export default function PainelDashboard({
       )}
 
       <div>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Agenda de hoje</h2>
-        <p style={{ fontSize: 12.5, color: cor.textoTerciario, margin: "0 0 12px" }}>Contratos com tarefa ou agendamento marcado pra hoje</p>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Agenda de hoje</h2>
+        <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 8px" }}>Contratos com tarefa ou agendamento marcado pra hoje</p>
         {processosAtividadeHoje.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12 }}>
             {processosAtividadeHoje.map((p, i) => (
-              <CardBento key={p.id} indice={i} vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CardBento key={p.id} indice={i} pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <Link
                       href={`/processos/${p.id}`}
@@ -259,17 +259,17 @@ export default function PainelDashboard({
       </div>
 
       <div>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Prazos da semana</h2>
-        <p style={{ fontSize: 12.5, color: cor.textoTerciario, margin: "0 0 12px" }}>Contratos ativos com prazo nos próximos 7 dias</p>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Prazos da semana</h2>
+        <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 8px" }}>Contratos ativos com prazo nos próximos 7 dias</p>
         {prazosDaSemana.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum prazo nos próximos 7 dias.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
             {prazosDaSemana.map((p, i) => (
               <Link key={p.id} href={`/processos/${p.id}`} style={{ textDecoration: "none" }}>
-                <CardBento indice={i} clicavel vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <strong style={{ fontSize: 15, color: cor.texto, fontVariantNumeric: "tabular-nums" }}>{p.numeroContrato}</strong>
+                <CardBento indice={i} clicavel pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <strong style={{ fontSize: 14, color: cor.texto, fontVariantNumeric: "tabular-nums" }}>{p.numeroContrato}</strong>
                     <IndicadorUrgencia
                       nivel={nivelUrgenciaPorDias(p.dias)}
                       texto={p.dias === 0 ? "vence hoje" : `${p.dias} dia${p.dias > 1 ? "s" : ""}`}
@@ -283,17 +283,17 @@ export default function PainelDashboard({
       </div>
 
       <div>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Divisão por coordenação</h2>
-        <p style={{ fontSize: 12.5, color: cor.textoTerciario, margin: "0 0 12px" }}>Contratos ativos</p>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Divisão por coordenação</h2>
+        <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 8px" }}>Contratos ativos</p>
         {divisaoPorCoordenacao.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
             {divisaoPorCoordenacao.map((c, i) => (
               <CardBento key={c.sigla} indice={i} pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <TagRotulo texto={c.sigla} corTexto={PALETA_VIVA[i % PALETA_VIVA.length]} />
-                  <strong style={{ fontSize: 28, fontWeight: 700, color: cor.texto, fontVariantNumeric: "tabular-nums" }}>{c.total}</strong>
+                  <strong style={{ fontSize: 22, fontWeight: 700, color: cor.texto, fontVariantNumeric: "tabular-nums" }}>{c.total}</strong>
                   <div style={{ height: 6, borderRadius: 3, background: cor.borda, overflow: "hidden" }}>
                     <div
                       style={{
@@ -311,12 +311,12 @@ export default function PainelDashboard({
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
-        <CardBento titulo="Contratos por etapa" indice={0} corAcento={PALETA_VIVA[0]} vidroClaro>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+        <CardBento titulo="Contratos por etapa" indice={0} pequeno corAcento={PALETA_VIVA[0]} vidroClaro>
           {dadosEtapas.length === 0 ? (
             <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
           ) : (
-            <div style={{ width: "100%", height: 260 }}>
+            <div style={{ width: "100%", height: 150 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={dadosEtapas} dataKey="valor" nameKey="nome" innerRadius="55%" outerRadius="88%" paddingAngle={2}>
@@ -331,11 +331,11 @@ export default function PainelDashboard({
           )}
         </CardBento>
 
-        <CardBento titulo="Eventos" subtitulo="Quantos contratos ativos têm cada evento agora" indice={1} corAcento={PALETA_VIVA[1]} vidroClaro>
+        <CardBento titulo="Eventos" subtitulo="Quantos contratos ativos têm cada evento agora" indice={1} pequeno corAcento={PALETA_VIVA[1]} vidroClaro>
           {dadosEventos.length === 0 ? (
             <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum evento ativo no momento.</p>
           ) : (
-            <div style={{ width: "100%", height: 260 }}>
+            <div style={{ width: "100%", height: 150 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={dadosEventos} dataKey="valor" nameKey="nome" innerRadius="55%" outerRadius="88%" paddingAngle={2}>
@@ -348,14 +348,14 @@ export default function PainelDashboard({
               </ResponsiveContainer>
             </div>
           )}
-          <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
+          <div style={{ marginTop: 6, display: "flex", justifyContent: "center" }}>
             <MedidorCircular
               valor={emCoberturaFerias}
               total={processos.length}
               corPreenchido={cor.atencao}
               corTrilha={cor.atencaoFundo}
               rotulo="Cobertura de férias"
-              tamanho={72}
+              tamanho={60}
             />
           </div>
         </CardBento>
@@ -366,9 +366,8 @@ export default function PainelDashboard({
         // pedido do Caio depois de ver as duas num mesmo print.
         const entregasRestantes = entregasEmAtraso.filter((e) => e.id !== acaoDoDia?.entregaDestacadaId);
         return entregasRestantes.length > 0 && (
-        <div style={{ ...card, background: cor.urgenteFundo, border: "none", borderLeft: `4px solid ${cor.urgente}` }}>
-          <strong style={{ fontSize: 13, color: cor.urgente }}>Entregas em atraso</strong>
-          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+        <CardBento titulo="Entregas em atraso" pequeno vidroClaro corAcento={cor.urgente}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {entregasRestantes.map((e) => (
               <Link
                 key={e.id}
@@ -379,13 +378,13 @@ export default function PainelDashboard({
               </Link>
             ))}
           </div>
-        </div>
+        </CardBento>
         );
       })()}
 
       <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: cor.texto, margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.atencao }} />
             Contratos parados
           </h2>
@@ -404,7 +403,7 @@ export default function PainelDashboard({
         {parados.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato parado além do limite.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
             {parados.map((p, i) => (
               <Link key={p.id} href={`/processos/${p.id}`} style={{ textDecoration: "none" }}>
                 <CardBento indice={i} clicavel pequeno vidroClaro corAcento={cor.atencao}>

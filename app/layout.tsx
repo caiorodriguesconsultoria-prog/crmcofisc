@@ -1,14 +1,17 @@
-import { Nunito } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import SentryUsuario from "./_sentry-usuario";
 import { cor } from "@/lib/theme";
 
-// Trocada de Urbanist pra Nunito — mais próxima da fonte arredondada das
-// referências que o Caio trouxe (apps estilo Apple/Instagram, print do
-// "Flutter Your Way"); SF Pro Rounded em si não é uma fonte de uso livre
-// na web, Nunito é a mais parecida (terminais arredondados, boa leitura
-// em tamanho pequeno pros números/rótulos densos do CRM).
-const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", weight: ["400", "500", "600", "700", "800"] });
+// Trocada de Nunito pra Inter — Caio reportou que Nunito (terminais
+// arredondados, "fofa") ainda não batia com a referência (prints de app
+// estilo Apple/"Flutter Your Way"). Olhando de novo, a fonte da
+// referência é neutra/geométrica, sem arredondamento nenhum — muito mais
+// perto da própria SF Pro/system font da Apple (que não é de uso livre
+// na web) do que de uma fonte "rounded". Inter é a referência mais
+// comum pra imitar esse visual de UI nativa, com números tabulares bons
+// e ótima leitura em tamanho pequeno.
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata = {
   title: "CRM-COFISC",
@@ -28,18 +31,17 @@ export default function RootLayout({
   modal: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={nunito.variable}>
+    <html lang="pt-BR" className={inter.variable}>
       <body
+        className="crm-fundo-aurora"
         style={{
-          fontFamily: "var(--font-nunito), system-ui, sans-serif",
+          fontFamily: "var(--font-inter), system-ui, sans-serif",
           margin: 0,
-          // Fundo em cor plana (uma rampa neutra só) — o degradê multi-tom
-          // que tinha aqui (pra bater com o site de referência) foi retirado
-          // a pedido do Caio: gradiente de fundo é um dos sinais mais comuns
-          // de interface com "cara de IA" (auditoria de design, regras de
-          // cor). cor.fundo é o mesmo neutro já usado em todo o resto do
-          // sistema.
-          background: cor.fundo,
+          // Fundo em degradê suave ("aurora", ver .crm-fundo-aurora em
+          // globals.css) — pedido explícito do Caio a partir de uma
+          // referência visual, aplicado no body pra cobrir TODA página,
+          // inclusive a barra de navegação no topo (antes só o Painel por
+          // dentro tinha o degradê, a barra ficava branca por cima).
           color: cor.texto,
           minHeight: "100vh",
           display: "flex",

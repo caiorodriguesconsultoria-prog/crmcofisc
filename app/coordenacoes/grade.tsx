@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { botaoPrimario, card, cor } from "@/lib/theme";
+import { botaoPrimario, cor, PALETA_VIVA } from "@/lib/theme";
 import { BotaoCopiar } from "@/app/_ui/campo";
+import CardBento from "@/app/_ui/card-bento";
 
 type MembroEquipe = { id: string; papelId: string; nome: string; email: string | null; ramal: string | null };
 
@@ -26,7 +27,7 @@ async function copiar(texto: string) {
   }
 }
 
-function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boolean }) {
+function Card({ coordenacao, isAdmin, indice }: { coordenacao: Coordenacao; isAdmin: boolean; indice: number }) {
   const router = useRouter();
   const supabase = createClient();
   const c = coordenacao;
@@ -113,7 +114,8 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
   }
 
   return (
-    <div style={{ ...card, display: "flex", flexDirection: "column", gap: 14 }}>
+    <CardBento indice={indice} vidroClaro corAcento={PALETA_VIVA[indice % PALETA_VIVA.length]}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
         <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: cor.destaqueFundo, color: cor.destaque }}>
           {c.sigla}
@@ -255,7 +257,8 @@ function Card({ coordenacao, isAdmin }: { coordenacao: Coordenacao; isAdmin: boo
           </button>
         )}
       </div>
-    </div>
+      </div>
+    </CardBento>
   );
 }
 
@@ -290,8 +293,8 @@ export default function GradeCoordenacoes({
         alignItems: "start",
       }}
     >
-      {coordenacoes.map((c) => (
-        <Card key={c.id} coordenacao={c} isAdmin={isAdmin} />
+      {coordenacoes.map((c, i) => (
+        <Card key={c.id} coordenacao={c} isAdmin={isAdmin} indice={i} />
       ))}
     </div>
   );

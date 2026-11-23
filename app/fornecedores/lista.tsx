@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { botaoPrimario, card, cor } from "@/lib/theme";
+import { botaoPrimario, cor, PALETA_VIVA } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
 import { BotaoCopiar } from "@/app/_ui/campo";
+import CardBento from "@/app/_ui/card-bento";
 type Email = { email: string; rotulo: string | null };
 type Fornecedor = {
   id: string;
@@ -151,94 +152,85 @@ export default function ListaFornecedores({
     >
       {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro}</p>}
 
-      <div style={{ ...card, padding: 0, overflow: "hidden" }}>
-        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-        <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: `1px solid ${cor.borda}` }}>
-              <th style={{ padding: "10px 12px" }}>Nome</th>
-              <th style={{ padding: "10px 12px" }}>CNPJ</th>
-              <th style={{ padding: "10px 12px" }}>Preposto</th>
-              <th style={{ padding: "10px 12px" }}>Telefone</th>
-              <th style={{ padding: "10px 12px" }}>E-mails</th>
-              <th style={{ padding: "10px 12px" }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {fornecedores.map((f) => (
-              <tr key={f.id} style={{ borderBottom: `1px solid ${cor.borda}` }}>
-                <td style={{ padding: "10px 12px" }}>
-                  <Link href={`/fornecedores/${f.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
-                    {f.nome}
-                  </Link>
-                </td>
-                <td style={{ padding: "10px 12px" }}>{f.cnpj}</td>
-                <td style={{ padding: "10px 12px" }}>{f.preposto}</td>
-                <td style={{ padding: "10px 12px" }}>{f.telefone}</td>
-                                <td style={{ padding: "10px 12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>
-                      {(f.fornecedor_emails ?? [])
-                        .map((e) => (e.rotulo ? `${e.email} (${e.rotulo})` : e.email))
-                        .join(", ")}
+      {fornecedores.length === 0 ? (
+        <p style={{ color: cor.textoTerciario, marginTop: 10 }}>Nenhum fornecedor cadastrado.</p>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginTop: 10 }}>
+          {fornecedores.map((f, i) => (
+            <CardBento key={f.id} indice={i} vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <Link href={`/fornecedores/${f.id}`} style={{ fontSize: 14, fontWeight: 700, color: cor.texto, textDecoration: "none" }}>
+                  {f.nome}
+                </Link>
+
+                <div>
+                  <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>CNPJ</div>
+                  <div style={{ fontSize: 12.5, color: cor.texto, marginTop: 1 }}>{f.cnpj || "—"}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>Preposto</div>
+                  <div style={{ fontSize: 12.5, color: cor.texto, marginTop: 1 }}>{f.preposto || "—"}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>Telefone</div>
+                  <div style={{ fontSize: 12.5, color: cor.texto, marginTop: 1 }}>{f.telefone || "—"}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>E-mails</div>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: 1 }}>
+                    <span style={{ fontSize: 12.5, color: cor.texto, overflowWrap: "break-word" }}>
+                      {(f.fornecedor_emails ?? []).length > 0
+                        ? (f.fornecedor_emails ?? []).map((e) => (e.rotulo ? `${e.email} (${e.rotulo})` : e.email)).join(", ")
+                        : "—"}
                     </span>
                     {(f.fornecedor_emails ?? []).length > 0 && (
                       <BotaoCopiar texto={(f.fornecedor_emails ?? []).map((e) => e.email).join("; ")} />
                     )}
                   </div>
-                </td>
-                <td style={{ padding: "10px 12px" }}>
-                  {isAdmin && (
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button
-                        type="button"
-                        onClick={() => abrirEdicao(f)}
-                        title="Editar"
-                        aria-label={`Editar ${f.nome}`}
-                        style={{
-                          fontSize: 10.5,
-                          padding: "3px 9px",
-                          borderRadius: 8,
-                          border: "none",
-                          background: "rgba(96,93,93,.10)",
-                          color: cor.textoSecundario,
-                        }}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        disabled={excluindoId === f.id}
-                        onClick={() => excluir(f)}
-                        title="Excluir"
-                        aria-label={`Excluir ${f.nome}`}
-                        style={{
-                          fontSize: 10.5,
-                          padding: "3px 9px",
-                          borderRadius: 8,
-                          border: "none",
-                          background: cor.urgenteFundo,
-                          color: cor.urgente,
-                        }}
-                      >
-                        {excluindoId === f.id ? "..." : "Excluir"}
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {fornecedores.length === 0 && (
-              <tr>
-                <td colSpan={6} style={{ padding: "10px 12px", color: cor.textoTerciario }}>
-                  Nenhum fornecedor cadastrado.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                </div>
+
+                {isAdmin && (
+                  <div style={{ display: "flex", gap: 6, borderTop: `1px solid ${cor.borda}`, paddingTop: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => abrirEdicao(f)}
+                      title="Editar"
+                      aria-label={`Editar ${f.nome}`}
+                      style={{
+                        fontSize: 10.5,
+                        padding: "3px 9px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: "rgba(96,93,93,.10)",
+                        color: cor.textoSecundario,
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={excluindoId === f.id}
+                      onClick={() => excluir(f)}
+                      title="Excluir"
+                      aria-label={`Excluir ${f.nome}`}
+                      style={{
+                        fontSize: 10.5,
+                        padding: "3px 9px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: cor.urgenteFundo,
+                        color: cor.urgente,
+                      }}
+                    >
+                      {excluindoId === f.id ? "..." : "Excluir"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </CardBento>
+          ))}
         </div>
-      </div>
+      )}
 
       {editando && (
         <div
