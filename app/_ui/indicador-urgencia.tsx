@@ -25,18 +25,11 @@ const CORES_TEXTO: Record<NivelUrgencia, string> = {
 export default function IndicadorUrgencia({
   nivel,
   texto,
-  textoEscuro,
 }: {
   nivel: NivelUrgencia;
   texto: string;
-  /** Protótipo do vidro/tema escuro (Painel) — as versões escurecidas de
-   * CORES_TEXTO foram calibradas pra contraste contra fundo BRANCO; em
-   * cima do vidro escuro ficam baixo contraste (verde/âmbar/vermelho
-   * escuros sobre marrom escuro). Usa a versão "cheia" (mais clara) nesse
-   * caso, que já tem contraste bom o bastante contra um fundo escuro. */
-  textoEscuro?: boolean;
 }) {
-  const corTexto = textoEscuro ? CORES_PONTO[nivel] : CORES_TEXTO[nivel];
+  const corTexto = CORES_TEXTO[nivel];
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: corTexto }}>
       <span style={{ width: 8, height: 8, borderRadius: "50%", background: CORES_PONTO[nivel], flex: "none" }} />

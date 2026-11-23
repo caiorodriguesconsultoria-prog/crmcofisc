@@ -1189,3 +1189,15 @@ Primeira tela convertida pro formato "widget" que o Caio pediu (Coordenações e
 - Números com `tabular-nums` no NUP.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-23 · Desfeito o tema escuro do Painel, fundo "aurora" claro em tudo
+Caio trouxe um print de referência (app estilo Apple/Instagram, fundo em degradê suave verde-sálvia + widgets brancos translúcidos) e pediu pra substituir o protótipo de tema escuro por esse visual, aplicado em tudo — confirmado via pergunta ("substituir tudo pelo claro").
+
+- **`.crm-fundo-aurora`** (novo, `globals.css`): fundo em degradê com manchas borradas (verde-sálvia + creme), atrás dos widgets — aplicado no Painel e em Contratos (ativos e concluídos) via prop `fundoAurora` do componente `Painel` (antes `temaEscuro`).
+- Removido todo o material de vidro ESCURO (`corAcento`/`vidro` escuro, `lib/tema-escuro.ts`, props `escuro`/`textoEscuro` em `Kpi`/`IndicadorUrgencia`/`MedidorCircular`) — o Painel volta a usar as cores normais do tema (`cor.*`) por cima do vidro CLARO (`vidroClaro`), já que o fundo deixou de ser escuro.
+- Acentos dos widgets do Painel passam a usar a mesma `PALETA_VIVA` já usada no resto do sistema (pizzas, coordenação), em vez de uma paleta própria do tema escuro.
+- Fonte não mudou — já era Urbanist (escolhida numa etapa anterior por ser próxima da estética arredondada da referência), continua.
+- Decisão consciente: isso reverte a regra geral de "sem degradê no fundo" (sinal comum de interface com cara de IA) só pra esse visual específico, porque foi um pedido explícito do Caio com referência visual, não um gradiente decorativo por conta própria.
+- Botão de escolher cor de fundo (cogitado): meio-passo decidido NÃO fazer agora, por pedido do próprio Caio — foco em acertar o visual fixo primeiro.
+
+Build e `tsc --noEmit` limpos. Sem migração.

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { animate, useReducedMotion } from "framer-motion";
 import { cor, movimento } from "@/lib/theme";
-import { corEscura } from "@/lib/tema-escuro";
 
 // KPI do dashboard — rótulo pequeno, número de 40px, variação em texto
 // colorido (nunca pílula preenchida). O número conta até o valor final só
@@ -14,7 +13,6 @@ export default function Kpi({
   sufixo,
   variacao,
   corNumero,
-  escuro,
 }: {
   rotulo: string;
   /** Número puro — a formatação pt-BR (milhar) é feita aqui dentro. */
@@ -25,10 +23,6 @@ export default function Kpi({
   /** Cor do número — opcional, pra diferenciar KPIs lado a lado (pedido do
    * Caio: "mais cores, algo mais vivo"). Sem isso, fica no neutro de sempre. */
   corNumero?: string;
-  /** Protótipo do vidro/tema escuro (Painel) — rótulo e variação em texto
-   * claro; as versões "Texto" (escurecidas pra contraste contra BRANCO)
-   * ficavam ilegíveis em cima do vidro escuro. */
-  escuro?: boolean;
 }) {
   const reduzido = useReducedMotion();
   const [exibido, setExibido] = useState(reduzido ? valor : 0);
@@ -52,13 +46,8 @@ export default function Kpi({
   // Versões escuras (positivoTexto/urgenteTexto) — texto pequeno de 12,5px
   // precisa de 4,5:1 de contraste; cor.positivo/cor.urgente "cheias" só têm
   // 3 a 4,3:1 (ver nota em lib/theme.ts, Etapa 6 do redesenho).
-  const corVariacao = escuro
-    ? variacao?.sentido === "positivo"
-      ? cor.positivo
-      : variacao?.sentido === "negativo"
-        ? cor.urgente
-        : corEscura.textoTerciario
-    : variacao?.sentido === "positivo"
+  const corVariacao =
+    variacao?.sentido === "positivo"
       ? cor.positivoTexto
       : variacao?.sentido === "negativo"
         ? cor.urgenteTexto
@@ -72,7 +61,7 @@ export default function Kpi({
           fontWeight: 600,
           textTransform: "uppercase",
           letterSpacing: 0.5,
-          color: escuro ? corEscura.textoTerciario : cor.textoTerciario,
+          color: cor.textoTerciario,
         }}
       >
         {rotulo}
@@ -82,7 +71,7 @@ export default function Kpi({
           style={{
             fontSize: 46,
             fontWeight: 600,
-            color: corNumero ?? (escuro ? corEscura.texto : cor.texto),
+            color: corNumero ?? cor.texto,
             lineHeight: 1,
             fontVariantNumeric: "tabular-nums",
           }}

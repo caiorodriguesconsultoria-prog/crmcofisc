@@ -210,6 +210,7 @@ export default async function ProcessosPage({
         titulo={titulo}
         subtitulo={titulo !== "Contratos" ? "Contratos" : undefined}
         maxWidth={1800}
+        fundoAurora
         // <a> normal (não o <Link> do Next) de propósito — /processos/novo tem o
         // mesmo formato de URL que a rota interceptada do modal /processos/[id],
         // e navegação client-side acaba caindo no modal tratando "novo" como id.

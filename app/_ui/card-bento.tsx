@@ -2,7 +2,6 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { cor, raio, movimento } from "@/lib/theme";
-import { corEscura } from "@/lib/tema-escuro";
 import { usarPodeHover } from "./usar-pode-hover";
 
 // Card base da grade bento — cabeçalho igual em todo lugar (título +
@@ -19,7 +18,6 @@ export default function CardBento({
   children,
   style,
   corAcento,
-  vidro,
   vidroClaro,
 }: {
   titulo?: string;
@@ -36,14 +34,9 @@ export default function CardBento({
    * não só cor sólida) na lateral esquerda. Usado pro acento do Painel e
    * pro status de entrega em Contratos. */
   corAcento?: string;
-  /** Material "vidro" (Liquid Glass) ESCURO — escuro tingido + blur, pro
-   * protótipo de tema escuro do Painel. O título/subtítulo viram texto
-   * claro automaticamente (vidro escuro com texto escuro ficava ilegível —
-   * foi o bug do 1º print). */
-  vidro?: boolean;
-  /** Material "vidro" CLARO — mesma ideia, mas pras telas que continuam no
-   * fundo claro padrão (Contratos, Coordenações, Fornecedores). Texto
-   * continua com as cores normais do tema, sem precisar de variante. */
+  /** Material "vidro" (Liquid Glass) — branco translúcido com blur, sobre
+   * o fundo em degradê do Painel ou o fundo claro padrão do resto do
+   * sistema. Texto continua com as cores normais do tema. */
   vidroClaro?: boolean;
 }) {
   const reduzido = useReducedMotion();
@@ -70,7 +63,7 @@ export default function CardBento({
           ? { scale: 0.97, transition: movimento.springPress }
           : undefined
       }
-      className={vidro ? "crm-cartao-vidro" : vidroClaro ? "crm-cartao-vidro-claro" : undefined}
+      className={vidroClaro ? "crm-cartao-vidro-claro" : undefined}
       style={{
         position: "relative",
         overflow: "hidden",
@@ -87,9 +80,9 @@ export default function CardBento({
       {(titulo || acao) && (
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: carregando ? 0 : 14 }}>
           <div style={{ minWidth: 0 }}>
-            {titulo && <div style={{ fontSize: 18, fontWeight: 600, color: vidro ? corEscura.texto : cor.texto }}>{titulo}</div>}
+            {titulo && <div style={{ fontSize: 18, fontWeight: 600, color: cor.texto }}>{titulo}</div>}
             {subtitulo && (
-              <div style={{ fontSize: 13, color: vidro ? corEscura.textoTerciario : cor.textoTerciario, marginTop: 2 }}>
+              <div style={{ fontSize: 13, color: cor.textoTerciario, marginTop: 2 }}>
                 {subtitulo}
               </div>
             )}
