@@ -1299,6 +1299,11 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-11-23 · Quadro Resumitivo: Gestor/Fiscal em coluna única
+Caio pediu pra organizar Gestor Titular/Substituto e Fiscal Titular/Substituto um embaixo do outro, nessa ordem — estavam intercalados com Valor Global/Garantia porque eram itens soltos no mesmo grid de 2 colunas (`gridAutoFlow: "dense"`), que preenche os buracos na ordem que aparecem no código, não por grupo. Agrupei os 4 campos num `<div style={{ gridColumn: "1 / -1" }}>` com coluna única dentro, ocupando as duas colunas do grid externo.
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 ## 2026-11-23 · Auditoria de legibilidade (contraste) e responsividade (itens #5 e #9 do backlog)
 Caio pediu pra fechar os dois itens pendentes do backlog: checar a legibilidade da fonte e fazer uma revisão responsiva do sistema. Em vez de ajustar caso a caso por impressão visual, medi o contraste de verdade (fórmula de luminância relativa da WCAG) das cores de texto do sistema contra fundo branco.
 

@@ -753,6 +753,11 @@ export default function QuadroResumitivo({
           </div>
         </div>
 
+        {/* Gestor/fiscal um embaixo do outro, nessa ordem (pedido do Caio)
+           — bloco de coluna única que ocupa as duas colunas do grid de
+           fora, em vez de cada campo virar item separado do grid (que
+           intercalava com Valor global/garantia por causa do auto-flow). */}
+        <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
           <div style={rotulo}>Gestor Titular</div>
           <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
@@ -780,6 +785,7 @@ export default function QuadroResumitivo({
             {formatarPessoa(processo.fiscal_substituto)}
             {processo.fiscal_substituto && <BotaoCopiar texto={formatarPessoa(processo.fiscal_substituto)} />}
           </div>
+        </div>
         </div>
       </div>
 
