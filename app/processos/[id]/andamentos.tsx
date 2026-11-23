@@ -69,10 +69,11 @@ export default function Andamentos({
   const [texto, setTexto] = useState("");
   const [incluirRelatorio, setIncluirRelatorio] = useState(false);
   const [tagIds, setTagIds] = useState<string[]>([]);
-  const [tagsCriadas, setTagsCriadas] = useState<Tag[]>([]);
-  const [criandoEvento, setCriandoEvento] = useState(false);
-  const [nomeNovoEvento, setNomeNovoEvento] = useState("");
-  const [corNovoEvento, setCorNovoEvento] = useState("#2F5FDB");
+  // Digitar "/" no texto abre a busca de tag, igual ao checklist — a
+  // criação de tag nova fica só lá em cima (EventosAtivos, app/processos/
+  // [id]/painel.tsx), não duplicada aqui.
+  const [buscaTagSlash, setBuscaTagSlash] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [arquivosNovos, setArquivosNovos] = useState<FileList | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -83,28 +84,21 @@ export default function Andamentos({
   const [melhorandoTexto, setMelhorandoTexto] = useState(false);
   const [listaAberta, setListaAberta] = useState(false);
 
-  const todasAsTags = [...tagsDisponiveis, ...tagsCriadas.filter((t) => !tagsDisponiveis.some((d) => d.id === t.id))];
-
   function alternarTag(tagId: string) {
     setTagIds((atual) => (atual.includes(tagId) ? atual.filter((id) => id !== tagId) : [...atual, tagId]));
   }
 
-  async function criarEvento() {
-    if (!nomeNovoEvento.trim()) return;
-    setErro(null);
-    const { data: novaTag, error } = await supabase
-      .from("tags")
-      .insert({ categoria: "evento", valor: nomeNovoEvento.trim(), ativo: true, cor: corNovoEvento })
-      .select("id, valor, cor")
-      .single();
-    if (error || !novaTag) {
-      setErro(error?.message ?? "Erro ao criar evento");
-      return;
-    }
-    setTagsCriadas((atual) => [...atual, novaTag]);
-    setTagIds((atual) => [...atual, novaTag.id]);
-    setNomeNovoEvento("");
-    setCriandoEvento(false);
+  function aoDigitarTexto(valor: string) {
+    setTexto(valor);
+    const m = valor.match(/\/(\S*)$/);
+    setBuscaTagSlash(m ? m[1] : null);
+  }
+
+  function selecionarTagViaSlash(tagId: string) {
+    setTexto((atual) => atual.replace(/\/(\S*)$/, ""));
+    setTagIds((ids) => (ids.includes(tagId) ? ids : [...ids, tagId]));
+    setBuscaTagSlash(null);
+    textareaRef.current?.focus();
   }
 
   function limparFormulario() {
@@ -113,6 +107,7 @@ export default function Andamentos({
     setTagIds([]);
     setArquivosNovos(null);
     setErro(null);
+    setBuscaTagSlash(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -245,12 +240,71 @@ export default function Andamentos({
       >
         <div style={{ position: "relative" }}>
           <textarea
+            ref={textareaRef}
             value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder="Escreva livremente o que aconteceu..."
+            onChange={(e) => aoDigitarTexto(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setBuscaTagSlash(null);
+            }}
+            placeholder="Escreva livremente o que aconteceu... (digite / pra marcar um evento)"
             required
             style={{ padding: 8, paddingRight: 72, minHeight: 60, width: "100%" }}
           />
+          {buscaTagSlash !== null &&
+            (() => {
+              const sugestoes = tagsDisponiveis.filter(
+                (t) => !tagIds.includes(t.id) && t.valor.toLowerCase().includes(buscaTagSlash.toLowerCase()),
+              );
+              if (sugestoes.length === 0) return null;
+              return (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    marginTop: 4,
+                    background: "#fff",
+                    border: `1px solid ${cor.borda}`,
+                    borderRadius: 8,
+                    boxShadow: "0 8px 20px rgba(32,31,29,.14)",
+                    zIndex: 20,
+                    minWidth: 200,
+                    maxHeight: 180,
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    padding: 4,
+                  }}
+                >
+                  {sugestoes.map((t) => {
+                    const c = corEvento(t.id, t.cor);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => selecionarTagViaSlash(t.id)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 7,
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "6px 10px",
+                          border: "none",
+                          background: "transparent",
+                          borderRadius: 6,
+                          fontSize: 12.5,
+                          color: cor.texto,
+                        }}
+                      >
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: c.texto, flex: "none" }} />
+                        {t.valor}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           <button
             type="button"
             onClick={melhorarComIA}
@@ -313,55 +367,10 @@ export default function Andamentos({
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {criandoEvento ? (
-            <div style={{ display: "flex", gap: 6 }}>
-              <input
-                value={nomeNovoEvento}
-                onChange={(e) => setNomeNovoEvento(e.target.value)}
-                placeholder="Nome do novo evento"
-                style={{ padding: 8, flex: 1 }}
-              />
-              <input
-                type="color"
-                value={corNovoEvento}
-                onChange={(e) => setCorNovoEvento(e.target.value)}
-                title="Cor do evento"
-                style={{ width: 38, padding: 2, flex: "none" }}
-              />
-              <button type="button" onClick={criarEvento} disabled={!nomeNovoEvento.trim()}>
-                Criar
-              </button>
-              <button type="button" onClick={() => { setCriandoEvento(false); setNomeNovoEvento(""); }}>
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", gap: 6 }}>
-              <select
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) alternarTag(e.target.value);
-                }}
-                style={{ padding: 8, flex: 1 }}
-              >
-                <option value="">Tipo de evento...</option>
-                {todasAsTags
-                  .filter((t) => !tagIds.includes(t.id))
-                  .map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.valor}
-                    </option>
-                  ))}
-              </select>
-              <button type="button" onClick={() => setCriandoEvento(true)} style={{ whiteSpace: "nowrap" }}>
-                + Novo Evento
-              </button>
-            </div>
-          )}
           {tagIds.length > 0 && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {tagIds.map((id) => {
-                const t = todasAsTags.find((x) => x.id === id);
+                const t = tagsDisponiveis.find((x) => x.id === id);
                 if (!t) return null;
                 const c = corEvento(t.id, t.cor);
                 return (
