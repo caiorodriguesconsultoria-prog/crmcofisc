@@ -1270,3 +1270,12 @@ Caio pediu pra trocar o tom do fundo em degradê de verde-sálvia/creme pra azul
 - `.crm-fundo-aurora`: manchas borradas recalibradas pros tons de azul já usados na marca do sistema (`cor.azul`/`azulEscuro`/`azulClaroDestaque` em `lib/theme.ts`), em vez de inventar uma paleta nova — mantém a cor do sistema coerente com o resto (links, pílula ativa, etc. já são desse mesmo azul).
 
 Build e `tsc --noEmit` limpos. Sem migração nesta mudança (a migração pendente de `painel_layout`, da rodada anterior, continua aguardando o Caio rodar).
+
+## 2026-11-23 · Nova tarefa: tags na mesma barra do texto + atalho "/"
+Caio pediu pra redesenhar o formulário de nova tarefa: as tags marcadas deveriam aparecer dentro da própria barra de texto (antes do texto), não numa linha separada embaixo, e também poder digitar "/" no meio do texto pra abrir a busca de tag sem precisar ir até o menu.
+
+- `app/processos/[id]/checklist.tsx`: o menu "+ Marcar tag de evento..." e os chips das tags selecionadas saem da segunda linha e entram na mesma barra do campo de texto — a barra vira um container único (borda, fundo branco) com os chips primeiro e o `<input>` de texto logo depois, fluindo igual um campo de chat.
+- **Atalho "/"**: digitar "/" seguido de parte do nome do evento, em qualquer ponto do texto, abre uma lista de sugestões (filtrada pelo que foi digitado) logo abaixo da barra. Selecionar uma tira o "/termo" do texto (mantendo o que foi escrito antes) e marca a tag como chip — o cursor volta pro campo, pronto pra continuar escrevendo.
+- Os dois jeitos de marcar tag (menu ou "/") continuam coexistindo, como o Caio pediu.
+
+Build e `tsc --noEmit` limpos. Sem migração.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { botaoPrimario, cor } from "@/lib/theme";
@@ -261,6 +261,11 @@ export default function Checklist({
   const [tarefaLabel, setTarefaLabel] = useState("");
   const [tarefaData, setTarefaData] = useState("");
   const [tarefaTagIds, setTarefaTagIds] = useState<string[]>([]);
+  // Atalho "/" na barra de texto da nova tarefa — digitar "/" (e, opcional,
+  // parte do nome) abre uma lista de tags pra marcar sem precisar ir até o
+  // menu suspenso. null = não está em modo de busca agora.
+  const [buscaTagSlash, setBuscaTagSlash] = useState<string | null>(null);
+  const tarefaInputRef = useRef<HTMLInputElement>(null);
   const [modalTarefaId, setModalTarefaId] = useState<string | null>(null);
   const [modalObservacoes, setModalObservacoes] = useState<Observacao[] | null>(null);
   const [novaObs, setNovaObs] = useState("");
@@ -382,6 +387,7 @@ export default function Checklist({
     setTarefaLabel("");
     setTarefaData("");
     setTarefaTagIds([]);
+    setBuscaTagSlash(null);
     router.refresh();
   }
 
@@ -415,6 +421,23 @@ export default function Checklist({
     abrirObservacoes(modalTarefaId);
   }
 
+  // Digitar "/" na barra da nova tarefa entra em modo de busca de tag — o
+  // texto depois da "/" (até o próximo espaço) filtra a lista. Selecionar
+  // uma tira o "/termo" do texto e marca a tag, sem perder o resto do que
+  // já tinha sido escrito antes da "/".
+  function aoDigitarTarefaLabel(valor: string) {
+    setTarefaLabel(valor);
+    const m = valor.match(/\/(\S*)$/);
+    setBuscaTagSlash(m ? m[1] : null);
+  }
+
+  function selecionarTagViaSlash(tagId: string) {
+    setTarefaLabel((atual) => atual.replace(/\/(\S*)$/, ""));
+    setTarefaTagIds((ids) => (ids.includes(tagId) ? ids : [...ids, tagId]));
+    setBuscaTagSlash(null);
+    tarefaInputRef.current?.focus();
+  }
+
   function formularioNovaTarefa(grupo: Grupo) {
     return novaTarefaEm === grupo.origemId ? (
       <div
@@ -428,31 +451,13 @@ export default function Checklist({
         }}
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-          <input
-            placeholder="O que precisa ser feito?"
-            value={tarefaLabel}
-            onChange={(e) => setTarefaLabel(e.target.value)}
-            style={{ padding: 6, flex: 1, minWidth: 160 }}
-          />
-          <input type="date" value={tarefaData} onChange={(e) => setTarefaData(e.target.value)} style={{ padding: 6 }} />
-          <button
-            onClick={() => adicionarTarefa(grupo)}
-            disabled={carregando === "nova-tarefa" || !tarefaLabel.trim()}
-            style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}
-          >
-            Salvar
-          </button>
-          <button onClick={() => setNovaTarefaEm(null)} disabled={carregando === "nova-tarefa"} style={{ fontSize: 11 }}>
-            Cancelar
-          </button>
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
           <select
             value=""
             onChange={(e) => {
-              if (e.target.value) setTarefaTagIds((ids) => [...ids, e.target.value]);
+              if (e.target.value) setTarefaTagIds((ids) => (ids.includes(e.target.value) ? ids : [...ids, e.target.value]));
             }}
-            style={{ padding: 6, fontSize: 12 }}
+            style={{ padding: 6, fontSize: 12, flex: "none" }}
+            aria-label="Marcar tag de evento"
           >
             <option value="">+ Marcar tag de evento...</option>
             {tagsDisponiveis
@@ -463,37 +468,143 @@ export default function Checklist({
                 </option>
               ))}
           </select>
-          {tarefaTagIds.map((id) => {
-            const t = tagsDisponiveis.find((x) => x.id === id);
-            if (!t) return null;
-            const c = corEvento(t.id, t.cor);
-            return (
-              <span
-                key={id}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: c.texto,
-                  background: c.fundo,
-                  borderRadius: 7,
-                  padding: "2px 7px",
-                }}
-              >
-                {t.valor}
-                <button
-                  type="button"
-                  onClick={() => setTarefaTagIds((ids) => ids.filter((x) => x !== id))}
-                  aria-label={`Remover ${t.valor}`}
-                  style={{ border: "none", background: "transparent", color: c.texto, fontSize: 10, cursor: "pointer", padding: 0 }}
+
+          {/* Tags marcadas e o texto da tarefa na mesma barra — pedido do
+             Caio: marcar as tags primeiro, elas aparecem aqui, e aí
+             continua escrevendo depois delas. Também suporta digitar "/"
+             no meio do texto pra abrir a busca de tag sem sair da barra. */}
+          <div
+            style={{
+              position: "relative",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 6,
+              flex: 1,
+              minWidth: 200,
+              padding: "4px 8px",
+              border: `1px solid ${cor.borda}`,
+              borderRadius: 8,
+              background: "#fff",
+            }}
+          >
+            {tarefaTagIds.map((id) => {
+              const t = tagsDisponiveis.find((x) => x.id === id);
+              if (!t) return null;
+              const c = corEvento(t.id, t.cor);
+              return (
+                <span
+                  key={id}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: c.texto,
+                    background: c.fundo,
+                    borderRadius: 7,
+                    padding: "2px 7px",
+                    flex: "none",
+                  }}
                 >
-                  ×
-                </button>
-              </span>
-            );
-          })}
+                  {t.valor}
+                  <button
+                    type="button"
+                    onClick={() => setTarefaTagIds((ids) => ids.filter((x) => x !== id))}
+                    aria-label={`Remover ${t.valor}`}
+                    style={{ border: "none", background: "transparent", color: c.texto, fontSize: 10, cursor: "pointer", padding: 0 }}
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+            <input
+              ref={tarefaInputRef}
+              placeholder={tarefaTagIds.length === 0 ? "O que precisa ser feito? (digite / pra marcar um evento)" : "Continue escrevendo..."}
+              value={tarefaLabel}
+              onChange={(e) => aoDigitarTarefaLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setBuscaTagSlash(null);
+              }}
+              style={{ border: "none", outline: "none", flex: 1, minWidth: 120, padding: "4px 2px" }}
+            />
+            {buscaTagSlash !== null &&
+              (() => {
+                const sugestoes = tagsDisponiveis.filter(
+                  (t) => !tarefaTagIds.includes(t.id) && t.valor.toLowerCase().includes(buscaTagSlash.toLowerCase()),
+                );
+                if (sugestoes.length === 0) return null;
+                return (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      marginTop: 4,
+                      background: "#fff",
+                      border: `1px solid ${cor.borda}`,
+                      borderRadius: 8,
+                      boxShadow: "0 8px 20px rgba(32,31,29,.14)",
+                      zIndex: 20,
+                      minWidth: 200,
+                      maxHeight: 180,
+                      overflowY: "auto",
+                      display: "flex",
+                      flexDirection: "column",
+                      padding: 4,
+                    }}
+                  >
+                    {sugestoes.map((t) => {
+                      const c = corEvento(t.id, t.cor);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => selecionarTagViaSlash(t.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 7,
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "6px 10px",
+                            border: "none",
+                            background: "transparent",
+                            borderRadius: 6,
+                            fontSize: 12.5,
+                            color: cor.texto,
+                          }}
+                        >
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: c.texto, flex: "none" }} />
+                          {t.valor}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+          </div>
+
+          <input type="date" value={tarefaData} onChange={(e) => setTarefaData(e.target.value)} style={{ padding: 6, flex: "none" }} />
+          <button
+            onClick={() => adicionarTarefa(grupo)}
+            disabled={carregando === "nova-tarefa" || !tarefaLabel.trim()}
+            style={{ ...botaoPrimario, fontSize: 11, padding: "6px 12px" }}
+          >
+            Salvar
+          </button>
+          <button
+            onClick={() => {
+              setNovaTarefaEm(null);
+              setBuscaTagSlash(null);
+            }}
+            disabled={carregando === "nova-tarefa"}
+            style={{ fontSize: 11 }}
+          >
+            Cancelar
+          </button>
         </div>
       </div>
     ) : (
