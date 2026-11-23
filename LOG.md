@@ -1214,3 +1214,17 @@ Caio viu o resultado da rodada anterior (print) e pediu ajustes finos: aplicar o
 - Cor por status de entrega (faixa `corAcento`) mantida intacta em Contratos — só o layout ao redor mudou.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-23 · Vidro translúcido em todo o sistema, cabeçalho em vidro, Coordenações/Fornecedores em widgets
+Caio pediu pra levar o vidro translúcido pra tudo (não só Painel/Contratos), com a opacidade calibrada pra não "sumir" contra o fundo nem virar opaco, e aplicar no cabeçalho também.
+
+- **Opacidade do vidro recalibrada pra `.82`** (era `.72` → pouco contraste, Caio reportou; depois `.9` → quase opaco, perdia o efeito) — mesmo valor agora em `.crm-cartao-vidro-claro`, na barra de navegação (linha1/mobile) e no objeto `card` genérico.
+- **`card` (lib/theme.ts)** — o estilo genérico usado via `style={{ ...card }}` em dezenas de telas (Dados, Avisos, Agenda, Pessoas/papel, Fornecedor/detalhe, filtros de Contratos, etc.) ganhou `background` translúcido + `backdropFilter` direto no objeto — cobre o sistema inteiro de uma vez, sem precisar editar tela por tela. Limitação conhecida: por ser inline style, não tem o fallback de `prefers-reduced-transparency` que a classe CSS tem (não resolvido nesta rodada).
+- **Barra de navegação** (`.crm-barra-topo-linha1`, `.crm-barra-topo-mobile`) também em vidro translúcido — antes ficava branca opaca por cima do fundo aurora.
+- **Fundo aurora movido pro `<body>`** (era só dentro do `Painel`) — agora cobre a página inteira, inclusive atrás do cabeçalho.
+- **Coordenações** e **Fornecedores**: convertidos pra grade de widgets (`CardBento` + `vidroClaro`), mesmo padrão de Contratos — Fornecedores também virou de tabela pra cards, com os campos empilhados (um por linha).
+- Card "Entregas em atraso" (Painel) também virou widget de vidro, fechando a limpeza das últimas cores/fundos fora do padrão.
+- Cor por status de entrega nos cards de Contratos (`corAcento`) conferida e mantida intacta.
+- Fonte Nunito confirmada — já é a mesma em todo o sistema (definida uma vez em `app/layout.tsx`, não por tela).
+
+Build e `tsc --noEmit` limpos. Sem migração.

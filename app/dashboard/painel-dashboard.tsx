@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Sparkles } from "lucide-react";
-import { card, cor, PALETA_VIVA } from "@/lib/theme";
+import { cor, PALETA_VIVA } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { corEtapa } from "@/lib/cor-etapa";
 import MedidorCircular from "@/app/_ui/medidor-circular";
@@ -366,9 +366,8 @@ export default function PainelDashboard({
         // pedido do Caio depois de ver as duas num mesmo print.
         const entregasRestantes = entregasEmAtraso.filter((e) => e.id !== acaoDoDia?.entregaDestacadaId);
         return entregasRestantes.length > 0 && (
-        <div style={{ ...card, background: cor.urgenteFundo, border: "none", borderLeft: `4px solid ${cor.urgente}` }}>
-          <strong style={{ fontSize: 13, color: cor.urgente }}>Entregas em atraso</strong>
-          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+        <CardBento titulo="Entregas em atraso" vidroClaro corAcento={cor.urgente}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {entregasRestantes.map((e) => (
               <Link
                 key={e.id}
@@ -379,7 +378,7 @@ export default function PainelDashboard({
               </Link>
             ))}
           </div>
-        </div>
+        </CardBento>
         );
       })()}
 

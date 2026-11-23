@@ -30,16 +30,15 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={nunito.variable}>
       <body
+        className="crm-fundo-aurora"
         style={{
           fontFamily: "var(--font-nunito), system-ui, sans-serif",
           margin: 0,
-          // Fundo em cor plana (uma rampa neutra só) — o degradê multi-tom
-          // que tinha aqui (pra bater com o site de referência) foi retirado
-          // a pedido do Caio: gradiente de fundo é um dos sinais mais comuns
-          // de interface com "cara de IA" (auditoria de design, regras de
-          // cor). cor.fundo é o mesmo neutro já usado em todo o resto do
-          // sistema.
-          background: cor.fundo,
+          // Fundo em degradê suave ("aurora", ver .crm-fundo-aurora em
+          // globals.css) — pedido explícito do Caio a partir de uma
+          // referência visual, aplicado no body pra cobrir TODA página,
+          // inclusive a barra de navegação no topo (antes só o Painel por
+          // dentro tinha o degradê, a barra ficava branca por cima).
           color: cor.texto,
           minHeight: "100vh",
           display: "flex",
