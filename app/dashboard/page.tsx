@@ -39,7 +39,7 @@ export default async function DashboardPage() {
     supabase
       .from("processos")
       .select(
-        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, titular_id, responsavel_atual_id, coordenacao_id, coordenacoes(sigla), processo_tags(tags(id, valor, cor))",
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, titular_id, responsavel_atual_id, coordenacao_id, coordenacoes(sigla), fornecedores(nome), processo_tags(tags(id, valor, cor))",
       ),
     supabase.from("processo_kanban_historico").select("id, processo_id, entrada_em").is("saida_em", null),
     supabase.from("processo_tag_historico").select("id, processo_id").is("fim_em", null),
@@ -199,6 +199,7 @@ export default async function DashboardPage() {
       nup: p.nup_principal,
       objeto: p.objeto,
       etapaAtual: p.etapa_atual,
+      fornecedor: (p as any).fornecedores?.nome ?? null,
       tags: (p.processo_tags ?? [])
         .map((pt: any) => pt.tags)
         .filter((t: any): t is { id: string; valor: string; cor: string | null } => !!t),
