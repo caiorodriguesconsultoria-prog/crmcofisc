@@ -61,12 +61,16 @@ export default function BarraTopo({
   return (
     <div className="crm-barra-topo">
       <div className="crm-barra-topo-linha1">
+        {/* Era um degradê arco-íris (teal/verde/amarelo) — destoava do resto
+           do cabeçalho, todo na paleta azul da marca ("+ Novo contrato" já
+           usa cor.escuro). Trocado pro mesmo tom escuro, consistente com o
+           resto do cabeçalho em vez de um "chrome" colorido isolado. */}
         <span
           style={{
             padding: "6px 14px",
             borderRadius: 10,
-            background: "linear-gradient(90deg, #22C1DC 0%, #8FD79A 50%, #F4E266 100%)",
-            color: "#000",
+            background: cor.escuro,
+            color: "#fff",
             fontWeight: 800,
             fontSize: 14,
             letterSpacing: -0.3,

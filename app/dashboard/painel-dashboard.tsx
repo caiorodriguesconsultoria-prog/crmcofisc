@@ -12,7 +12,6 @@ import MedidorCircular from "@/app/_ui/medidor-circular";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import CardBento from "@/app/_ui/card-bento";
 import Kpi from "@/app/_ui/kpi";
-import TagRotulo from "@/app/_ui/tag-rotulo";
 
 type Processo = {
   id: string;
@@ -42,7 +41,10 @@ type Etapa = { id: string; nome: string };
 // 0049). ORDEM_PADRAO é a ordem de fábrica, usada quando a pessoa ainda não
 // reorganizou nada ou quando um widget novo aparece (entra no fim).
 type SecaoId = "kpis" | "agenda" | "coordenacao" | "graficos" | "parados";
-const ORDEM_PADRAO: SecaoId[] = ["kpis", "agenda", "coordenacao", "graficos", "parados"];
+// "coordenacao" logo depois de "kpis" — pedido do Caio, pra formar uma
+// grade única (KPIs em cima, coordenações embaixo) em vez de aparecer só
+// depois da Agenda.
+const ORDEM_PADRAO: SecaoId[] = ["kpis", "coordenacao", "agenda", "graficos", "parados"];
 
 // Tooltip escuro padrão dos gráficos do Painel — só o nome e o valor, sem
 // nenhuma legenda fixa na tela (pedido do Caio: "não precisa colocar os
@@ -127,21 +129,31 @@ export default function PainelDashboard({
   // conteúdo de cada um continua igual ao de antes.
   const secoes: Partial<Record<SecaoId, React.ReactNode>> = {
     kpis: (
-      // justifyContent centralizado só no celular (classe CSS, media query
-      // em globals.css) — no desktop fica alinhado à esquerda como antes.
-      <div className="crm-grid-kpis-painel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 210px))", gap: 12 }}>
+      // flex-wrap em vez de grid auto-fit: com minmax(min, max) num grid, o
+      // número de colunas é calculado a partir do MAX (pra contar quantas
+      // cabem), não do MIN — então num celular estreito onde 2 cards de
+      // 160px caberiam, o grid só cria 1 coluna (ele calcula com 210px, que
+      // não cabe duas vezes). flex-wrap com flex-basis/maxWidth por item
+      // não tem essa pegadinha: cada card cresce até o máximo e quebra de
+      // linha sozinho quando não couber mais. justifyContent centralizado
+      // só no celular (classe CSS, media query em globals.css).
+      <div className="crm-grid-kpis-painel" style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
         {kpis.map((k, i) => {
           const conteudo = (
-            <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} corAcento={PALETA_VIVA[i % PALETA_VIVA.length]} vidroClaro>
-              <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} />
+            <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} vidroClaro>
+              <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} centralizado />
             </CardBento>
           );
-          return k.href ? (
-            <Link key={k.rotulo} href={k.href} style={{ textDecoration: "none", display: "block", minWidth: 0 }}>
-              {conteudo}
-            </Link>
-          ) : (
-            conteudo
+          return (
+            <div key={k.rotulo} style={{ flex: "1 1 140px", maxWidth: 210, minWidth: 0 }}>
+              {k.href ? (
+                <Link href={k.href} style={{ textDecoration: "none", display: "block" }}>
+                  {conteudo}
+                </Link>
+              ) : (
+                conteudo
+              )}
+            </div>
           );
         })}
       </div>
@@ -217,31 +229,29 @@ export default function PainelDashboard({
         {divisaoPorCoordenacao.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 170px))", gap: 12, justifyContent: "start" }}>
+          // Tiles pequenos, "como apps" (pedido do Caio) — mesmo
+          // componente Kpi dos cards de cima (centralizado), só num card
+          // menor, sem o rótulo/barra de progresso de antes. flex-wrap com
+          // maxWidth pequeno em vez de grid (mesma razão da seção kpis
+          // acima — minmax com max fixo no grid conta colunas errado no
+          // celular estreito).
+          <div className="crm-grid-kpis-painel" style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             {divisaoPorCoordenacao.map((c, i) => (
-              <CardBento key={c.sigla} indice={i} pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <TagRotulo texto={c.sigla} corTexto={PALETA_VIVA[i % PALETA_VIVA.length]} />
-                  <strong style={{ fontSize: 22, fontWeight: 700, color: cor.texto, fontVariantNumeric: "tabular-nums" }}>{c.total}</strong>
-                  <div style={{ height: 6, borderRadius: 3, background: cor.borda, overflow: "hidden" }}>
-                    <div
-                      style={{
-                        height: "100%",
-                        width: `${Math.round((c.total / Math.max(1, divisaoPorCoordenacao[0].total)) * 100)}%`,
-                        background: PALETA_VIVA[i % PALETA_VIVA.length],
-                        borderRadius: 3,
-                      }}
-                    />
-                  </div>
-                </div>
-              </CardBento>
+              <div key={c.sigla} style={{ flex: "1 1 100px", maxWidth: 130, minWidth: 0 }}>
+                <CardBento indice={i} pequeno vidroClaro>
+                  <Kpi rotulo={c.sigla} valor={c.total} corNumero={PALETA_VIVA[i % PALETA_VIVA.length]} centralizado />
+                </CardBento>
+              </div>
             ))}
           </div>
         )}
       </div>
     ),
     graficos: (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 340px))", gap: 12, justifyContent: "start" }}>
+      // Centralizado só no celular (mesma classe das outras grades do
+      // Painel) — pedido do Caio: "centralize os cards contratos por
+      // etapas".
+      <div className="crm-grid-kpis-painel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 340px))", gap: 12 }}>
         <CardBento titulo="Contratos por etapa" indice={0} pequeno corAcento={PALETA_VIVA[0]} vidroClaro>
           {dadosEtapas.length === 0 ? (
             <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>

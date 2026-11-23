@@ -13,6 +13,7 @@ export default function Kpi({
   sufixo,
   variacao,
   corNumero,
+  centralizado,
 }: {
   rotulo: string;
   /** Número puro — a formatação pt-BR (milhar) é feita aqui dentro. */
@@ -23,6 +24,10 @@ export default function Kpi({
   /** Cor do número — opcional, pra diferenciar KPIs lado a lado (pedido do
    * Caio: "mais cores, algo mais vivo"). Sem isso, fica no neutro de sempre. */
   corNumero?: string;
+  /** Centraliza rótulo e número — usado nos KPIs do Painel (pedido do Caio:
+   * "centralize as informações"); os outros usos (ex. app/exemplo) mantêm o
+   * alinhamento à esquerda de sempre. */
+  centralizado?: boolean;
 }) {
   const reduzido = useReducedMotion();
   const [exibido, setExibido] = useState(reduzido ? valor : 0);
@@ -54,7 +59,7 @@ export default function Kpi({
         : cor.textoTerciario;
 
   return (
-    <div style={{ minWidth: 0 }}>
+    <div style={{ minWidth: 0, textAlign: centralizado ? "center" : undefined }}>
       <div
         style={{
           fontSize: 12,
@@ -70,7 +75,16 @@ export default function Kpi({
       {/* flexWrap — "atenção à agenda"/"agir hoje" ao lado do número força o
          card a crescer além da largura do widget (grade "esticando" em
          telas estreitas) se não puder quebrar pra linha de baixo. */}
-      <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: centralizado ? "center" : undefined,
+          flexWrap: "wrap",
+          gap: 8,
+          marginTop: 4,
+        }}
+      >
         <span
           style={{
             fontSize: 46,
