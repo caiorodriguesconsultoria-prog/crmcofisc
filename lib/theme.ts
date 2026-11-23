@@ -108,14 +108,17 @@ export const sombraFlutuante = "0 1px 2px rgba(0,0,0,.07), 0 6px 16px rgba(0,0,0
 // via `style={{ ...card }}` em vez do componente CardBento. Opacidade
 // calibrada entre dois extremos que o Caio já reportou: alta demais
 // (.9) virava quase opaco e perdia o efeito "vidro"; baixa demais (.72)
-// ficava parecida demais com a cor do fundo. .82 é o meio-termo.
+// ficava parecida demais com a cor do fundo. .82 é o meio-termo. Blur/
+// saturate na faixa que a Apple usa nos materiais (skill apple-design) —
+// uma rodada anterior forçou mais (30px/200%) achando que resolvia o
+// "vidro" não ficar perceptível, só piorou a legibilidade do texto.
 // Limitação conhecida: por ser um objeto de inline style (não uma
 // classe), não tem o fallback de prefers-reduced-transparency que
 // .crm-cartao-vidro-claro tem — documentado, não resolvido nesta rodada.
 export const card: React.CSSProperties = {
   background: "rgba(255,255,255,.82)",
-  backdropFilter: "blur(30px) saturate(200%)",
-  WebkitBackdropFilter: "blur(30px) saturate(200%)",
+  backdropFilter: "blur(22px) saturate(180%)",
+  WebkitBackdropFilter: "blur(22px) saturate(180%)",
   borderRadius: 18,
   padding: "18px 20px",
   border: "1px solid rgba(32,31,29,.08)",
