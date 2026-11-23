@@ -108,6 +108,11 @@ export default function DadosPrincipais({
   unidadeMedida,
   responsavelPagamentoNome,
   responsavelPagamentoEmail,
+  coordenacaoSigla,
+  coordenacaoNome,
+  coordenacaoTelefone,
+  coordenadorNome,
+  coordenadorEmail,
 }: {
   processoId: string;
   nupPrincipal: string;
@@ -122,6 +127,11 @@ export default function DadosPrincipais({
   unidadeMedida: string | null;
   responsavelPagamentoNome: string | null;
   responsavelPagamentoEmail: string | null;
+  coordenacaoSigla: string;
+  coordenacaoNome: string | null;
+  coordenacaoTelefone: string | null;
+  coordenadorNome: string | null;
+  coordenadorEmail: string | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -164,6 +174,16 @@ export default function DadosPrincipais({
     { label: "Preposto", valor: fornecedorPreposto || "" },
     { label: "Telefone", valor: fornecedorTelefone || "" },
     { label: "E-mail", valor: fornecedorEmails },
+  ];
+
+  // Dados de contato da coordenação, pra abrir ao clicar na sigla — mesmo
+  // padrão já usado em DadosProcesso (app/processos/[id]/dados-processo.tsx),
+  // só que aqui dentro de Dados principais também (pedido do Caio).
+  const camposCoordenacao = [
+    { label: "Nome", valor: coordenacaoNome || "" },
+    { label: "Telefone", valor: coordenacaoTelefone || "" },
+    { label: "Coordenador", valor: coordenadorNome || "" },
+    { label: "E-mail do coordenador", valor: coordenadorEmail || "" },
   ];
 
   // Criação de um novo lançamento (entrega total/parcial) direto por aqui —
@@ -345,6 +365,11 @@ export default function DadosPrincipais({
               acima — cada coluna tem um mínimo de verdade, e quem não
               couber desce pra próxima linha em vez de espremer. */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14 }}>
+            <Coluna
+              label="Coordenação"
+              valor={coordenacaoSigla || "não informado"}
+              camposPopup={coordenacaoSigla ? camposCoordenacao : undefined}
+            />
             <Coluna label="Contratada" valor={fornecedorNome || "não informado"} camposPopup={fornecedorNome ? camposFornecedor : undefined} />
             <Coluna label="CNPJ" valor={cnpj || "não informado"} />
             <Coluna

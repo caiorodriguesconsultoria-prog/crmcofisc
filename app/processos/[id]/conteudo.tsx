@@ -356,6 +356,11 @@ export async function carregarProcesso(id: string) {
         unidadeMedida={p.unidade_medida}
         responsavelPagamentoNome={p.responsavel_pagamento_nome}
         responsavelPagamentoEmail={p.responsavel_pagamento_email}
+        coordenacaoSigla={p.coordenacoes?.sigla ?? ""}
+        coordenacaoNome={p.coordenacoes?.nome ?? null}
+        coordenacaoTelefone={p.coordenacoes?.telefone ?? null}
+        coordenadorNome={p.coordenacoes?.coordenador_nome ?? null}
+        coordenadorEmail={p.coordenacoes?.coordenador_email ?? null}
       />
 
       {/* Cronograma de entregas — fixo, sem recolher, logo abaixo de Dados principais */}
