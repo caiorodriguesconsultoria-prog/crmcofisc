@@ -49,7 +49,9 @@ type Processo = {
   valor_unitario: number | null;
   valor_global: number | null;
   valor_garantia: number | null;
+  catmat: string | null;
   portaria_designacao_fiscal: string | null;
+  portaria_designacao_fiscal_sei: string | null;
   nota_empenho_numero: string | null;
   programa_trabalho: string | null;
   natureza_despesa: string | null;
@@ -161,6 +163,7 @@ type CampoTexto = {
     | "valor_unitario"
     | "valor_global"
     | "valor_garantia"
+    | "portaria_designacao_fiscal_sei"
   >;
   label: string;
   span?: boolean;
@@ -171,6 +174,7 @@ const CAMPOS: CampoTexto[] = [
   { chave: "processo_eletronico_numero", label: "Processo Eletrônico nº" },
   { chave: "objeto", label: "Objeto", span: true, tipo: "textarea" },
   { chave: "data_assinatura", label: "Data da Assinatura", tipo: "data" },
+  { chave: "catmat", label: "CATMAT" },
   { chave: "nota_empenho_numero", label: "Nota de Empenho nº" },
   { chave: "programa_trabalho", label: "Programa de Trabalho" },
   { chave: "natureza_despesa", label: "Natureza de Despesa" },
@@ -204,6 +208,7 @@ export default function QuadroResumitivo({
     }
     iniciais.vigencia_inicio = processo.vigencia_inicio ?? "";
     iniciais.vigencia_fim = processo.vigencia_fim ?? "";
+    iniciais.valor_unitario = moedaParaFormatado(processo.valor_unitario);
     iniciais.valor_global = moedaParaFormatado(processo.valor_global);
     iniciais.valor_garantia = moedaParaFormatado(processo.valor_garantia);
     iniciais.publicacao_dou = processo.publicacao_dou ?? "";
@@ -221,6 +226,7 @@ export default function QuadroResumitivo({
       "publicacao_dou_ata_sei",
       "publicacao_pncp", "publicacao_pncp_sei",
       "publicacao_dou_sei",
+      "portaria_designacao_fiscal_sei",
     ];
     for (const chave of chavesComSei) {
       iniciais[chave] = (processo[chave] as string) ?? "";
@@ -354,9 +360,12 @@ export default function QuadroResumitivo({
         publicacao_dou_sei: valores.publicacao_dou_sei || null,
         publicacao_pncp: valores.publicacao_pncp || null,
         publicacao_pncp_sei: valores.publicacao_pncp_sei || null,
+        valor_unitario: paraNumeroMoeda(valores.valor_unitario),
         valor_global: paraNumeroMoeda(valores.valor_global),
         valor_garantia: paraNumeroMoeda(valores.valor_garantia),
+        catmat: valores.catmat || null,
         portaria_designacao_fiscal: valores.portaria_designacao_fiscal || null,
+        portaria_designacao_fiscal_sei: valores.portaria_designacao_fiscal_sei || null,
         nota_empenho_numero: valores.nota_empenho_numero || null,
         programa_trabalho: valores.programa_trabalho || null,
         natureza_despesa: valores.natureza_despesa || null,
@@ -578,87 +587,24 @@ export default function QuadroResumitivo({
       {erro && <p style={{ color: "#B0655C" }}>{erro}</p>}
       {erroAnexo && <p style={{ color: "#B0655C" }}>{erroAnexo}</p>}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gridAutoFlow: "dense",
-          gap: 12,
-          marginTop: 8,
-        }}
-      >
+      {/* Um campo embaixo do outro (pedido do Caio, pra ficar na mesma
+         ordem/formato do documento original — ver imagem de referência) —
+         era um grid de 2 colunas com gridAutoFlow:"dense", que intercalava
+         campos de forma imprevisível assim que algum campo span:true
+         "furava" uma coluna. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
         {campoComLabel("processo_eletronico_numero", "Processo Eletrônico nº", undefined)}
-
         {campoComSei("Pregão Eletrônico nº", "pregao_eletronico_numero", "pregao_eletronico_numero_sei")}
         {blocoDou("Publicação D.O.U (Pregão)", processo.publicacao_dou_pregao, douPregao, atualizarDouPregao, "publicacao_dou_pregao_sei")}
         {campoComSei("Publicação PNCP (Pregão)", "publicacao_pncp_pregao", "publicacao_pncp_pregao_sei", "data")}
-
         {campoComSei("Ata de Registro de Preços nº", "ata_registro_precos_numero", "ata_registro_precos_numero_sei")}
         {blocoDou("Publicação D.O.U (Ata)", processo.publicacao_dou_ata, douAta, atualizarDouAta, "publicacao_dou_ata_sei")}
         {campoComSei("Publicação PNCP (Ata)", "publicacao_pncp_ata", "publicacao_pncp_ata_sei", "data")}
-
+        {campoComLabel("objeto", "Objeto", "textarea")}
         {campoComSei("Contrato nº", "numero_contrato", "numero_contrato_sei")}
         {blocoDou("Publicação D.O.U (Contrato)", processo.publicacao_dou, douContrato, atualizarDouContrato, "publicacao_dou_sei")}
         {campoComSei("Publicação PNCP (Contrato)", "publicacao_pncp", "publicacao_pncp_sei", "data")}
-
-        {campoComLabel("objeto", "Objeto", "textarea", true)}
         {campoComLabel("data_assinatura", "Data da Assinatura", "data")}
-
-        <div style={{ gridColumn: "1 / -1" }}>
-          <div style={rotulo}>Portaria Designação de Fiscal</div>
-          <div style={{ marginTop: 2 }}>
-            {!editando ? (
-              processo.portaria_designacao_fiscal ? (
-                <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 6 }}>
-                  {processo.portaria_designacao_fiscal}
-                  <BotaoCopiar texto={processo.portaria_designacao_fiscal} />
-                </span>
-              ) : (
-                "não informado"
-              )
-            ) : (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                <input
-                  placeholder="Portaria CGLIS nº"
-                  value={portaria.numero}
-                  onChange={(e) => atualizarPortaria("numero", e.target.value)}
-                  style={{ padding: 6, width: 110 }}
-                />
-                <input
-                  type="date"
-                  value={portaria.data}
-                  onChange={(e) => atualizarPortaria("data", e.target.value)}
-                  style={{ padding: 6, width: 150 }}
-                />
-                <select
-                  value={portaria.tipo}
-                  onChange={(e) => atualizarPortaria("tipo", e.target.value)}
-                  style={{ padding: 6 }}
-                >
-                  <option value="BGP">BGP</option>
-                  <option value="BSE">BSE</option>
-                </select>
-                <input
-                  placeholder={`Nº ${portaria.tipo}`}
-                  value={portaria.numeroTipo}
-                  onChange={(e) => atualizarPortaria("numeroTipo", e.target.value)}
-                  style={{ padding: 6, width: 110 }}
-                />
-                <input
-                  type="date"
-                  value={portaria.dataTipo}
-                  onChange={(e) => atualizarPortaria("dataTipo", e.target.value)}
-                  style={{ padding: 6, width: 150 }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {campoComLabel("nota_empenho_numero", "Nota de Empenho nº", undefined)}
-        {campoComLabel("programa_trabalho", "Programa de Trabalho", undefined)}
-        {campoComLabel("natureza_despesa", "Natureza de Despesa", undefined)}
-        {campoComLabel("local_entrega", "Local de Entrega", undefined)}
 
         <div>
           <div style={rotulo}>Vigência do Contrato</div>
@@ -729,7 +675,7 @@ export default function QuadroResumitivo({
           </div>
         </div>
 
-        <div style={{ gridColumn: "1 / -1" }}>
+        <div>
           <div style={rotulo}>Valor da Garantia</div>
           <div style={{ marginTop: 2 }}>
             {editando ? (
@@ -753,11 +699,6 @@ export default function QuadroResumitivo({
           </div>
         </div>
 
-        {/* Gestor/fiscal um embaixo do outro, nessa ordem (pedido do Caio)
-           — bloco de coluna única que ocupa as duas colunas do grid de
-           fora, em vez de cada campo virar item separado do grid (que
-           intercalava com Valor global/garantia por causa do auto-flow). */}
-        <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
           <div style={rotulo}>Gestor Titular</div>
           <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
@@ -786,7 +727,93 @@ export default function QuadroResumitivo({
             {processo.fiscal_substituto && <BotaoCopiar texto={formatarPessoa(processo.fiscal_substituto)} />}
           </div>
         </div>
+
+        <div>
+          <div style={rotulo}>Portaria Designação de Fiscal</div>
+          <div style={{ marginTop: 2 }}>
+            {!editando ? (
+              processo.portaria_designacao_fiscal ? (
+                <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 6 }}>
+                  {processo.portaria_designacao_fiscal}
+                  {processo.portaria_designacao_fiscal_sei && ` (${processo.portaria_designacao_fiscal_sei})`}
+                  <BotaoCopiar
+                    texto={`${processo.portaria_designacao_fiscal}${processo.portaria_designacao_fiscal_sei ? ` (${processo.portaria_designacao_fiscal_sei})` : ""}`}
+                  />
+                </span>
+              ) : (
+                "não informado"
+              )
+            ) : (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <input
+                  placeholder="Portaria CGLIS nº"
+                  value={portaria.numero}
+                  onChange={(e) => atualizarPortaria("numero", e.target.value)}
+                  style={{ padding: 6, width: 110 }}
+                />
+                <input
+                  type="date"
+                  value={portaria.data}
+                  onChange={(e) => atualizarPortaria("data", e.target.value)}
+                  style={{ padding: 6, width: 150 }}
+                />
+                <select
+                  value={portaria.tipo}
+                  onChange={(e) => atualizarPortaria("tipo", e.target.value)}
+                  style={{ padding: 6 }}
+                >
+                  <option value="BGP">BGP</option>
+                  <option value="BSE">BSE</option>
+                </select>
+                <input
+                  placeholder={`Nº ${portaria.tipo}`}
+                  value={portaria.numeroTipo}
+                  onChange={(e) => atualizarPortaria("numeroTipo", e.target.value)}
+                  style={{ padding: 6, width: 110 }}
+                />
+                <input
+                  type="date"
+                  value={portaria.dataTipo}
+                  onChange={(e) => atualizarPortaria("dataTipo", e.target.value)}
+                  style={{ padding: 6, width: 150 }}
+                />
+                <input
+                  placeholder="nº SEI"
+                  value={valores.portaria_designacao_fiscal_sei ?? ""}
+                  onChange={(e) => atualizar("portaria_designacao_fiscal_sei", e.target.value)}
+                  style={{ padding: 6, width: 110 }}
+                />
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Valor Unitário e CATMAT — pedido do Caio, logo abaixo da
+           Portaria/Gestores/Fiscais. */}
+        <div>
+          <div style={rotulo}>Valor Unitário</div>
+          <div style={{ marginTop: 2 }}>
+            {editando ? (
+              <CampoMascarado
+                valor={valores.valor_unitario}
+                formatar={formatarMoedaBR}
+                onChange={(v) => atualizar("valor_unitario", v)}
+                style={{ width: "100%", padding: 6 }}
+              />
+            ) : (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                {formatarMoeda(processo.valor_unitario) ?? "não informado"}
+                {formatarMoeda(processo.valor_unitario) && <BotaoCopiar texto={formatarMoeda(processo.valor_unitario)!} />}
+              </span>
+            )}
+          </div>
+        </div>
+        {campoComLabel("catmat", "CATMAT", undefined)}
+
+        {campoComLabel("nota_empenho_numero", "Nota de Empenho nº", undefined)}
+        {campoComLabel("programa_trabalho", "Programa de Trabalho", undefined)}
+        {campoComLabel("natureza_despesa", "Natureza de Despesa", undefined)}
+        {campoComLabel("local_entrega", "Local de Entrega", undefined)}
       </div>
 
       <div style={{ marginTop: 14 }}>
