@@ -97,6 +97,7 @@ export default function ListaPessoasPapel({
       titulo={titulo}
       voltarHref="/dashboard"
       maxWidth={900}
+      fundoAurora
       acao={
         isAdmin && (
           <Link href={novoHref} style={{ ...botaoPrimario, textDecoration: "none" }}>

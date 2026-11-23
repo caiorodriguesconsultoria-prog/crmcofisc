@@ -1201,3 +1201,16 @@ Caio trouxe um print de referência (app estilo Apple/Instagram, fundo em degrad
 - Botão de escolher cor de fundo (cogitado): meio-passo decidido NÃO fazer agora, por pedido do próprio Caio — foco em acertar o visual fixo primeiro.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-23 · Visual "aurora" em todas as telas, fonte Nunito, Painel todo em widgets
+Caio viu o resultado da rodada anterior (print) e pediu ajustes finos: aplicar o fundo aurora em todas as páginas (não só Painel/Contratos), trocar a fonte pela mais parecida com a referência, converter o resto do Painel (Agenda de hoje, Prazos da semana, Divisão por coordenação) em grade de widgets — igual Contratos —, empilhar informações diferentes nos cards de Contratos em vez de lado a lado, tirar as cores escuras remanescentes (card "Ação do dia") e aumentar a opacidade do branco dos cards de vidro (estava quase da cor do fundo).
+
+- **Fonte**: Urbanist → **Nunito** (terminais arredondados, mais próxima da estética das referências; SF Pro Rounded em si não é de uso livre na web).
+- **`.crm-cartao-vidro-claro`**: opacidade do branco subida de `.72` pra `.9` — tinha pouco contraste contra o fundo aurora.
+- **`fundoAurora`** aplicado em todas as telas que usam `<Painel>` (Agenda, Avisos, Coordenações, Dados, Fornecedores, Novo contrato/coordenação/fornecedor, Pessoas/papel, Tags), além de Painel e Contratos que já tinham.
+- **Painel**: "Agenda de hoje" (era uma tabela dentro de 1 card) e "Prazos da semana" (era uma lista dentro de 1 card) viram grade de widgets, 1 card por contrato/prazo — mesmo padrão de Contratos. "Divisão por coordenação" vira grade de mini-widgets (1 por coordenação, com barra + número). "Contratos parados" segue o mesmo padrão. "Contratos por etapa" e "Eventos" (gráficos de pizza) continuam como widgets únicos, lado a lado.
+- Card "Ação do dia" perde o fundo escuro (`cor.escuro`/texto branco) — vira vidro claro com faixa de acento laranja, como os outros widgets.
+- Cards de Contratos: Coordenação/Fornecedor deixam de ficar lado a lado (grid 2 colunas) e passam a ficar empilhados, cada um na sua linha.
+- Cor por status de entrega (faixa `corAcento`) mantida intacta em Contratos — só o layout ao redor mudou.
+
+Build e `tsc --noEmit` limpos. Sem migração.

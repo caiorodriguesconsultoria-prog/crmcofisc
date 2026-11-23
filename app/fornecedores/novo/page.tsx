@@ -27,7 +27,7 @@ export default async function NovoFornecedorPage() {
 
   return (
     <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Fornecedores > Novo">
-      <Painel titulo="Novo fornecedor" voltarHref="/fornecedores" maxWidth={480}>
+      <Painel titulo="Novo fornecedor" voltarHref="/fornecedores" maxWidth={480} fundoAurora>
         <NovoFornecedorForm />
       </Painel>
     </TelaComBarraTopo>

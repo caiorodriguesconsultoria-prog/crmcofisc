@@ -509,7 +509,7 @@ export default function ListaProcessos({
                     <BotaoCopiar texto={p.nup_principal} />
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12.5 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5 }}>
                     <div>
                       <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>
                         Coordenação
@@ -520,7 +520,7 @@ export default function ListaProcessos({
                       <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>
                         Fornecedor
                       </div>
-                      <div style={{ color: cor.texto, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ color: cor.texto, marginTop: 1, overflowWrap: "break-word" }}>
                         {p.fornecedores?.nome ?? "—"}
                       </div>
                     </div>

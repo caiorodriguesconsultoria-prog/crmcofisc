@@ -51,7 +51,7 @@ export default async function NovoProcessoPage() {
 
   return (
     <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Contratos > Novo">
-      <Painel titulo="Novo contrato" voltarHref="/processos" maxWidth={480}>
+      <Painel titulo="Novo contrato" voltarHref="/processos" maxWidth={480} fundoAurora>
         {erros.length > 0 && (
           <p style={{ color: cor.urgente }}>Erro ao carregar opções — {erros.join("; ")}</p>
         )}

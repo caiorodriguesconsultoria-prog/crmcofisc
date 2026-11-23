@@ -140,6 +140,7 @@ export default function ListaFornecedores({
       titulo="Fornecedores"
       voltarHref="/dashboard"
       maxWidth={1000}
+      fundoAurora
       acao={
         isAdmin && (
           <Link href="/fornecedores/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>

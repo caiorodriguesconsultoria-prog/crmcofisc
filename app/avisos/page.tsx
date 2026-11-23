@@ -29,7 +29,7 @@ export default async function AvisosPage() {
 
   return (
     <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Avisos">
-      <Painel titulo="Avisos do sistema" subtitulo="Histórico dos alertas de erro enviados pro celular dos admins." maxWidth={900}>
+      <Painel titulo="Avisos do sistema" subtitulo="Histórico dos alertas de erro enviados pro celular dos admins." maxWidth={900} fundoAurora>
         {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
         <ListaAvisos avisos={avisos ?? []} minhaPessoaId={pessoaAtual?.id ?? null} />
       </Painel>

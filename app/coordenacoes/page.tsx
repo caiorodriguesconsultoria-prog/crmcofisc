@@ -57,6 +57,7 @@ export default async function CoordenacoesPage() {
         titulo="Coordenações"
         subtitulo="Responsáveis, e-mails e ramais usados nas notificações do contrato."
         maxWidth={1100}
+        fundoAurora
         acao={
           isAdmin && (
             <Link href="/coordenacoes/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
