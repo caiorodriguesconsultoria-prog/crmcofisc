@@ -32,6 +32,7 @@ export default async function DashboardPage() {
     { data: andamentosHoje },
     { data: tarefasHoje },
     { data: execucoesPendentesRaw },
+    { data: pessoaAtual },
     eventos,
     etapas,
   ] = await Promise.all([
@@ -57,11 +58,19 @@ export default async function DashboardPage() {
       .select("id, numero, data_prevista, processos(id, numero_contrato)")
       .is("data_entrega", null)
       .not("data_prevista", "is", null),
+    supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
     getTagsEvento(),
     getEtapasKanban(),
   ]);
 
   const erro = erroProcessos || erroKanban;
+
+  // Ordem personalizada dos widgets do Painel (modo "Editar", pedido do
+  // Caio) — busca separada porque depende do pessoa_id acima; ver
+  // supabase/migrations/0049_painel_layout.sql.
+  const { data: painelLayout } = pessoaAtual?.id
+    ? await supabase.from("painel_layout").select("ordem_widgets").eq("pessoa_id", pessoaAtual.id).maybeSingle()
+    : { data: null };
 
   const hojeMeiaNoite = new Date();
   hojeMeiaNoite.setHours(0, 0, 0, 0);
@@ -83,22 +92,6 @@ export default async function DashboardPage() {
     (p) => p.prazo_data && p.prazo_data >= hoje && p.prazo_data <= emSeteDiasStr,
   ).length;
   const comOcorrencia = ativosProcessos.filter((p) => (p.processo_tags ?? []).length > 0).length;
-
-  const prazosDaSemana = ativosProcessos
-    .filter((p) => p.prazo_data && p.prazo_data >= hoje && p.prazo_data <= emSeteDiasStr)
-    .map((p) => {
-      const dias = Math.round(
-        (new Date(`${p.prazo_data}T00:00:00`).getTime() - new Date(`${hoje}T00:00:00`).getTime()) /
-          (1000 * 60 * 60 * 24),
-      );
-      return {
-        id: p.id,
-        numeroContrato: numeroContratoSemSei(p.numero_contrato),
-        prazoData: p.prazo_data as string,
-        dias,
-      };
-    })
-    .sort((a, b) => a.dias - b.dias);
 
   const divisaoPorCoordenacao: { sigla: string; total: number }[] = (() => {
     const contagem = new Map<string, number>();
@@ -181,9 +174,9 @@ export default async function DashboardPage() {
     adicionar(processoId, { rotulo: t.label, horario: null, periodo: t.periodo as "manha" | "tarde" | null });
   }
 
-  // Entrega ainda sem data_entrega e cuja data prevista já passou — mesmo
-  // cálculo que existia na Agenda, transferido pra cá a pedido do Caio, pra
-  // aparecer no Painel assim que a entrega atrasa.
+  // Entrega ainda sem data_entrega e cuja data prevista já passou — usado
+  // só pro ponto de alerta do sininho na barra (temAlerta); o widget
+  // "Entregas em atraso" que existia no Painel foi removido a pedido do Caio.
   const entregasEmAtraso = (execucoesPendentesRaw ?? [])
     .filter((e: any) => e.processos && e.data_prevista && e.data_prevista < hoje)
     .map((e: any) => {
@@ -197,23 +190,6 @@ export default async function DashboardPage() {
       };
     })
     .sort((a, b) => b.dias - a.dias);
-
-  // Ação do dia (card escuro de destaque, Etapa 2) — a entrega em atraso
-  // mais antiga tem prioridade; sem atraso, o prazo mais próximo da semana.
-  // entregaDestacadaId marca qual item já apareceu aqui, pra lista "Entregas
-  // em atraso" logo abaixo não repetir o mesmo item (pedido do Caio).
-  const acaoDoDia = entregasEmAtraso[0]
-    ? {
-        texto: `Entrega em atraso: CT ${entregasEmAtraso[0].numeroContrato} — ${entregasEmAtraso[0].dias} dia${entregasEmAtraso[0].dias > 1 ? "s" : ""}`,
-        href: `/processos/${entregasEmAtraso[0].processoId}`,
-        entregaDestacadaId: entregasEmAtraso[0].id,
-      }
-    : prazosDaSemana[0]
-      ? {
-          texto: `Prazo mais próximo: CT ${prazosDaSemana[0].numeroContrato} em ${prazosDaSemana[0].dias} dia${prazosDaSemana[0].dias !== 1 ? "s" : ""}`,
-          href: `/processos/${prazosDaSemana[0].id}`,
-        }
-      : null;
 
   const processosAtividadeHoje = (processos ?? [])
     .filter((p) => atividadePorProcesso.has(p.id))
@@ -258,6 +234,8 @@ export default async function DashboardPage() {
         {erro && <p style={{ color: cor.urgente }}>Erro ao carregar: {erro.message}</p>}
 
         <PainelDashboard
+          pessoaId={pessoaAtual?.id ?? null}
+          ordemSalva={(painelLayout?.ordem_widgets as string[] | undefined) ?? null}
           processos={processosComTempo}
           contagemPorEtapa={contagemPorEtapa}
           contagemPorEvento={contagemPorEvento}
@@ -267,10 +245,8 @@ export default async function DashboardPage() {
           vencemEm7Dias={vencemEm7Dias}
           comOcorrencia={comOcorrencia}
           emCoberturaFerias={emCoberturaFerias}
-          acaoDoDia={acaoDoDia}
           divisaoPorCoordenacao={divisaoPorCoordenacao}
           processosAtividadeHoje={processosAtividadeHoje}
-          entregasEmAtraso={entregasEmAtraso}
           eventos={eventos ?? []}
           etapas={etapas ?? []}
         />

@@ -1254,3 +1254,19 @@ Caio reportou três problemas desta rodada: os widgets do Painel continuavam do 
 Build e `tsc --noEmit` limpos. Sem migração nesta rodada.
 
 Pendente (próxima etapa, à parte): Caio pediu um modo "Editar" no Painel pra arrastar e reorganizar os widgets, com a ordem salva na conta (precisa de tabela nova + migração .sql) — vai ser tratado como uma etapa própria, não entra neste commit.
+
+## 2026-11-23 · Organizar widgets do Painel (arrastar), liquid glass corrigido, Ação do dia/Entregas em atraso removidos
+Três coisas nesta rodada: o modo "Editar" que Caio pediu pra arrastar e reorganizar os widgets do Painel (com ordem salva na conta), uma correção real no material "vidro" depois de carregar a skill `apple-design` (Emil Kowalski/Apple), e a remoção dos widgets "Ação do dia" e "Entregas em atraso".
+
+- **Organizar widgets (NOVO, precisa de migração)**: botão "Editar" no Painel — ativado, os widgets balançam (igual ícone de app no iPhone) e podem ser arrastados pra qualquer ordem (`framer-motion` `Reorder`, já era dependência do projeto, nenhuma lib nova). "Concluído" salva a ordem escolhida na tabela nova `painel_layout` (1 linha por pessoa, RLS só a própria pessoa lê/escreve a própria linha) — vale em qualquer dispositivo que a pessoa acessar, como o Caio confirmou que queria. **Migração `supabase/migrations/0049_painel_layout.sql` entregue — aguardando o Caio rodar no Supabase antes de mergear/colocar em produção** (a função já degrada bem sem a tabela: o botão "Editar" aparece e reorganiza normalmente na tela, só não persiste entre sessões até a tabela existir).
+- **Liquid glass — causa real encontrada**: depois de carregar a skill `apple-design` (seção "Materials & depth"), a regra é clara — "nunca empilhe uma superfície translúcida clara sobre outra, a legibilidade desmorona". A rodada anterior tinha ADICIONADO um reflexo diagonal (`::before`) por cima do fundo já translúcido dos cards e da barra de navegação — exatamente esse empilhamento, e é isso que explica o Caio ter reportado "diminuiu a opacidade da fonte". Removido o reflexo extra nos dois lugares; blur/saturate voltaram pra faixa que a própria Apple usa no exemplo da skill (22px/180%, eram 30px/200% — mais forte não é o que fazia o material ser reconhecido como vidro, só deixava mais lavado). A barra de navegação ganhou opacidade um pouco maior (.5 → .72) pelo mesmo motivo de legibilidade.
+- **Removidos**: widgets "Ação do dia" e "Entregas em atraso" do Painel (pedido direto do Caio). O cálculo de `entregasEmAtraso` continua existindo só pro ponto de alerta do sininho na barra de navegação; `prazosDaSemana`/`acaoDoDia` (que só alimentavam esses dois widgets) foram removidos de `app/dashboard/page.tsx`.
+
+Build e `tsc --noEmit` limpos.
+
+## 2026-11-23 · Fundo aurora trocado de verde pra azul
+Caio pediu pra trocar o tom do fundo em degradê de verde-sálvia/creme pra azul, mesma intensidade de antes, pra o vidro translúcido das janelas destacar melhor por cima.
+
+- `.crm-fundo-aurora`: manchas borradas recalibradas pros tons de azul já usados na marca do sistema (`cor.azul`/`azulEscuro`/`azulClaroDestaque` em `lib/theme.ts`), em vez de inventar uma paleta nova — mantém a cor do sistema coerente com o resto (links, pílula ativa, etc. já são desse mesmo azul).
+
+Build e `tsc --noEmit` limpos. Sem migração nesta mudança (a migração pendente de `painel_layout`, da rodada anterior, continua aguardando o Caio rodar).

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Reorder } from "framer-motion";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { Sparkles } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { cor, PALETA_VIVA } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
 import { corEtapa } from "@/lib/cor-etapa";
@@ -34,7 +35,13 @@ type ProcessoAtividadeHoje = {
 
 type Evento = { id: string; valor: string; cor: string | null };
 type Etapa = { id: string; nome: string };
-type EntregaEmAtraso = { id: string; processoId: string; numeroContrato: string; numeroParcela: number; dias: number };
+
+// IDs fixos dos widgets reorganizáveis do Painel (modo "Editar", pedido do
+// Caio) — a ordem escolhida fica salva em `painel_layout` (ver migração
+// 0049). ORDEM_PADRAO é a ordem de fábrica, usada quando a pessoa ainda não
+// reorganizou nada ou quando um widget novo aparece (entra no fim).
+type SecaoId = "kpis" | "agenda" | "coordenacao" | "graficos" | "parados";
+const ORDEM_PADRAO: SecaoId[] = ["kpis", "agenda", "coordenacao", "graficos", "parados"];
 
 // Tooltip escuro padrão dos gráficos do Painel — só o nome e o valor, sem
 // nenhuma legenda fixa na tela (pedido do Caio: "não precisa colocar os
@@ -50,6 +57,8 @@ function TooltipGrafico({ active, payload }: any) {
 }
 
 export default function PainelDashboard({
+  pessoaId,
+  ordemSalva,
   processos,
   contagemPorEtapa,
   contagemPorEvento,
@@ -59,13 +68,18 @@ export default function PainelDashboard({
   vencemEm7Dias,
   comOcorrencia,
   emCoberturaFerias,
-  acaoDoDia,
   divisaoPorCoordenacao,
   processosAtividadeHoje,
-  entregasEmAtraso,
   eventos,
   etapas,
 }: {
+  /** ID da pessoa logada — usado só pra salvar a ordem dos widgets na
+   * conta. Sem isso (caso raro, cadastro sem linha em `pessoas`), o modo
+   * "Editar" não aparece. */
+  pessoaId: string | null;
+  /** Ordem salva anteriormente (painel_layout.ordem_widgets) — null se a
+   * pessoa nunca reorganizou. */
+  ordemSalva: string[] | null;
   processos: Processo[];
   contagemPorEtapa: Record<string, number>;
   contagemPorEvento: Record<string, number>;
@@ -75,14 +89,15 @@ export default function PainelDashboard({
   vencemEm7Dias: number;
   comOcorrencia: number;
   emCoberturaFerias: number;
-  acaoDoDia: { texto: string; href: string; entregaDestacadaId?: string } | null;
   divisaoPorCoordenacao: { sigla: string; total: number }[];
   processosAtividadeHoje: ProcessoAtividadeHoje[];
-  entregasEmAtraso: EntregaEmAtraso[];
   eventos: Evento[];
   etapas: Etapa[];
 }) {
+  const supabase = createClient();
   const [limiteDias, setLimiteDias] = useState(15);
+  const [editando, setEditando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
   const parados = processos
     .filter((p) => p.diasParado !== null && p.diasParado >= limiteDias)
@@ -119,8 +134,11 @@ export default function PainelDashboard({
     { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, href: "/processos/concluidos" },
   ];
 
-  return (
-    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+  // Cada widget reorganizável vira um nó só, guardado num mapa por ID —
+  // o que muda de uma reorganização pra outra é só a ORDEM desses nós, o
+  // conteúdo de cada um continua igual ao de antes.
+  const secoes: Partial<Record<SecaoId, React.ReactNode>> = {
+    kpis: (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 210px))", gap: 12, justifyContent: "start" }}>
         {kpis.map((k, i) => {
           const conteudo = (
@@ -137,37 +155,8 @@ export default function PainelDashboard({
           );
         })}
       </div>
-
-      {acaoDoDia && (
-        <Link href={acaoDoDia.href} style={{ textDecoration: "none" }}>
-          <CardBento indice={1} clicavel vidroClaro corAcento={cor.destaqueQuente}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: cor.destaqueQuenteFundo,
-                  color: cor.destaqueQuente,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: "none",
-                }}
-              >
-                <Sparkles size={18} />
-              </span>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: cor.textoTerciario }}>
-                  Ação do dia
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 600, marginTop: 2, color: cor.texto }}>{acaoDoDia.texto}</div>
-              </div>
-            </div>
-          </CardBento>
-        </Link>
-      )}
-
+    ),
+    agenda: (
       <div>
         <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Agenda de hoje</h2>
         <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 8px" }}>Contratos com tarefa ou agendamento marcado pra hoje</p>
@@ -247,7 +236,8 @@ export default function PainelDashboard({
           </div>
         )}
       </div>
-
+    ),
+    coordenacao: (
       <div>
         <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Divisão por coordenação</h2>
         <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 8px" }}>Contratos ativos</p>
@@ -276,7 +266,8 @@ export default function PainelDashboard({
           </div>
         )}
       </div>
-
+    ),
+    graficos: (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 340px))", gap: 12, justifyContent: "start" }}>
         <CardBento titulo="Contratos por etapa" indice={0} pequeno corAcento={PALETA_VIVA[0]} vidroClaro>
           {dadosEtapas.length === 0 ? (
@@ -326,28 +317,8 @@ export default function PainelDashboard({
           </div>
         </CardBento>
       </div>
-
-      {(() => {
-        // A entrega já destacada em "Ação do dia" (acima) não repete aqui —
-        // pedido do Caio depois de ver as duas num mesmo print.
-        const entregasRestantes = entregasEmAtraso.filter((e) => e.id !== acaoDoDia?.entregaDestacadaId);
-        return entregasRestantes.length > 0 && (
-        <CardBento titulo="Entregas em atraso" pequeno vidroClaro corAcento={cor.urgente}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {entregasRestantes.map((e) => (
-              <Link
-                key={e.id}
-                href={`/processos/${e.processoId}`}
-                style={{ fontSize: 12.5, color: cor.urgente, textDecoration: "none", fontWeight: 600 }}
-              >
-                CT {e.numeroContrato} - {e.numeroParcela}ª Parcela — {e.dias} dia{e.dias > 1 ? "s" : ""} em atraso
-              </Link>
-            ))}
-          </div>
-        </CardBento>
-        );
-      })()}
-
+    ),
+    parados: (
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
@@ -384,6 +355,64 @@ export default function PainelDashboard({
           </div>
         )}
       </div>
+    ),
+  };
+
+  const disponiveis = ORDEM_PADRAO.filter((id) => secoes[id]);
+
+  const [ordem, setOrdem] = useState<SecaoId[]>(() => {
+    const salvaFiltrada = (ordemSalva ?? []).filter((id): id is SecaoId => disponiveis.includes(id as SecaoId));
+    const faltando = disponiveis.filter((id) => !salvaFiltrada.includes(id));
+    return [...salvaFiltrada, ...faltando] as SecaoId[];
+  });
+
+  async function salvarOrdem() {
+    if (!pessoaId) {
+      setEditando(false);
+      return;
+    }
+    setSalvando(true);
+    await supabase
+      .from("painel_layout")
+      .upsert({ pessoa_id: pessoaId, ordem_widgets: ordem, atualizado_em: new Date().toISOString() });
+    setSalvando(false);
+    setEditando(false);
+  }
+
+  return (
+    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+      {pessoaId && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={editando ? salvarOrdem : () => setEditando(true)}
+            disabled={salvando}
+            style={{
+              fontSize: 12.5,
+              fontWeight: 700,
+              padding: "7px 16px",
+              borderRadius: 999,
+              border: "none",
+              color: editando ? "#fff" : cor.destaque,
+              background: editando ? cor.destaque : cor.destaqueFundo,
+            }}
+          >
+            {salvando ? "Salvando..." : editando ? "Concluído" : "Editar"}
+          </button>
+        </div>
+      )}
+
+      {editando ? (
+        <Reorder.Group as="div" axis="y" values={ordem} onReorder={setOrdem} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {ordem.map((id) => (
+            <Reorder.Item key={id} value={id} as="div" className="crm-widget-jiggle" whileDrag={{ scale: 1.02, zIndex: 10, boxShadow: "0 16px 36px rgba(32,31,29,.2)" }}>
+              {secoes[id]}
+            </Reorder.Item>
+          ))}
+        </Reorder.Group>
+      ) : (
+        ordem.map((id) => <div key={id}>{secoes[id]}</div>)
+      )}
     </div>
   );
 }

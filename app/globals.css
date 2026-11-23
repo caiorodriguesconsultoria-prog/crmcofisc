@@ -224,41 +224,31 @@ th {
   margin: 0 auto 16px;
 }
 
-/* Barra de navegação (a "pílula" grande do topo) em vidro claro — Caio
-   reportou que ainda parecia um fundo branco opaco em vez de vidro.
-   Opacidade mais baixa que os cards (.5 em vez de .82) de propósito: o
-   texto aqui é só rótulo curto/alto-contraste, tolera mais transparência
-   que os cards de conteúdo dos dois sem perder legibilidade, e é onde o
-   efeito "vidro" fica mais visível (mais do fundo aurora aparece por
-   trás). Mesmo reflexo diagonal (::before) dos cards. */
+/* Barra de navegação (a "pílula" grande do topo) em vidro claro. Tinha um
+   reflexo diagonal (::before) igual aos cards — removido: a skill
+   apple-design ("Materials & depth") é explícita que NUNCA se empilha uma
+   superfície translúcida clara sobre outra, perde legibilidade; era
+   exatamente esse o motivo do texto ter ficado com menos contraste depois
+   da rodada anterior. O "vidro" vem só do background translúcido + blur +
+   a borda de cima bem clara (a "luz pegando" no material), como no
+   exemplo da própria Apple. */
 .crm-barra-topo-linha1 {
-  position: relative;
-  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 14px;
-  background: rgba(255, 255, 255, 0.5) !important;
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(32, 31, 29, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: 999px;
   padding: 10px 14px;
-}
-.crm-barra-topo-linha1::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 50%);
-  pointer-events: none;
 }
 @media (prefers-reduced-transparency: reduce) {
   .crm-barra-topo-linha1 {
     background: rgba(255, 255, 255, 0.98) !important;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-  }
-  .crm-barra-topo-linha1::before {
-    display: none;
   }
 }
 
@@ -293,8 +283,8 @@ th {
   left: 14px;
   min-width: 190px;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid rgba(32, 31, 29, 0.07);
   border-radius: 14px;
   box-shadow: 0 10px 30px rgba(32, 31, 29, 0.16);
@@ -322,8 +312,8 @@ th {
     right: 0;
     bottom: 0;
     background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(30px) saturate(200%);
-    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
     border-top: 1px solid rgba(32, 31, 29, 0.07);
     padding: 8px 6px calc(env(safe-area-inset-bottom, 0px) + 6px);
   }
@@ -532,33 +522,22 @@ th {
    em degradê com vidro branco, aplicada em tudo. Ver .crm-fundo-aurora.) */
 .crm-cartao-vidro-claro {
   /* Opacidade calibrada em .82 — .72 ficava quase da mesma cor do fundo
-     aurora (pouco contraste, 1º print do Caio); .9 (ajuste seguinte) virava
-     quase opaco e perdia o efeito vidro (Caio pediu "nível de opacidade
-     pra não confundir as cores com o fundo", não opacidade total). Mesmo
-     valor usado em `card` (lib/theme.ts) e na barra de navegação. */
+     aurora (pouco contraste, 1º print do Caio); .9 virava quase opaco e
+     perdia o efeito vidro. Mesmo valor usado em `card` (lib/theme.ts) e na
+     barra de navegação. */
   background: rgba(255, 255, 255, 0.82) !important;
-  /* Blur/saturate subidos (20px/140% -> 30px/200%) — Caio reportou "ainda
-     não percebi o liquid glass". Causa provável: o fundo aurora é um
-     degradê bem suave, sem textura nenhuma — borrar algo já liso não muda
-     muito o que se vê. O ::before abaixo adiciona um brilho diagonal (o
-     reflexo que faz "vidro" ser reconhecido como vidro, não só uma
-     superfície translúcida) e o saturate mais alto deixa a cor do fundo
-     mais viva por trás do vidro. */
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  /* Blur/saturate na faixa que a própria Apple usa nos materiais (skill
+     apple-design, "Materials & depth": blur(20px) saturate(180%) no
+     exemplo deles) — uma rodada anterior subiu pra 30px/200% achando que
+     "mais forte" resolvia o vidro não ficar perceptível, só que isso NÃO
+     era o problema (ver abaixo) e deixava a imagem meio lavada. */
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid rgba(32, 31, 29, 0.08) !important;
+  /* Borda de cima bem clara = a borda que "pega luz" no material, truque
+     que a própria Apple usa em vez de uma camada extra de brilho. */
   border-top: 1px solid rgba(255, 255, 255, 0.95) !important;
-  box-shadow:
-    0 8px 28px rgba(32, 31, 29, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
-}
-.crm-cartao-vidro-claro::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  /* Reflexo diagonal — o "brilho" que vende o efeito de vidro. */
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%);
-  pointer-events: none;
+  box-shadow: 0 8px 28px rgba(32, 31, 29, 0.12) !important;
 }
 @media (prefers-reduced-transparency: reduce) {
   .crm-cartao-vidro-claro {
@@ -566,25 +545,52 @@ th {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-  .crm-cartao-vidro-claro::before {
-    display: none;
-  }
 }
 
-/* Fundo "aurora" — degradê suave em verde-sálvia/creme com manchas
-   borradas (referência que o Caio trouxe, print de app estilo Apple/
-   Instagram), atrás dos widgets de vidro claro no Painel. É uma exceção
-   deliberada à regra geral de "sem degradê no fundo" (sinal comum de
-   interface com cara de IA) — aqui é o visual que o Caio pediu
-   explicitamente a partir de uma referência, não um gradiente decorativo
-   gratuito. background-attachment fixed pra não repetir/deslocar as
-   manchas ao rolar a página. */
+/* Fundo "aurora" — degradê suave em tons de azul (era verde-sálvia/creme;
+   Caio pediu pra trocar pro azul da própria marca do sistema, na mesma
+   tonalidade/intensidade de antes, pra o vidro translúcido das janelas
+   destacar melhor por cima) com manchas borradas, atrás dos widgets de
+   vidro claro no Painel. Tons vêm da paleta de azul já usada no resto do
+   sistema (cor.azul/azulEscuro/azulClaroDestaque em lib/theme.ts), pra
+   ficar coerente com o resto da marca. É uma exceção deliberada à regra
+   geral de "sem degradê no fundo" (sinal comum de interface com cara de
+   IA) — aqui é o visual que o Caio pediu explicitamente a partir de uma
+   referência, não um gradiente decorativo gratuito. background-attachment
+   fixed pra não repetir/deslocar as manchas ao rolar a página. */
 .crm-fundo-aurora {
-  background-color: #f4f8f2;
+  background-color: #dce7f8;
   background-image:
-    radial-gradient(circle at 12% 12%, rgba(173, 209, 168, 0.55) 0%, rgba(173, 209, 168, 0) 42%),
-    radial-gradient(circle at 88% 18%, rgba(214, 232, 200, 0.55) 0%, rgba(214, 232, 200, 0) 45%),
-    radial-gradient(circle at 80% 88%, rgba(250, 233, 211, 0.5) 0%, rgba(250, 233, 211, 0) 48%),
-    radial-gradient(circle at 15% 90%, rgba(190, 221, 196, 0.45) 0%, rgba(190, 221, 196, 0) 45%);
+    radial-gradient(circle at 12% 12%, rgba(47, 95, 219, 0.35) 0%, rgba(47, 95, 219, 0) 42%),
+    radial-gradient(circle at 88% 18%, rgba(193, 232, 255, 0.6) 0%, rgba(193, 232, 255, 0) 45%),
+    radial-gradient(circle at 80% 88%, rgba(27, 63, 166, 0.3) 0%, rgba(27, 63, 166, 0) 48%),
+    radial-gradient(circle at 15% 90%, rgba(47, 95, 219, 0.25) 0%, rgba(47, 95, 219, 0) 45%);
   background-attachment: fixed;
+}
+
+/* "Balançar" dos widgets no modo Editar do Painel (igual ícone de app no
+   iPhone) — pedido do Caio: "clico em editar, eles começam a se mexer e
+   eu organizo a tela". Puramente decorativo, some com prefers-reduced-motion. */
+@keyframes crm-jiggle {
+  0% {
+    transform: rotate(-0.6deg);
+  }
+  50% {
+    transform: rotate(0.6deg);
+  }
+  100% {
+    transform: rotate(-0.6deg);
+  }
+}
+.crm-widget-jiggle {
+  animation: crm-jiggle 0.24s ease-in-out infinite;
+  cursor: grab;
+}
+.crm-widget-jiggle:active {
+  cursor: grabbing;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crm-widget-jiggle {
+    animation: none;
+  }
 }
