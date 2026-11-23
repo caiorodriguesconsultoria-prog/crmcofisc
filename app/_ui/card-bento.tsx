@@ -89,7 +89,9 @@ export default function CardBento({
       {(titulo || acao) && (
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: carregando ? 0 : pequeno ? 8 : 14 }}>
           <div style={{ minWidth: 0 }}>
-            {titulo && <div style={{ fontSize: pequeno ? 14 : 18, fontWeight: 600, color: cor.texto }}>{titulo}</div>}
+            {/* 14 -> 16 (pedido do Caio: "aumente a fonte" nos títulos dos
+               widgets pequenos, ex. Contratos por etapa/Eventos). */}
+            {titulo && <div style={{ fontSize: pequeno ? 16 : 18, fontWeight: 600, color: cor.texto }}>{titulo}</div>}
             {subtitulo && (
               <div style={{ fontSize: pequeno ? 11.5 : 13, color: cor.textoTerciario, marginTop: 2 }}>
                 {subtitulo}

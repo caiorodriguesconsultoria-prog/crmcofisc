@@ -1299,6 +1299,17 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-11-23 · Painel: bug do grid de KPIs no celular, coordenação em tiles "de app", cabeçalho
+Caio mandou print do Painel no celular mostrando os 2 KPIs ("Contratos ativos"/"Concluídos") empilhados um embaixo do outro em vez de lado a lado, mesmo depois do ajuste anterior. Pediu também pra centralizar as informações dentro dos cards, encurtar as laterais, mover "Divisão por coordenação" pra logo abaixo dos KPIs com tiles pequenos "como apps", aumentar a fonte dos títulos dos gráficos e ajustar o cabeçalho.
+
+- **Causa raiz do bug do grid**: `grid-template-columns: repeat(auto-fit, minmax(160px, 210px))` — o número de colunas que o `auto-fit` cria é calculado a partir do MAX da função (210px), não do MIN. Num celular com ~358px de largura útil, 210px×2+gap não cabe, então o grid só cria 1 coluna — mesmo os KPIs cabendo perfeitamente a 160px cada. Troquei `kpis` e a nova grade de `coordenacao` de CSS Grid pra `display:flex; flexWrap:wrap` com `flex:"1 1 Npx", maxWidth:Mpx` por item — flexbox quebra de linha pelo espaço disponível de verdade, sem essa pegadinha do grid.
+- **`app/_ui/kpi.tsx`**: novo prop `centralizado` (rótulo + número centralizados) — usado só no Painel, o `app/exemplo` continua à esquerda.
+- **`app/dashboard/painel-dashboard.tsx`**: KPIs sem a faixa lateral colorida (texto centralizado, cards mais estreitos — "encurte as laterais"); `coordenacao` reescrita pra usar o mesmo componente `Kpi` (centralizado) num card bem menor, em vez do card antigo com barra de progresso — visual "ícone de app"; `ORDEM_PADRAO` mudou pra `kpis, coordenacao, agenda, graficos, parados` (coordenação logo abaixo dos KPIs); grade de gráficos ganhou a classe de centralização mobile.
+- **`app/_ui/card-bento.tsx`**: título do card pequeno, 14px → 16px (afeta "Contratos por etapa"/"Eventos" e os outros widgets pequenos).
+- **`app/_ui/barra-topo.tsx`**: selo "COFISC" trocado do degradê arco-íris (teal/verde/amarelo, destoava do resto do cabeçalho) pro mesmo tom escuro já usado em "+ Novo contrato".
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 ## 2026-11-23 · Reorganização do card de Contratos (separadores, hierarquia, "Eventos"/"Entregas")
 Caio mandou print do card de Contratos pedindo: separadores entre cada grupo de informação, tirar a linha "Próximo evento" (vira título "Eventos" em negrito pra lista de tarefas agendadas), um bloco "Entregas" com a próxima entrega (futuro de verdade) e o atraso (parcela sem entrega concluída) separados, e reforço de contraste — "as fontes estão meio apagadas". Usei a skill apple-design (seção de materiais/vibrância — texto cinza chapado sobre superfície translúcida perde legibilidade, pede contraste mais alto — e tipografia — hierarquia por peso, não só tamanho) pra guiar o ajuste.
 
