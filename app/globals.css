@@ -587,10 +587,13 @@ th {
   border-top: 1px solid rgba(255, 255, 255, 0.95) !important;
   /* Duas sombras — contato curto (ancora a base) + elevação longa
      (flutua) — em vez de uma só, que faz o card parecer colado em vez de
-     apoiado. Ver seção 2 da skill visual-apps-apple-ios26. */
+     apoiado. Ver seção 2 da skill visual-apps-apple-ios26. Elevação subida
+     (8px/.12 -> 20px/.16, mais blur) — pedido do Caio: "ajuste para que
+     as janelas pareçam flutuar", a sombra de antes era discreta demais
+     pra ler como elevação de verdade contra o fundo aurora. */
   box-shadow:
     0 1px 2px rgba(32, 31, 29, 0.08),
-    0 8px 28px rgba(32, 31, 29, 0.12) !important;
+    0 20px 44px rgba(32, 31, 29, 0.16) !important;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 @media (prefers-reduced-transparency: reduce) {

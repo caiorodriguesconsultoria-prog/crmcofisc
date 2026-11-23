@@ -103,7 +103,9 @@ export const movimento = {
 // existe uma cor própria por item, como nas etapas do Kanban.
 export const PALETA_VIVA = ["#3578B8", "#D19936", "#2D9570", "#C66846", "#7D9849", "#C66177", "#8A5CB8", "#3A7CA5"];
 
-export const sombraCard = "0 1px 2px rgba(32,31,29,.035)";
+// Subida (era "0 1px 2px rgba(32,31,29,.035)", quase imperceptível) —
+// pedido do Caio pras janelas "parecerem flutuar" sobre o fundo aurora.
+export const sombraCard = "0 1px 2px rgba(32,31,29,.06), 0 18px 40px rgba(32,31,29,.14)";
 export const sombraFlutuante = "0 1px 2px rgba(0,0,0,.07), 0 6px 16px rgba(0,0,0,.05)";
 
 // Vidro translúcido (mesmo material de .crm-cartao-vidro-claro em
