@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Sparkles } from "lucide-react";
 import { cor, PALETA_VIVA } from "@/lib/theme";
 import { corEvento } from "@/lib/cores-evento";
@@ -11,7 +11,6 @@ import MedidorCircular from "@/app/_ui/medidor-circular";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import CardBento from "@/app/_ui/card-bento";
 import Kpi from "@/app/_ui/kpi";
-import IndicadorUrgencia, { type NivelUrgencia } from "@/app/_ui/indicador-urgencia";
 import TagRotulo from "@/app/_ui/tag-rotulo";
 
 type Processo = {
@@ -36,18 +35,11 @@ type ProcessoAtividadeHoje = {
 type Evento = { id: string; valor: string; cor: string | null };
 type Etapa = { id: string; nome: string };
 type EntregaEmAtraso = { id: string; processoId: string; numeroContrato: string; numeroParcela: number; dias: number };
-type PrazoDaSemana = { id: string; numeroContrato: string; prazoData: string; dias: number };
-
-function nivelUrgenciaPorDias(dias: number): NivelUrgencia {
-  if (dias <= 2) return "critico";
-  if (dias <= 5) return "atencao";
-  return "ok";
-}
 
 // Tooltip escuro padrão dos gráficos do Painel — só o nome e o valor, sem
 // nenhuma legenda fixa na tela (pedido do Caio: "não precisa colocar os
 // nomes nas cores, ao passar o mouse em cima o nome aparece").
-function TooltipPizza({ active, payload }: any) {
+function TooltipGrafico({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const item = payload[0];
   return (
@@ -68,7 +60,6 @@ export default function PainelDashboard({
   comOcorrencia,
   emCoberturaFerias,
   acaoDoDia,
-  prazosDaSemana,
   divisaoPorCoordenacao,
   processosAtividadeHoje,
   entregasEmAtraso,
@@ -85,7 +76,6 @@ export default function PainelDashboard({
   comOcorrencia: number;
   emCoberturaFerias: number;
   acaoDoDia: { texto: string; href: string; entregaDestacadaId?: string } | null;
-  prazosDaSemana: PrazoDaSemana[];
   divisaoPorCoordenacao: { sigla: string; total: number }[];
   processosAtividadeHoje: ProcessoAtividadeHoje[];
   entregasEmAtraso: EntregaEmAtraso[];
@@ -131,7 +121,7 @@ export default function PainelDashboard({
 
   return (
     <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 210px))", gap: 12, justifyContent: "start" }}>
         {kpis.map((k, i) => {
           const conteudo = (
             <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} corAcento={PALETA_VIVA[i % PALETA_VIVA.length]} vidroClaro>
@@ -184,7 +174,7 @@ export default function PainelDashboard({
         {processosAtividadeHoje.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 280px))", gap: 12, justifyContent: "start" }}>
             {processosAtividadeHoje.map((p, i) => (
               <CardBento key={p.id} indice={i} pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -259,36 +249,12 @@ export default function PainelDashboard({
       </div>
 
       <div>
-        <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Prazos da semana</h2>
-        <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 8px" }}>Contratos ativos com prazo nos próximos 7 dias</p>
-        {prazosDaSemana.length === 0 ? (
-          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum prazo nos próximos 7 dias.</p>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
-            {prazosDaSemana.map((p, i) => (
-              <Link key={p.id} href={`/processos/${p.id}`} style={{ textDecoration: "none" }}>
-                <CardBento indice={i} clicavel pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <strong style={{ fontSize: 14, color: cor.texto, fontVariantNumeric: "tabular-nums" }}>{p.numeroContrato}</strong>
-                    <IndicadorUrgencia
-                      nivel={nivelUrgenciaPorDias(p.dias)}
-                      texto={p.dias === 0 ? "vence hoje" : `${p.dias} dia${p.dias > 1 ? "s" : ""}`}
-                    />
-                  </div>
-                </CardBento>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div>
         <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: "0 0 2px" }}>Divisão por coordenação</h2>
         <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 8px" }}>Contratos ativos</p>
         {divisaoPorCoordenacao.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 170px))", gap: 12, justifyContent: "start" }}>
             {divisaoPorCoordenacao.map((c, i) => (
               <CardBento key={c.sigla} indice={i} pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -311,21 +277,21 @@ export default function PainelDashboard({
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 340px))", gap: 12, justifyContent: "start" }}>
         <CardBento titulo="Contratos por etapa" indice={0} pequeno corAcento={PALETA_VIVA[0]} vidroClaro>
           {dadosEtapas.length === 0 ? (
             <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato ativo.</p>
           ) : (
             <div style={{ width: "100%", height: 150 }}>
               <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={dadosEtapas} dataKey="valor" nameKey="nome" innerRadius="55%" outerRadius="88%" paddingAngle={2}>
+                <BarChart data={dadosEtapas} barCategoryGap="30%">
+                  <Tooltip content={<TooltipGrafico />} cursor={{ fill: "rgba(32,31,29,.05)" }} />
+                  <Bar dataKey="valor" radius={[8, 8, 0, 0]} maxBarSize={34}>
                     {dadosEtapas.map((_, i) => (
-                      <Cell key={i} fill={PALETA_VIVA[i % PALETA_VIVA.length]} stroke="none" />
+                      <Cell key={i} fill={PALETA_VIVA[i % PALETA_VIVA.length]} />
                     ))}
-                  </Pie>
-                  <Tooltip content={<TooltipPizza />} />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           )}
@@ -337,14 +303,14 @@ export default function PainelDashboard({
           ) : (
             <div style={{ width: "100%", height: 150 }}>
               <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={dadosEventos} dataKey="valor" nameKey="nome" innerRadius="55%" outerRadius="88%" paddingAngle={2}>
+                <BarChart data={dadosEventos} barCategoryGap="30%">
+                  <Tooltip content={<TooltipGrafico />} cursor={{ fill: "rgba(32,31,29,.05)" }} />
+                  <Bar dataKey="valor" radius={[8, 8, 0, 0]} maxBarSize={24}>
                     {dadosEventos.map((d, i) => (
-                      <Cell key={i} fill={d.cor} stroke="none" />
+                      <Cell key={i} fill={d.cor} />
                     ))}
-                  </Pie>
-                  <Tooltip content={<TooltipPizza />} />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           )}
@@ -403,7 +369,7 @@ export default function PainelDashboard({
         {parados.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato parado além do limite.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 220px))", gap: 12, justifyContent: "start" }}>
             {parados.map((p, i) => (
               <Link key={p.id} href={`/processos/${p.id}`} style={{ textDecoration: "none" }}>
                 <CardBento indice={i} clicavel pequeno vidroClaro corAcento={cor.atencao}>
