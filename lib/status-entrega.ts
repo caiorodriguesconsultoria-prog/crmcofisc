@@ -134,8 +134,13 @@ export function resumoEntregas(
     .map((p) => ({ numero: p.numero, data: p.data_prevista as string, atrasada: (diasEmAtrasoAgora(p.data_prevista, hoje) ?? 0) > 0 }))
     .sort((a, b) => a.data.localeCompare(b.data));
   const atrasadas = pendentes.filter((p) => p.atrasada);
+  // "Próxima entrega" é só futuro de verdade (pedido do Caio) — uma parcela
+  // já atrasada não é "próxima", é a "atrasada" (as duas linhas mostravam a
+  // mesma parcela quando só havia uma pendente e ela já tinha passado do
+  // prazo).
+  const futuras = pendentes.filter((p) => !p.atrasada);
   return {
-    proxima: pendentes[0] ? { numero: pendentes[0].numero, data: pendentes[0].data } : null,
+    proxima: futuras[0] ? { numero: futuras[0].numero, data: futuras[0].data } : null,
     atrasada: atrasadas[0] ? { numero: atrasadas[0].numero, data: atrasadas[0].data } : null,
   };
 }

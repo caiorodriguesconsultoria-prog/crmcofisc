@@ -1299,6 +1299,14 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-11-23 · Reorganização do card de Contratos (separadores, hierarquia, "Eventos"/"Entregas")
+Caio mandou print do card de Contratos pedindo: separadores entre cada grupo de informação, tirar a linha "Próximo evento" (vira título "Eventos" em negrito pra lista de tarefas agendadas), um bloco "Entregas" com a próxima entrega (futuro de verdade) e o atraso (parcela sem entrega concluída) separados, e reforço de contraste — "as fontes estão meio apagadas". Usei a skill apple-design (seção de materiais/vibrância — texto cinza chapado sobre superfície translúcida perde legibilidade, pede contraste mais alto — e tipografia — hierarquia por peso, não só tamanho) pra guiar o ajuste.
+
+- **`lib/status-entrega.ts`** (`resumoEntregas`): "próxima entrega" agora só considera parcelas realmente no futuro (`data_prevista` ainda não vencida) — antes, se a única parcela pendente já estivesse atrasada, ela aparecia ao mesmo tempo como "próxima" e como "atrasada" (mesma parcela duas vezes). Agora "atrasada" é exclusivamente quem já passou do prazo sem entrega.
+- **`app/processos/lista.tsx`**: objeto/NUP/coordenação/fornecedor, "Eventos" (tarefas agendadas) e "Entregas" (próxima + atraso) agora são blocos visualmente separados por uma borda fina com respiro acima (mesmo padrão que o último andamento já usava) — "Próximo evento" foi removido, vira o título "Eventos". Textos que estavam em `cor.textoSecundario`/`textoTerciario` (cinza, baixo contraste) passaram pra `cor.texto` com `fontWeight: 500`, e os títulos de seção ("Eventos", "Entregas") em negrito (`fontWeight: 700`) — hierarquia por peso, não só tamanho, como a skill recomenda pra texto sobre vidro translúcido.
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 ## 2026-11-23 · Bug de texto quebrando letra por letra no celular, KPIs do Painel reduzidos e centralizados só no mobile
 Caio mandou vídeo mostrando, na tela do contrato no celular, o bloco Contratada/CNPJ/Objeto quebrando letra por letra (cada caractere numa linha) — e pediu pra tirar os KPIs "Vencem em 7 dias", "Com ocorrência" e "Vencendo hoje" do Painel, deixando só "Contratos ativos" e "Concluídos" centralizados no celular (a grade da Agenda de hoje tinha ficado centralizada também no desktop por engano, pedido pra corrigir isso junto).
 
