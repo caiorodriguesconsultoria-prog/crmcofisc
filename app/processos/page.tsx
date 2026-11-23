@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import VisualizacoesProcessos from "./visualizacoes";
-import { botaoPrimario, cor } from "@/lib/theme";
+import { cor } from "@/lib/theme";
 import Painel from "@/app/_ui/painel";
 import BarraTopo from "@/app/_ui/barra-topo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
@@ -236,16 +236,9 @@ export default async function ProcessosPage({
         subtitulo={titulo !== "Contratos" ? "Contratos" : undefined}
         maxWidth={1800}
         fundoAurora
-        // <a> normal (não o <Link> do Next) de propósito — /processos/novo tem o
-        // mesmo formato de URL que a rota interceptada do modal /processos/[id],
-        // e navegação client-side acaba caindo no modal tratando "novo" como id.
-        // Um <a> força navegação completa (recarrega a página), que resolve
-        // certo pelo lado do servidor.
-        acao={
-          <a href="/processos/novo" style={{ ...botaoPrimario, textDecoration: "none" }}>
-            + Novo contrato
-          </a>
-        }
+        // Botão "+ Novo contrato" tirado daqui — ficava duplicado com o da
+        // BarraTopo (pedido do Caio: só um botão). O atalho continua
+        // disponível ali, em toda tela do sistema.
       >
         {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 

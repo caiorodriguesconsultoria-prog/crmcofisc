@@ -1407,3 +1407,12 @@ Caio reportou o tooltip dos gráficos mostrando "valor: 1" em vez do nome da eta
 - **Efeito de flutuar**: sombra de elevação subida nos cards de vidro (`.crm-cartao-vidro-claro`) e no `card` genérico (`sombraCard`, de quase imperceptível pra uma sombra de verdade) — a sombra de antes era discreta demais pra ler como elevação contra o fundo aurora.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-23 · Contratos: menos vão no topo, um só botão "Novo contrato", Coordenação clicável em Dados principais
+Caio pediu 3 ajustes na tela de Contratos: diminuir o vão entre a BarraTopo e o título da página, tirar o botão "+ Novo contrato" duplicado (tinha um na BarraTopo e outro na própria página) e acrescentar o nome da coordenação em Dados principais, clicável, abrindo os dados de contato com botões de copiar — igual já existe em Coordenações.
+
+- **`app/globals.css`**: `.crm-painel-fundo.crm-fundo-aurora` (as telas com fundo aurora — Contratos, Dados etc.) ganhou `padding-top: 10px` (era 28px herdado de `.crm-painel-fundo` genérico) — só essas telas, não mexe nas sem aurora.
+- **`app/processos/page.tsx`**: removido o `acao` (botão "+ Novo contrato") do `Painel` — o da BarraTopo já cobre o mesmo atalho em qualquer tela do sistema.
+- **`app/processos/[id]/dados-principais.tsx`**: novo campo "Coordenação" na mesma linha de Contratada/CNPJ/Objeto, clicável, abrindo um `PopupNome` com Nome/Telefone/Coordenador/E-mail do coordenador — mesmo padrão (e os mesmos dados) que `dados-processo.tsx` já usa pra sigla da coordenação, só que agora também dentro do card Dados principais.
+
+Build e `tsc --noEmit` limpos. Sem migração.

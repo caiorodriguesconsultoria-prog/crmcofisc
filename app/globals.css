@@ -170,6 +170,14 @@ th {
   justify-content: center;
 }
 
+/* Vão grande demais entre a BarraTopo e o título da página nas telas com
+   fundo aurora (Contratos, Dados etc.) — pedido do Caio pra diminuir.
+   Only aplica quando o Painel usa fundoAurora (as duas classes juntas no
+   mesmo elemento, ver app/_ui/painel.tsx), não mexe nas telas sem aurora. */
+.crm-painel-fundo.crm-fundo-aurora {
+  padding-top: 10px;
+}
+
 .crm-painel {
   width: 100%;
   border-radius: 22px;
