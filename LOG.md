@@ -1299,6 +1299,16 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-11-23 · Auditoria de legibilidade (contraste) e responsividade (itens #5 e #9 do backlog)
+Caio pediu pra fechar os dois itens pendentes do backlog: checar a legibilidade da fonte e fazer uma revisão responsiva do sistema. Em vez de ajustar caso a caso por impressão visual, medi o contraste de verdade (fórmula de luminância relativa da WCAG) das cores de texto do sistema contra fundo branco.
+
+- **Achado**: `cor.textoTerciario` (`#7D7979`, usada em 146 lugares — rótulos pequenos maiúsculos, legendas, textos de apoio em quase toda tela do sistema) media **4,3:1** de contraste contra branco — abaixo do mínimo de 4,5:1 da WCAG AA pra texto pequeno/normal. Era essa a causa de fundo da sensação de fonte "apagada" que o Caio reportou várias vezes nesta sessão, não um problema de peso/transparência isolado em uma tela.
+- **Correção**: `textoTerciario` escurecido pra `#6E6A6A` (**5,3:1**, passa confortavelmente), em `lib/theme.ts` e no espelho `design-system/tokens.css` (mantidos em sincronia, regra do CLAUDE.md). Como é um token central, a correção vale pro sistema inteiro de uma vez — não precisou mexer tela por tela.
+- Também achei e troquei 7 ocorrências do mesmo cinza `#7D7979` **grafado direto como hex** (não via `cor.textoTerciario`) nas telas de Relatório e no formulário de novo contrato — essas escapavam do token e não seriam corrigidas pela mudança acima. Trocadas por `cor.textoTerciario` (ou o novo hex direto, nos arquivos que ainda não importavam `lib/theme`).
+- **Revisão responsiva**: busquei por todo o código o mesmo padrão de bug achado nesta sessão (grid `auto-fit`/`auto-fill` com `minmax(min, max)` de dois valores fixos — conta colunas pelo MAX, não pelo MIN, empilhando cards que caberiam lado a lado num celular estreito) e por colunas `Nfr Mfr` sem mínimo de verdade (quebra de texto letra por letra). Achei e corrigi mais um caso de cada: "Contratos parados" no Painel (grid → flex-wrap) e "Responsável pelo pagamento"/"E-mail" em Dados principais (`1.2fr 1.6fr` → `auto-fit, minmax(180px, 1fr)`). As outras ocorrências do mesmo padrão (telas de Relatório, formulário de novo contrato) são campos de formulário em telas de uso majoritariamente desktop, sem o mesmo risco de quebra — deixadas como estão por ora.
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 ## 2026-11-23 · Painel: bug do grid de KPIs no celular, coordenação em tiles "de app", cabeçalho
 Caio mandou print do Painel no celular mostrando os 2 KPIs ("Contratos ativos"/"Concluídos") empilhados um embaixo do outro em vez de lado a lado, mesmo depois do ajuste anterior. Pediu também pra centralizar as informações dentro dos cards, encurtar as laterais, mover "Divisão por coordenação" pra logo abaixo dos KPIs com tiles pequenos "como apps", aumentar a fonte dos títulos dos gráficos e ajustar o cabeçalho.
 

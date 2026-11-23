@@ -48,7 +48,7 @@ export default function EntregasLazy({ processoId }: { processoId: string }) {
   }, [processoId]);
 
   if (!entregas) {
-    return <p style={{ fontSize: 12, color: "#7D7979", marginTop: 20 }}>Carregando…</p>;
+    return <p style={{ fontSize: 12, color: "#6E6A6A", marginTop: 20 }}>Carregando…</p>;
   }
 
   // Esse componente busca os próprios dados (client-side), fora da árvore

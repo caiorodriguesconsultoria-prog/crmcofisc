@@ -356,7 +356,9 @@ export default function DadosPrincipais({
             <Coluna label="Unidade de medida" valor={unidadeMedida ?? "não informado"} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.6fr", gap: 14 }}>
+          {/* Mesmo motivo do ajuste acima — "1.2fr 1.6fr" sem mínimo de
+             verdade quebrava o e-mail letra por letra no celular. */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
             <Coluna label="Responsável pelo pagamento" valor={responsavelPagamentoNome || "não informado"} />
             <Coluna label="E-mail do responsável" valor={responsavelPagamentoEmail || "não informado"} />
           </div>

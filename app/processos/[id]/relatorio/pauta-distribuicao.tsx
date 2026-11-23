@@ -197,7 +197,7 @@ export default function PautaDistribuicao({
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.verdeEscuro }} />
         Pauta de distribuição
       </strong>
-      <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
+      <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 8px" }}>
         Forma de entrega: {formaEntrega}
       </p>
 
@@ -240,7 +240,7 @@ export default function PautaDistribuicao({
 
       {grupos.map((grupo) => (
         <div key={grupo.execucaoId ?? "sem-parcela"} style={{ marginBottom: 10 }}>
-          <span style={{ fontSize: 11.5, fontWeight: 600, color: "#7D7979" }}>{grupo.rotulo}</span>
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: cor.textoTerciario }}>{grupo.rotulo}</span>
           <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 4 }}>
             <thead>
               <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
@@ -312,7 +312,7 @@ export default function PautaDistribuicao({
       ))}
 
       {pauta.length === 0 && (
-        <p style={{ fontSize: 12.5, color: "#7D7979" }}>Nenhuma UF cadastrada.</p>
+        <p style={{ fontSize: 12.5, color: cor.textoTerciario }}>Nenhuma UF cadastrada.</p>
       )}
       {pauta.length > 0 && (
         <p style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", margin: "4px 0 0" }}>Total: {total}</p>

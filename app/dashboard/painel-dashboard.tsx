@@ -323,13 +323,21 @@ export default function PainelDashboard({
         {parados.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhum contrato parado além do limite.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 220px))", gap: 12, justifyContent: "start" }}>
+          // flex-wrap, mesmo motivo das outras grades do Painel — grid
+          // auto-fill com minmax(170,220) conta colunas pelo máximo (220),
+          // então 2 cards de 170px que cabem no celular acabavam
+          // empilhados em 1 coluna só.
+          <div className="crm-grid-kpis-painel" style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             {parados.map((p, i) => (
-              <Link key={p.id} href={`/processos/${p.id}`} style={{ textDecoration: "none", display: "block", minWidth: 0 }}>
+              <Link
+                key={p.id}
+                href={`/processos/${p.id}`}
+                style={{ textDecoration: "none", display: "block", flex: "1 1 170px", maxWidth: 220, minWidth: 0 }}
+              >
                 <CardBento indice={i} clicavel pequeno vidroClaro corAcento={cor.atencao}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <strong style={{ fontSize: 14, color: cor.texto }}>{p.numeroContrato}</strong>
-                    <span style={{ fontSize: 12, color: cor.textoTerciario }}>{p.etapaAtual}</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: cor.textoSecundario }}>{p.etapaAtual}</span>
                     <span style={{ fontSize: 12, color: cor.urgente, fontWeight: 600 }}>há {p.diasParado} dias</span>
                   </div>
                 </CardBento>

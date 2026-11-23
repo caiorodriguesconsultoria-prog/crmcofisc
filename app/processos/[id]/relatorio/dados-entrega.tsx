@@ -190,7 +190,7 @@ export default function DadosEntrega({
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor.azulEscuro }} />
         Dados de entrega
       </strong>
-      <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
+      <p style={{ fontSize: 12, color: cor.textoTerciario, margin: "2px 0 8px" }}>
         Atraso, % de transcurso e Faltante são calculados automaticamente (cruzando com a Pauta de
         distribuição pela UF/local de entrega) — não ficam salvos, recalculam sempre que a lista muda.
       </p>
@@ -283,7 +283,7 @@ export default function DadosEntrega({
             })}
             {entregas.length === 0 && (
               <tr>
-                <td colSpan={14} style={{ padding: 6, color: "#7D7979" }}>
+                <td colSpan={14} style={{ padding: 6, color: cor.textoTerciario }}>
                   Nenhuma entrega registrada.
                 </td>
               </tr>
