@@ -21,6 +21,9 @@ const ABAS = [
 // Itens que ainda não têm cápsula própria — ficam no menu "Mais" pra não
 // perder nenhum acesso que já existia na gaveta lateral.
 const MAIS = [
+  // Fase 1 do agente de IA (pesquisa sobre contratos) — fica no "Mais"
+  // enquanto é novo/em teste; sobe pra cápsula própria se pegar uso.
+  { href: "/assistente", label: "Assistente (IA)" },
   { href: "/processos/concluidos", label: "Concluídos" },
   { href: "/dados", label: "Dados" },
   { href: "/avisos", label: "Avisos" },
