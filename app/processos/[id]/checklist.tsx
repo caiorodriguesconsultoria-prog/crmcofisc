@@ -451,24 +451,6 @@ export default function Checklist({
         }}
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) setTarefaTagIds((ids) => (ids.includes(e.target.value) ? ids : [...ids, e.target.value]));
-            }}
-            style={{ padding: 6, fontSize: 12, flex: "none" }}
-            aria-label="Marcar tag de evento"
-          >
-            <option value="">+ Marcar tag de evento...</option>
-            {tagsDisponiveis
-              .filter((t) => !tarefaTagIds.includes(t.id))
-              .map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.valor}
-                </option>
-              ))}
-          </select>
-
           {/* Tags marcadas e o texto da tarefa na mesma barra — pedido do
              Caio: marcar as tags primeiro, elas aparecem aqui, e aí
              continua escrevendo depois delas. Também suporta digitar "/"

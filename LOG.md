@@ -1317,6 +1317,14 @@ Caio mandou a skill `escrita-humanizada` e pediu um resumo de andamento de um co
 
 Sem código novo além do documento. Sem migração.
 
+## 2026-11-23 · Marcar tag só via "/", criação de tag centralizada
+Caio pediu pra tirar o dropdown "+ Marcar tag de evento..." da barra de nova tarefa (Checklist) e deixar só o "/" pra marcar tag; levar o mesmo "/" pro campo de Andamentos; e tirar a função de criar tag nova dali de dentro, deixando só no lugar que já existe (EventosAtivos, `app/processos/[id]/painel.tsx`) — tudo puxando a mesma lista de tags (`tagsDisponiveis`), que já vinha de uma única fonte em `conteudo.tsx`.
+
+- **`app/processos/[id]/checklist.tsx`**: removido o `<select>` "+ Marcar tag de evento..." — só sobrou o "/" (já implementado numa rodada anterior).
+- **`app/processos/[id]/andamentos.tsx`**: removida a criação de tag embutida no formulário (`criarEvento`/`criandoEvento`/`tagsCriadas` — inseria direto na tabela `tags`, duplicando o que já existe em EventosAtivos) e o `<select>` "Tipo de evento..." — no lugar, o mesmo mecanismo de "/" no texto do andamento (igual ao Checklist): digita "/", aparece a busca, seleciona, a tag vira um chip e o "/termo" some do texto.
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 ## 2026-11-23 · Segundo bug de texto quebrando letra por letra (desta vez no desktop)
 Caio reportou o mesmo sintoma (texto quebrando letra por letra), agora no navegador/desktop, especificamente no campo Objeto de Dados principais — print mostrando "De/sm/op/res/sin/a/Ac/eta/to" numa coluna estreitíssima, enquanto Contratada e CNPJ ficavam largos ao lado.
 
