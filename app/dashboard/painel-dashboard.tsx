@@ -69,9 +69,6 @@ export default function PainelDashboard({
   contagemPorEvento,
   ativos,
   concluidos,
-  vencendoHoje,
-  vencemEm7Dias,
-  comOcorrencia,
   emCoberturaFerias,
   divisaoPorCoordenacao,
   processosAtividadeHoje,
@@ -90,9 +87,6 @@ export default function PainelDashboard({
   contagemPorEvento: Record<string, number>;
   ativos: number;
   concluidos: number;
-  vencendoHoje: number;
-  vencemEm7Dias: number;
-  comOcorrencia: number;
   emCoberturaFerias: number;
   divisaoPorCoordenacao: { sigla: string; total: number }[];
   processosAtividadeHoje: ProcessoAtividadeHoje[];
@@ -121,21 +115,10 @@ export default function PainelDashboard({
   // "chrome" diferentes na mesma tela), que é exatamente o padrão que a
   // auditoria de design pede pra evitar: cor deve ficar no conteúdo (o
   // número, via corNumero), não espalhada pelo fundo do card.
+  // Pedido do Caio: tirar "Vencem em 7 dias", "Com ocorrência" e "Vencendo
+  // hoje" — ficam só os dois KPIs abaixo.
   const kpis = [
     { rotulo: "Contratos ativos", valor: ativos, corNumero: cor.azulEscuro },
-    {
-      rotulo: "Vencem em 7 dias",
-      valor: vencemEm7Dias,
-      corNumero: cor.laranja,
-      variacao: vencemEm7Dias > 0 ? { texto: "atenção à agenda", sentido: "negativo" as const } : undefined,
-    },
-    { rotulo: "Com ocorrência", valor: comOcorrencia, corNumero: cor.destaqueQuente },
-    {
-      rotulo: "Vencendo hoje",
-      valor: vencendoHoje,
-      corNumero: cor.vermelhoEscuro,
-      variacao: vencendoHoje > 0 ? { texto: "agir hoje", sentido: "negativo" as const } : undefined,
-    },
     { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, href: "/processos/concluidos" },
   ];
 
@@ -144,11 +127,13 @@ export default function PainelDashboard({
   // conteúdo de cada um continua igual ao de antes.
   const secoes: Partial<Record<SecaoId, React.ReactNode>> = {
     kpis: (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 210px))", gap: 12, justifyContent: "start" }}>
+      // justifyContent centralizado só no celular (classe CSS, media query
+      // em globals.css) — no desktop fica alinhado à esquerda como antes.
+      <div className="crm-grid-kpis-painel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 210px))", gap: 12 }}>
         {kpis.map((k, i) => {
           const conteudo = (
             <CardBento key={k.rotulo} indice={i} pequeno clicavel={!!k.href} corAcento={PALETA_VIVA[i % PALETA_VIVA.length]} vidroClaro>
-              <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} variacao={k.variacao} />
+              <Kpi rotulo={k.rotulo} valor={k.valor} corNumero={k.corNumero} />
             </CardBento>
           );
           return k.href ? (
@@ -168,9 +153,11 @@ export default function PainelDashboard({
         {processosAtividadeHoje.length === 0 ? (
           <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma atividade marcada pra hoje.</p>
         ) : (
-          // Centralizado — pedido do Caio, pra ficar bem no meio da tela do
-          // celular em vez de colado na esquerda (onde só cabe 1 por linha).
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 260px))", gap: 12, justifyContent: "center" }}>
+          // Centralizado só no celular (pedido do Caio: no meio da tela em
+          // vez de colado na esquerda, onde só cabe 1 por linha) — no
+          // desktop fica alinhado à esquerda, igual ao resto do Painel
+          // (tinha ficado centralizado nos dois por engano).
+          <div className="crm-grid-kpis-painel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 260px))", gap: 12 }}>
             {processosAtividadeHoje.map((p, i) => (
               <CardBento key={p.id} indice={i} pequeno vidroClaro corAcento={PALETA_VIVA[i % PALETA_VIVA.length]}>
                 {/* Card resumido — só identidade do contrato (pedido do

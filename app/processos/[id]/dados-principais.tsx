@@ -329,7 +329,14 @@ export default function DadosPrincipais({
             <Coluna label="NUP Relatório" valor={nupRelatorio?.valor ?? "não informado"} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
+          {/* Era "1.2fr 1fr 1.6fr" fixo — no celular isso faz as 3 colunas
+              dividirem uma largura minúscula entre si (a proporção é
+              relativa, não tem um mínimo de verdade), e o texto (CNPJ,
+              objeto) acaba quebrando letra por letra. repeat(auto-fit,
+              minmax(...)) é o mesmo padrão já usado na linha do NUP logo
+              acima — cada coluna tem um mínimo de verdade, e quem não
+              couber desce pra próxima linha em vez de espremer. */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14 }}>
             <Coluna label="Contratada" valor={fornecedorNome || "não informado"} camposPopup={fornecedorNome ? camposFornecedor : undefined} />
             <Coluna label="CNPJ" valor={cnpj || "não informado"} />
             <Coluna
@@ -343,7 +350,7 @@ export default function DadosPrincipais({
               }
             />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.6fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14 }}>
             <div />
             <div />
             <Coluna label="Unidade de medida" valor={unidadeMedida ?? "não informado"} />

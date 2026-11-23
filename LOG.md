@@ -1299,6 +1299,14 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-11-23 · Bug de texto quebrando letra por letra no celular, KPIs do Painel reduzidos e centralizados só no mobile
+Caio mandou vídeo mostrando, na tela do contrato no celular, o bloco Contratada/CNPJ/Objeto quebrando letra por letra (cada caractere numa linha) — e pediu pra tirar os KPIs "Vencem em 7 dias", "Com ocorrência" e "Vencendo hoje" do Painel, deixando só "Contratos ativos" e "Concluídos" centralizados no celular (a grade da Agenda de hoje tinha ficado centralizada também no desktop por engano, pedido pra corrigir isso junto).
+
+- **Bug do texto vertical**: `app/processos/[id]/dados-principais.tsx` usava `gridTemplateColumns: "1.2fr 1fr 1.6fr"` pras colunas Contratada/CNPJ/Objeto — proporção relativa sem um mínimo de verdade, então no celular (pouco espaço disponível) as 3 colunas dividiam uma largura minúscula entre si e o texto (sem espaço pra quebrar em palavras) quebrava caractere por caractere. Trocado pro mesmo padrão já usado na linha do NUP logo acima (`repeat(auto-fit, minmax(150px, 1fr))`), que tem um mínimo de verdade por coluna e desce pra próxima linha em vez de espremer.
+- **Painel**: `kpis` em `painel-dashboard.tsx` reduzido a "Contratos ativos" e "Concluídos" (removidos os 3 que o Caio pediu); `vencendoHoje`/`vencemEm7Dias`/`comOcorrencia` removidos de `app/dashboard/page.tsx` (ficaram sem uso). Grade de KPIs e grade de Agenda de hoje ganharam a classe `.crm-grid-kpis-painel` (`app/globals.css`) — alinhada à esquerda por padrão, centralizada só abaixo de 680px (antes a Agenda de hoje ficava centralizada também no desktop, por um `justifyContent: "center"` sem media query).
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 ## 2026-11-23 · Cor de entrega no cronograma, card de Contratos com tarefas/próxima entrega, e card mais "abaulado"
 Caio pediu pra aplicar a mesma regra de cor (vermelho/amarelo/verde suave) já usada nos cards de Contratos também dentro do cronograma de cada contrato (pílula da parcela + card expandido), e pra enriquecer o card de Contratos com as tarefas agendadas e a data da próxima entrega/parcela — retirando a faixa lateral colorida. Também pediu reforço no efeito "abaulado/3D" dos cards de vidro.
 
