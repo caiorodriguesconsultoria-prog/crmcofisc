@@ -1299,6 +1299,24 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-11-23 · Quadro Resumitivo em coluna única + CATMAT/Valor Unitário/SEI da portaria (com migração)
+Caio mandou a imagem de referência do documento original e pediu o Quadro Resumitivo editável em coluna única (um campo embaixo do outro), na mesma ordem do documento, mais dois campos novos (Valor Unitário e CATMAT, abaixo do bloco Gestor/Fiscal/Portaria) e o número do documento SEI pra Portaria Designação de Fiscal.
+
+- **`supabase/migrations/0050_quadro_resumitivo_catmat_portaria_sei.sql`** (entregue pro Caio rodar manualmente, nunca migração automática): duas colunas novas em `processos` — `catmat` (não existia nesse nível; só em `processo_itens`, que é por item) e `portaria_designacao_fiscal_sei` (mesmo padrão "_sei" das migrações 0044/0045).
+- **`app/processos/[id]/relatorio/quadro-resumitivo.tsx`**: grid de 2 colunas (`gridAutoFlow:"dense"`, que intercalava campos de forma imprevisível) trocado por uma coluna só, na ordem do documento original. "Valor Unitário" ganhou campo de verdade (a coluna `processos.valor_unitario` já existia mas nunca tinha virado UI — só o valor unitário por item aparecia). Portaria ganhou o campo de nº SEI ao lado, mesmo padrão já usado em Pregão/Ata/Contrato.
+- **`app/processos/[id]/conteudo.tsx`**: query do processo passou a buscar `catmat` e `portaria_designacao_fiscal_sei`.
+- **Bônus (sem depender da migração)**: `.crm-painel-alto`/`.crm-modal-painel` ganharam `flex-shrink: 0` — reforço defensivo pro painel do contrato não encolher abaixo da largura total ao trocar de aba (Resumo/Andamentos/Relatório), bug reportado no navegador que não consegui reproduzir/diagnosticar com certeza só lendo o código; pedido pro Caio confirmar se continua acontecendo depois desse ajuste.
+
+Build e `tsc --noEmit` limpos. **Depende de migração** — aguardando Caio confirmar que rodou o SQL antes de mergear pra `main`.
+
+## 2026-11-23 · Modelo de resumo de contrato (escrita humanizada) pra Fase 2 do agente de IA
+Caio mandou a skill `escrita-humanizada` e pediu um resumo de andamento de um contrato nesse estilo (texto corrido, sem negrito em cada rótulo, sem tabela/emoji) — gostou do resultado e pediu pra salvar como modelo pra próxima vez.
+
+- **`docs/modelo-resumo-contrato.md`** (novo): estrutura do resumo (dados principais em texto corrido → entregas/cronograma → tramitações em andamento → histórico recente só se der contexto → tags por último) + o exemplo aprovado. Fica como referência pra quando a Fase 2 do agente de IA (geração de relatório) for implementada — e pra qualquer resumo manual que eu mesmo escrever nesse meio tempo.
+- **Caio confirmou que rodou a migração 0050** (CATMAT + SEI da portaria) — segue pro merge em `main` nesta mesma rodada.
+
+Sem código novo além do documento. Sem migração.
+
 ## 2026-11-23 · Segundo bug de texto quebrando letra por letra (desta vez no desktop)
 Caio reportou o mesmo sintoma (texto quebrando letra por letra), agora no navegador/desktop, especificamente no campo Objeto de Dados principais — print mostrando "De/sm/op/res/sin/a/Ac/eta/to" numa coluna estreitíssima, enquanto Contratada e CNPJ ficavam largos ao lado.
 

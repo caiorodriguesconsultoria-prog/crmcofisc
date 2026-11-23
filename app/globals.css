@@ -448,6 +448,11 @@ th {
 
 .crm-painel-alto {
   width: 100%;
+  /* flex-shrink:0 — reforço defensivo: esse painel é filho de um flex
+     (.crm-painel-alto-fundo); sem isso, conteúdo mais estreito numa aba
+     (Resumo/Andamentos/Relatório) pode fazer o item encolher abaixo de
+     100% em vez de manter a largura total do container. */
+  flex-shrink: 0;
   height: calc(100vh - 68px);
   max-height: 900px;
   border-radius: 22px;
@@ -521,6 +526,7 @@ th {
 
 .crm-modal-painel {
   width: 100%;
+  flex-shrink: 0;
   height: calc(100vh - 56px);
   max-height: 900px;
   border-radius: 22px;
