@@ -8,7 +8,7 @@ import BarraTopo from "@/app/_ui/barra-topo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
 import Atividades from "@/app/_nav/atividades";
 import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
-import { statusContrato, gradienteOuSolido, type ParcelaStatus } from "@/lib/status-entrega";
+import { statusContrato, gradienteOuSolido, resumoEntregas, type ParcelaStatus } from "@/lib/status-entrega";
 
 export default async function ProcessosPage({
   searchParams,
@@ -60,7 +60,7 @@ export default async function ProcessosPage({
     // ficava de fora do cálculo de "próximo evento" de cada contrato.
     supabase
       .from("processo_tarefas")
-      .select("processo_id, agendamento_data")
+      .select("processo_id, agendamento_data, label")
       .eq("concluida", false)
       .not("agendamento_data", "is", null)
       .gte("agendamento_data", hoje),
@@ -89,7 +89,7 @@ export default async function ProcessosPage({
     supabase
       .from("processo_execucoes")
       .select(
-        "processo_id, quantidade, data_prevista, processo_entrega_lancamentos(id, tipo, lancamento_pai_id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega)",
+        "processo_id, numero, quantidade, data_prevista, processo_entrega_lancamentos(id, tipo, lancamento_pai_id, quantidade_normal, quantidade_avaria, quantidade_desvio, data_entrega)",
       ),
   ]);
 
@@ -118,6 +118,18 @@ export default async function ProcessosPage({
   }
   for (const t of tarefasAgendadasRaw ?? []) {
     considerar(t.processo_id, t.agendamento_data as string, null);
+  }
+  // Lista completa de tarefas agendadas por contrato (não só a mais
+  // próxima) — pedido do Caio pra aparecerem todas no card, com rótulo e
+  // data, em vez de só "próximo evento" genérico.
+  const tarefasAgendadasPorProcesso = new Map<string, { label: string; data: string }[]>();
+  for (const t of tarefasAgendadasRaw ?? []) {
+    const lista = tarefasAgendadasPorProcesso.get(t.processo_id) ?? [];
+    lista.push({ label: t.label as string, data: t.agendamento_data as string });
+    tarefasAgendadasPorProcesso.set(t.processo_id, lista);
+  }
+  for (const lista of tarefasAgendadasPorProcesso.values()) {
+    lista.sort((a, b) => a.data.localeCompare(b.data));
   }
   for (const a of andamentosAgendadosRaw ?? []) {
     considerar(a.processo_id, a.agendamento_data as string, null);
@@ -151,6 +163,7 @@ export default async function ProcessosPage({
   for (const e of execucoesComLancamentosRaw ?? []) {
     const lista = parcelasPorProcesso.get(e.processo_id) ?? [];
     lista.push({
+      numero: Number(e.numero),
       quantidade: Number(e.quantidade),
       data_prevista: e.data_prevista,
       lancamentos: (e.processo_entrega_lancamentos ?? []).map((l: any) => ({
@@ -166,15 +179,27 @@ export default async function ProcessosPage({
     parcelasPorProcesso.set(e.processo_id, lista);
   }
   const corStatusEntrega = { vermelho: cor.urgente, amarelo: cor.atencao, verde: cor.verdeEscuro };
+  // Versão suave (fundo), pro card inteiro em vez da faixa lateral que o
+  // Caio pediu pra tirar — a versão "cheia" acima ainda serve pro texto da
+  // data de atraso no card.
+  const corStatusEntregaFundo = { vermelho: cor.urgenteFundo, amarelo: cor.atencaoFundo, verde: cor.verdeEscuroFundo };
 
-  const processosComAgendamento = (processos ?? []).map((p) => ({
-    ...p,
-    proximoAgendamento: proximoAgendamentoPorProcesso.get(p.id) ?? null,
-    ultimoAndamento: ultimoAndamentoPorProcesso.get(p.id) ?? null,
-    entregaAtrasada: processosComEntregaAtrasada.has(p.id),
-    relatorioDesatualizado: relatorioDesatualizado(p.relatorio_atualizado_em),
-    corStatusEntrega: gradienteOuSolido(statusContrato(parcelasPorProcesso.get(p.id) ?? [], hoje), corStatusEntrega),
-  }));
+  const processosComAgendamento = (processos ?? []).map((p) => {
+    const parcelas = parcelasPorProcesso.get(p.id) ?? [];
+    const { proxima, atrasada } = resumoEntregas(parcelas, hoje);
+    return {
+      ...p,
+      proximoAgendamento: proximoAgendamentoPorProcesso.get(p.id) ?? null,
+      tarefasAgendadas: tarefasAgendadasPorProcesso.get(p.id) ?? [],
+      proximaEntrega: proxima,
+      entregaAtrasadaInfo: atrasada,
+      ultimoAndamento: ultimoAndamentoPorProcesso.get(p.id) ?? null,
+      entregaAtrasada: processosComEntregaAtrasada.has(p.id),
+      relatorioDesatualizado: relatorioDesatualizado(p.relatorio_atualizado_em),
+      corStatusEntrega: gradienteOuSolido(statusContrato(parcelas, hoje), corStatusEntrega),
+      fundoStatusEntrega: gradienteOuSolido(statusContrato(parcelas, hoje), corStatusEntregaFundo),
+    };
+  });
 
   const eventoSelecionado = sp.evento ? (eventos ?? []).find((e) => e.id === sp.evento) : null;
   const titulo = sp.etapa || eventoSelecionado?.valor || "Contratos";
