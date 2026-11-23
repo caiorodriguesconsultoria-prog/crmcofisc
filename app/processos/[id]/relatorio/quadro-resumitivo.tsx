@@ -180,7 +180,7 @@ const CAMPOS: CampoTexto[] = [
 // Campo com um número/sigla do SEI entre parênteses ao lado — o documento
 // original do Quadro Resumitivo mostra isso em Pregão/Ata/Contrato nº e nas
 // publicações de PNCP. SEI é sempre opcional (nem todo campo tem um).
-const rotulo = { fontSize: 10.5, textTransform: "uppercase" as const, color: "#7D7979", letterSpacing: 0.5 };
+const rotulo = { fontSize: 10.5, textTransform: "uppercase" as const, color: cor.textoTerciario, letterSpacing: 0.5 };
 
 export default function QuadroResumitivo({
   processoId,
@@ -722,7 +722,7 @@ export default function QuadroResumitivo({
                   {formatarMoeda(processo.valor_global) && <BotaoCopiar texto={formatarMoeda(processo.valor_global)!} />}
                 </span>
                 {extensoMoeda(processo.valor_global) && (
-                  <div style={{ fontSize: 11, color: "#7D7979" }}>{extensoMoeda(processo.valor_global)}</div>
+                  <div style={{ fontSize: 11, color: cor.textoTerciario }}>{extensoMoeda(processo.valor_global)}</div>
                 )}
               </>
             )}
@@ -746,7 +746,7 @@ export default function QuadroResumitivo({
                   {formatarMoeda(processo.valor_garantia) && <BotaoCopiar texto={formatarMoeda(processo.valor_garantia)!} />}
                 </span>
                 {extensoMoeda(processo.valor_garantia) && (
-                  <div style={{ fontSize: 11, color: "#7D7979" }}>{extensoMoeda(processo.valor_garantia)}</div>
+                  <div style={{ fontSize: 11, color: cor.textoTerciario }}>{extensoMoeda(processo.valor_garantia)}</div>
                 )}
               </>
             )}
@@ -784,11 +784,11 @@ export default function QuadroResumitivo({
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "#7D7979", letterSpacing: 0.5, marginBottom: 6 }}>
+        <div style={{ fontSize: 10.5, textTransform: "uppercase", color: cor.textoTerciario, letterSpacing: 0.5, marginBottom: 6 }}>
           Itens do contrato
         </div>
         {itens.length === 0 ? (
-          <p style={{ fontSize: 12.5, color: "#7D7979", margin: 0 }}>Nenhum item cadastrado.</p>
+          <p style={{ fontSize: 12.5, color: cor.textoTerciario, margin: 0 }}>Nenhum item cadastrado.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {[...itens]
@@ -800,25 +800,25 @@ export default function QuadroResumitivo({
                 >
                   <span style={{ fontWeight: 600 }}>Item {item.numero}</span>
                   <span>{item.descricao}</span>
-                  {item.catmat && <span style={{ color: "#7D7979" }}>CATMAT {item.catmat}</span>}
+                  {item.catmat && <span style={{ color: cor.textoTerciario }}>CATMAT {item.catmat}</span>}
                   {item.quantidade != null && (
-                    <span style={{ color: "#7D7979" }}>
+                    <span style={{ color: cor.textoTerciario }}>
                       {item.quantidade.toLocaleString("pt-BR")} {item.unidade_medida ?? ""}
                     </span>
                   )}
                   {item.valor_unitario != null && (
-                    <span style={{ color: "#7D7979" }}>{formatarMoeda(item.valor_unitario)}</span>
+                    <span style={{ color: cor.textoTerciario }}>{formatarMoeda(item.valor_unitario)}</span>
                   )}
                 </div>
               ))}
           </div>
         )}
-        <p style={{ fontSize: 11, color: "#7D7979", marginTop: 6 }}>
+        <p style={{ fontSize: 11, color: cor.textoTerciario, marginTop: 6 }}>
           Itens são só leitura aqui — cadastre/edite na seção "Cronograma de entregas" do contrato.
         </p>
       </div>
 
-      <p style={{ fontSize: 11, color: "#7D7979", marginTop: 8 }}>
+      <p style={{ fontSize: 11, color: cor.textoTerciario, marginTop: 8 }}>
         Gestor/Fiscal são só leitura aqui — edite na seção "Gestão e Fiscalização" do contrato.
       </p>
     </div>

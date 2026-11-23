@@ -10,7 +10,9 @@
   --bg-card: #FFFFFF;
   --text-1: #201F1D;
   --text-2: #605D5D;
-  --text-3: #7D7979;
+  /* Era #7D7979 (4,3:1 contra branco, abaixo do mínimo AA de 4,5:1) —
+     escurecido pra #6E6A6A (5,3:1), espelhando lib/theme.ts. */
+  --text-3: #6E6A6A;
   --border: rgba(32, 31, 29, .07);
   --accent: #2F5FDB;
   --accent-bg: rgba(47, 95, 219, .10);

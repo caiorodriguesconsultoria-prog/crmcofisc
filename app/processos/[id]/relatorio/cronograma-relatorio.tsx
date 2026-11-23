@@ -57,7 +57,7 @@ export default function CronogramaRelatorio({ execucoes }: { execucoes: Execucao
           })}
           {execucoes.length === 0 && (
             <tr>
-              <td colSpan={6} style={{ padding: 6, color: "#7D7979" }}>
+              <td colSpan={6} style={{ padding: 6, color: "#6E6A6A" }}>
                 Nenhuma parcela cadastrada.
               </td>
             </tr>
@@ -74,7 +74,7 @@ export default function CronogramaRelatorio({ execucoes }: { execucoes: Execucao
           )}
         </tbody>
       </table>
-      <p style={{ fontSize: 11, color: "#7D7979", marginTop: 4 }}>
+      <p style={{ fontSize: 11, color: "#6E6A6A", marginTop: 4 }}>
         Editável no painel do contrato, seção "Cronograma de entregas".
       </p>
     </div>

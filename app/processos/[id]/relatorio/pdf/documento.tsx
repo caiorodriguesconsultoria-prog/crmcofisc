@@ -460,7 +460,7 @@ export default function Documento({
           marginBottom: 16,
         }}
       >
-        <span style={{ fontSize: 11, color: "#7D7979" }}>Tipo</span>
+        <span style={{ fontSize: 11, color: "#6E6A6A" }}>Tipo</span>
         <div style={{ display: "flex", gap: 6 }}>
           {(["Parcial", "Final"] as const).map((t) => (
             <button

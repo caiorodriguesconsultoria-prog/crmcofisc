@@ -5,7 +5,14 @@ export const cor = {
   branco: "#FFFFFF",
   texto: "#201F1D",
   textoSecundario: "#605D5D",
-  textoTerciario: "#7D7979",
+  // Era #7D7979 (4,3:1 contra branco — abaixo do mínimo de 4,5:1 pra texto
+  // pequeno/normal da WCAG AA) — essa é a cor usada em quase todo rótulo
+  // pequeno maiúsculo do sistema (146 usos em 48 arquivos), então era
+  // exatamente a causa da sensação de fonte "apagada" que o Caio reportou
+  // repetidas vezes. #6E6A6A mede 5,3:1, passa confortavelmente, e ainda
+  // lê como um cinza "terciário" claramente mais claro que textoSecundario
+  // (6,5:1) e texto (quase preto).
+  textoTerciario: "#6E6A6A",
   borda: "rgba(32,31,29,.07)",
   // "destaque" é o acento de marca (links, pílulas ativas, botão copiar,
   // rótulos) — centralizado aqui pra virar azul em todo o app de uma vez.

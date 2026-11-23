@@ -735,7 +735,7 @@ export default function NovoProcessoForm({
       </label>
       <div>
         <span style={{ fontWeight: 600 }}>Itens do contrato</span>
-        <p style={{ fontSize: 12, color: "#7D7979", margin: "2px 0 8px" }}>
+        <p style={{ fontSize: 12, color: "#6E6A6A", margin: "2px 0 8px" }}>
           Opcional — se deixar em branco, nasce com 1 item usando o Objeto acima. As parcelas de cada item são
           cadastradas depois, na tela do contrato.
         </p>
@@ -794,7 +794,7 @@ export default function NovoProcessoForm({
                 </button>
               )}
               {item.parcelas.length > 0 && (
-                <p style={{ flexBasis: "100%", fontSize: 11.5, color: "#7D7979", margin: "4px 0 0" }}>
+                <p style={{ flexBasis: "100%", fontSize: 11.5, color: "#6E6A6A", margin: "4px 0 0" }}>
                   {item.parcelas.length} parcela{item.parcelas.length > 1 ? "s" : ""} extraída
                   {item.parcelas.length > 1 ? "s" : ""} do PDF — confira/ajuste depois no Cronograma de entregas do
                   contrato.
