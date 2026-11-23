@@ -146,7 +146,7 @@ export default async function AgendaPage({
         atualizadoEm={atualizadoEm}
       />
 
-    <Painel titulo="Agenda" maxWidth={900}>
+    <Painel titulo="Agenda" maxWidth={900} fundoAurora>
       {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
       {googleStatus === "conectado" && (

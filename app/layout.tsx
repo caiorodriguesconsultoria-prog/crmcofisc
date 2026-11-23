@@ -1,11 +1,14 @@
-import { Urbanist } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import SentryUsuario from "./_sentry-usuario";
 import { cor } from "@/lib/theme";
 
-// Trocada de Manrope pra Urbanist — mesma fonte do site de referência
-// (moorly), que o Caio disse ter gostado ao ver de novo.
-const urbanist = Urbanist({ subsets: ["latin"], variable: "--font-urbanist", weight: ["400", "500", "600", "700", "800"] });
+// Trocada de Urbanist pra Nunito — mais próxima da fonte arredondada das
+// referências que o Caio trouxe (apps estilo Apple/Instagram, print do
+// "Flutter Your Way"); SF Pro Rounded em si não é uma fonte de uso livre
+// na web, Nunito é a mais parecida (terminais arredondados, boa leitura
+// em tamanho pequeno pros números/rótulos densos do CRM).
+const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata = {
   title: "CRM-COFISC",
@@ -25,10 +28,10 @@ export default function RootLayout({
   modal: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={urbanist.variable}>
+    <html lang="pt-BR" className={nunito.variable}>
       <body
         style={{
-          fontFamily: "var(--font-urbanist), system-ui, sans-serif",
+          fontFamily: "var(--font-nunito), system-ui, sans-serif",
           margin: 0,
           // Fundo em cor plana (uma rampa neutra só) — o degradê multi-tom
           // que tinha aqui (pra bater com o site de referência) foi retirado

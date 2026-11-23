@@ -115,7 +115,7 @@ export default async function DadosPage() {
 
   return (
     <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Dados">
-    <Painel titulo="Dados" subtitulo="KPIs de contratos" maxWidth={1000}>
+    <Painel titulo="Dados" subtitulo="KPIs de contratos" maxWidth={1000} fundoAurora>
       <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           {[

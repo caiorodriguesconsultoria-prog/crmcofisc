@@ -53,7 +53,7 @@ export default async function TagsPage() {
         migalha="Tags"
       />
 
-      <Painel titulo="Tags" subtitulo="Eventos e formas de entrega usados nos contratos" maxWidth={1100}>
+      <Painel titulo="Tags" subtitulo="Eventos e formas de entrega usados nos contratos" maxWidth={1100} fundoAurora>
         {error && <p style={{ color: "#B0655C" }}>Erro ao carregar: {error.message}</p>}
         <Gerenciador tags={tags ?? []} />
       </Painel>

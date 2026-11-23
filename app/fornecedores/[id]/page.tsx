@@ -57,7 +57,7 @@ export default async function FornecedorPage({
 
   return (
     <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha={`Fornecedores > ${fornecedor.nome}`}>
-    <Painel titulo={fornecedor.nome} voltarHref="/fornecedores" maxWidth={800}>
+    <Painel titulo={fornecedor.nome} voltarHref="/fornecedores" maxWidth={800} fundoAurora>
       <div style={{ ...card, display: "flex", flexDirection: "column", gap: 4 }}>
         <p style={{ color: cor.textoSecundario, margin: 0, fontSize: 13 }}>{fornecedor.cnpj}</p>
         <p style={{ margin: 0, fontSize: 13 }}>

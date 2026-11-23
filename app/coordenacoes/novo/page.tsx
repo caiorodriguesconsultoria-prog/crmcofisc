@@ -27,7 +27,7 @@ export default async function NovaCoordenacaoPage() {
 
   return (
     <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Coordenações > Nova">
-      <Painel titulo="Nova coordenação" voltarHref="/coordenacoes" maxWidth={480}>
+      <Painel titulo="Nova coordenação" voltarHref="/coordenacoes" maxWidth={480} fundoAurora>
         <NovaCoordenacaoForm />
       </Painel>
     </TelaComBarraTopo>

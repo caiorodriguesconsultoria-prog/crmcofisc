@@ -46,7 +46,7 @@ export default function NovaPessoaPapelForm({
   }
 
   return (
-    <Painel titulo={titulo} voltarHref={voltarHref} maxWidth={480}>
+    <Painel titulo={titulo} voltarHref={voltarHref} maxWidth={480} fundoAurora>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <label>
           Nome completo
