@@ -268,7 +268,6 @@ export default async function DashboardPage() {
           comOcorrencia={comOcorrencia}
           emCoberturaFerias={emCoberturaFerias}
           acaoDoDia={acaoDoDia}
-          prazosDaSemana={prazosDaSemana}
           divisaoPorCoordenacao={divisaoPorCoordenacao}
           processosAtividadeHoje={processosAtividadeHoje}
           entregasEmAtraso={entregasEmAtraso}

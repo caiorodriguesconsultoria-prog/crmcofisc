@@ -114,8 +114,8 @@ export const sombraFlutuante = "0 1px 2px rgba(0,0,0,.07), 0 6px 16px rgba(0,0,0
 // .crm-cartao-vidro-claro tem — documentado, não resolvido nesta rodada.
 export const card: React.CSSProperties = {
   background: "rgba(255,255,255,.82)",
-  backdropFilter: "blur(20px) saturate(140%)",
-  WebkitBackdropFilter: "blur(20px) saturate(140%)",
+  backdropFilter: "blur(30px) saturate(200%)",
+  WebkitBackdropFilter: "blur(30px) saturate(200%)",
   borderRadius: 18,
   padding: "18px 20px",
   border: "1px solid rgba(32,31,29,.08)",

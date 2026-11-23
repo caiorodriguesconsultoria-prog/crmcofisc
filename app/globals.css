@@ -224,25 +224,41 @@ th {
   margin: 0 auto 16px;
 }
 
-/* Barra de navegação em vidro claro (mesmo material de .crm-cartao-vidro-claro)
-   — antes ficava branca opaca flutuando sobre o fundo aurora, pedido do
-   Caio foi levar o vidro também pro cabeçalho. */
+/* Barra de navegação (a "pílula" grande do topo) em vidro claro — Caio
+   reportou que ainda parecia um fundo branco opaco em vez de vidro.
+   Opacidade mais baixa que os cards (.5 em vez de .82) de propósito: o
+   texto aqui é só rótulo curto/alto-contraste, tolera mais transparência
+   que os cards de conteúdo dos dois sem perder legibilidade, e é onde o
+   efeito "vidro" fica mais visível (mais do fundo aurora aparece por
+   trás). Mesmo reflexo diagonal (::before) dos cards. */
 .crm-barra-topo-linha1 {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 14px;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid rgba(32, 31, 29, 0.08);
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 999px;
   padding: 10px 14px;
 }
+.crm-barra-topo-linha1::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 50%);
+  pointer-events: none;
+}
 @media (prefers-reduced-transparency: reduce) {
   .crm-barra-topo-linha1 {
-    background: rgba(255, 255, 255, 0.98);
+    background: rgba(255, 255, 255, 0.98) !important;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+  .crm-barra-topo-linha1::before {
+    display: none;
   }
 }
 
@@ -277,8 +293,8 @@ th {
   left: 14px;
   min-width: 190px;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
   border: 1px solid rgba(32, 31, 29, 0.07);
   border-radius: 14px;
   box-shadow: 0 10px 30px rgba(32, 31, 29, 0.16);
@@ -306,8 +322,8 @@ th {
     right: 0;
     bottom: 0;
     background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
     border-top: 1px solid rgba(32, 31, 29, 0.07);
     padding: 8px 6px calc(env(safe-area-inset-bottom, 0px) + 6px);
   }
@@ -521,17 +537,37 @@ th {
      pra não confundir as cores com o fundo", não opacidade total). Mesmo
      valor usado em `card` (lib/theme.ts) e na barra de navegação. */
   background: rgba(255, 255, 255, 0.82) !important;
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  /* Blur/saturate subidos (20px/140% -> 30px/200%) — Caio reportou "ainda
+     não percebi o liquid glass". Causa provável: o fundo aurora é um
+     degradê bem suave, sem textura nenhuma — borrar algo já liso não muda
+     muito o que se vê. O ::before abaixo adiciona um brilho diagonal (o
+     reflexo que faz "vidro" ser reconhecido como vidro, não só uma
+     superfície translúcida) e o saturate mais alto deixa a cor do fundo
+     mais viva por trás do vidro. */
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
   border: 1px solid rgba(32, 31, 29, 0.08) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 8px 28px rgba(32, 31, 29, 0.1) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow:
+    0 8px 28px rgba(32, 31, 29, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+.crm-cartao-vidro-claro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Reflexo diagonal — o "brilho" que vende o efeito de vidro. */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%);
+  pointer-events: none;
 }
 @media (prefers-reduced-transparency: reduce) {
   .crm-cartao-vidro-claro {
     background: rgba(255, 255, 255, 0.98) !important;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+  .crm-cartao-vidro-claro::before {
+    display: none;
   }
 }
 

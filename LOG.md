@@ -1240,3 +1240,17 @@ Caio viu o resultado e pediu pra diminuir as janelas do Painel (principalmente o
 Build e `tsc --noEmit` limpos. Sem migração.
 
 Pendente de resposta do Caio: perguntou se gráfico de barra seria melhor que pizza pra "Contratos por etapa"/"Eventos" — build desta rodada manteve pizza (só compactada), aguardando confirmação antes de trocar o tipo de gráfico.
+
+## 2026-11-23 · Liquid glass mais perceptível, gráficos de barra, widgets sem esticar
+Caio reportou três problemas desta rodada: os widgets do Painel continuavam do mesmo tamanho/disposição mesmo "pequenos" (porque a grade esticava os cards pra preencher a linha toda, `1fr`), o efeito vidro ainda não ficava perceptível, e pediu gráfico de barra no lugar da pizza (formato da referência que mandou). Também pediu pra remover "Prazos da semana" do Painel.
+
+- **Grades do Painel não esticam mais os cards**: trocado `minmax(X, 1fr)` por `minmax(X, Ypx)` + `justifyContent: "start"` em todas as grades do Painel (KPIs, Agenda de hoje, Divisão por coordenação, gráficos, Contratos parados) — antes, com poucos itens numa tela larga, cada card virava um retângulo enorme pra preencher o espaço; agora o card fica do tamanho real do seu conteúdo, como um widget.
+- **Liquid glass mais forte**: blur subiu de 20px pra 30px, saturate de 140% pra 200% (em `.crm-cartao-vidro-claro`, no `card` genérico e na barra de navegação) — um fundo liso como o aurora quase não muda nada com blur fraco, então o efeito não aparecia. Acrescentado um reflexo diagonal (brilho no canto superior) via `::before` nos cards e na barra — é esse brilho que faz o olho reconhecer "vidro" em vez de só "fundo meio transparente".
+- **Barra de navegação** (a pílula grande do topo): opacidade baixada de .82 pra .5 (bem mais transparente que os cards de conteúdo — o texto ali é só rótulo curto, tolera mais transparência) + o mesmo reflexo diagonal, pra não parecer mais um fundo branco opaco.
+- **Gráficos de pizza → barra**: "Contratos por etapa" e "Eventos" agora são `BarChart` (recharts) com cantos arredondados no topo das barras (`radius={[8,8,0,0]}`), mesma cor por categoria de antes, sem eixos/legendas (tooltip no hover, como já era).
+- **"Prazos da semana" removido** do Painel (o cálculo continua existindo em `app/dashboard/page.tsx` só pra montar o texto de "Ação do dia", que não mudou).
+- Fonte Inter confirmada correta no código (verificado `app/layout.tsx`) — se ainda não apareceu pro Caio, é cache do navegador/PWA (o service worker do projeto só trata notificação push, não intercepta nem armazena página/CSS em cache), resolve com um refresh forçado ou reabrindo o app.
+
+Build e `tsc --noEmit` limpos. Sem migração nesta rodada.
+
+Pendente (próxima etapa, à parte): Caio pediu um modo "Editar" no Painel pra arrastar e reorganizar os widgets, com a ordem salva na conta (precisa de tabela nova + migração .sql) — vai ser tratado como uma etapa própria, não entra neste commit.
