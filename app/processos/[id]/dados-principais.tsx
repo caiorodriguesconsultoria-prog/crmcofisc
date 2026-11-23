@@ -64,12 +64,20 @@ function Coluna({
       >
         {label}
       </span>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, fontWeight: 600 }}>
-        <span style={{ overflowWrap: "break-word", minWidth: 0 }}>
+      {/* flexWrap — quando tem uma "acao" larga do lado (ex.: o pill
+         "Copiar objeto + unidade" no campo Objeto), ela e o texto brigavam
+         pela mesma linha e o texto (que pode encolher até 0 por causa do
+         minWidth:0) acabava espremido a quase nada, quebrando letra por
+         letra. Com wrap, a ação cai pra linha de baixo quando não há
+         espaço, em vez de espremer o texto. */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, fontWeight: 600, flexWrap: "wrap" }}>
+        <span style={{ overflowWrap: "break-word", minWidth: 0, flex: "1 1 160px" }}>
           {camposPopup ? <PopupNome nome={valor} campos={camposPopup} /> : valor}
         </span>
-        <BotaoCopiar texto={valor} />
-        {acao}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flex: "none" }}>
+          <BotaoCopiar texto={valor} />
+          {acao}
+        </div>
       </div>
     </div>
   );

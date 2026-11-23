@@ -1299,6 +1299,14 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-11-23 · Segundo bug de texto quebrando letra por letra (desta vez no desktop)
+Caio reportou o mesmo sintoma (texto quebrando letra por letra), agora no navegador/desktop, especificamente no campo Objeto de Dados principais — print mostrando "De/sm/op/res/sin/a/Ac/eta/to" numa coluna estreitíssima, enquanto Contratada e CNPJ ficavam largos ao lado.
+
+- **Causa raiz (diferente do bug de mobile já corrigido)**: o campo Objeto é o único que tem uma `acao` extra — o pill "Copiar objeto + unidade" — ao lado do texto, dentro da mesma linha flex do componente `Coluna`. Esse pill tem texto que não quebra (botão), então seu tamanho mínimo é a largura inteira do rótulo; como o `<span>` do texto tem `minWidth: 0` (pra poder encolher), ele cedia TODO o espaço que sobrava pro pill ficar no tamanho dele, espremendo o texto do objeto a quase nada — exatamente o padrão de quebra letra por letra.
+- **Correção**: `app/processos/[id]/dados-principais.tsx`, `Coluna` — a linha ganhou `flexWrap: "wrap"` e o texto ganhou `flex: "1 1 160px"` (prioridade pra crescer, mínimo de 160px antes de dividir linha) enquanto os botões de ação viraram um grupo `flex: "none"` à parte — agora, quando não cabe tudo numa linha só, a ação desce pra linha de baixo em vez de espremer o texto.
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 ## 2026-11-23 · Agente de IA no CRM — Fase 1 (pesquisa sobre contratos)
 Caio pediu pra seguir com o item de viabilidade "agente de IA no CRM": pesquisa sobre contratos em linguagem natural e, depois, geração de relatórios. Segui a metodologia de desenvolvimento (Etapa 1 — requisitos, antes de qualquer código): perguntei quem usa, exemplos de pergunta, se os relatórios já existem no sistema ou são novos, dado sensível e volume esperado. Caio respondeu: só ele por enquanto (equipe depois), ~60 perguntas/mês, dados públicos (sem restrição), relatórios ainda serão enviados como exemplo de padrão de escrita. Propus 3 fases (pesquisa → relatórios → WhatsApp) pra não misturar escopos, e ele aprovou seguir com a Fase 1.
 
