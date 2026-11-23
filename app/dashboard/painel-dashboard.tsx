@@ -50,9 +50,13 @@ const ORDEM_PADRAO: SecaoId[] = ["kpis", "agenda", "coordenacao", "graficos", "p
 function TooltipGrafico({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const item = payload[0];
+  // item.name vem do dataKey da barra ("valor") quando a <Bar> não tem um
+  // `name` próprio — o nome de verdade (a etapa/evento) está em
+  // item.payload.nome. Era esse o bug: tooltip mostrando "valor: 1" em vez
+  // do nome da etapa, reportado pelo Caio com print.
   return (
     <div style={{ background: cor.escuro, color: "#fff", borderRadius: 10, padding: "6px 10px", fontSize: 12.5 }}>
-      <strong>{item.name}</strong>: {item.value}
+      <strong>{item.payload?.nome ?? item.name}</strong>: {item.value}
     </div>
   );
 }
@@ -257,7 +261,7 @@ export default function PainelDashboard({
           ) : (
             <div style={{ width: "100%", height: 150 }}>
               <ResponsiveContainer>
-                <BarChart data={dadosEtapas} barCategoryGap="30%">
+                <BarChart data={dadosEtapas} barCategoryGap="15%">
                   <Tooltip content={<TooltipGrafico />} cursor={{ fill: "rgba(32,31,29,.05)" }} />
                   <Bar dataKey="valor" radius={[8, 8, 0, 0]} maxBarSize={34}>
                     {dadosEtapas.map((_, i) => (
@@ -276,7 +280,7 @@ export default function PainelDashboard({
           ) : (
             <div style={{ width: "100%", height: 150 }}>
               <ResponsiveContainer>
-                <BarChart data={dadosEventos} barCategoryGap="30%">
+                <BarChart data={dadosEventos} barCategoryGap="15%">
                   <Tooltip content={<TooltipGrafico />} cursor={{ fill: "rgba(32,31,29,.05)" }} />
                   <Bar dataKey="valor" radius={[8, 8, 0, 0]} maxBarSize={24}>
                     {dadosEventos.map((d, i) => (

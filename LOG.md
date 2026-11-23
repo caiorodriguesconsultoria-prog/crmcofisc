@@ -1298,3 +1298,12 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 - `app/coordenacoes/grade.tsx`: grid comum trocado por colunas CSS (`columnWidth`/`columnGap` + `breakInside: avoid` em cada card) — os cards têm alturas bem diferentes (depende de quantos membros cada coordenação tem), e colunas CSS fluem isso em mosaico, sem o vão que o grid deixava.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-23 · Barras mais juntas, tooltip com nome certo, janelas "flutuando"
+Caio reportou o tooltip dos gráficos mostrando "valor: 1" em vez do nome da etapa/evento, pediu as barras mais próximas (como a referência que mandou) e as janelas com efeito de flutuar de verdade sobre o fundo.
+
+- **Bug do tooltip**: `<Bar dataKey="valor">` sem `name` próprio faz o recharts usar o dataKey ("valor") como rótulo no tooltip — o nome de verdade (a etapa/evento) está em `payload.nome`. Corrigido pra usar `item.payload?.nome`.
+- **Barras mais juntas**: `barCategoryGap` de 30% pra 15% nos dois gráficos.
+- **Efeito de flutuar**: sombra de elevação subida nos cards de vidro (`.crm-cartao-vidro-claro`) e no `card` genérico (`sombraCard`, de quase imperceptível pra uma sombra de verdade) — a sombra de antes era discreta demais pra ler como elevação contra o fundo aurora.
+
+Build e `tsc --noEmit` limpos. Sem migração.
