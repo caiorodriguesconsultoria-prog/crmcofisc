@@ -67,7 +67,7 @@ export default async function ProcessosConcluidosPage() {
 
   return (
     <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Contratos > Concluídos">
-      <Painel titulo="Concluídos" subtitulo="Contratos" maxWidth={1800}>
+      <Painel titulo="Concluídos" subtitulo="Contratos" maxWidth={1800} fundoAurora>
         {error && <p style={{ color: cor.urgente }}>Erro ao carregar: {error.message}</p>}
 
         <ListaProcessos

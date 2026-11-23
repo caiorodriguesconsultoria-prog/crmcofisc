@@ -1,5 +1,4 @@
 import { cor } from "@/lib/theme";
-import { corEscura } from "@/lib/tema-escuro";
 
 // Anel/medidor pra "quantos de um total têm X" — cada evento é independente
 // (um processo pode ter vários eventos ao mesmo tempo, então isso NUNca vira
@@ -13,7 +12,6 @@ export default function MedidorCircular({
   corTrilha,
   rotulo,
   tamanho = 72,
-  textoEscuro,
 }: {
   valor: number;
   total: number;
@@ -21,9 +19,6 @@ export default function MedidorCircular({
   corTrilha: string;
   rotulo: string;
   tamanho?: number;
-  /** Protótipo do vidro/tema escuro (Painel) — texto claro em vez do texto
-   * escuro padrão, que ficava ilegível em cima do vidro escuro. */
-  textoEscuro?: boolean;
 }) {
   const raio = tamanho / 2 - 5;
   const circunferencia = 2 * Math.PI * raio;
@@ -49,14 +44,14 @@ export default function MedidorCircular({
         >
           <title>{`${rotulo}: ${valor} de ${total} (${(fracao * 100).toFixed(0)}%)`}</title>
         </circle>
-        <text x={centro} y={centro + 4} textAnchor="middle" fontSize={13} fontWeight={700} fill={textoEscuro ? corEscura.texto : cor.texto}>
+        <text x={centro} y={centro + 4} textAnchor="middle" fontSize={13} fontWeight={700} fill={cor.texto}>
           {(fracao * 100).toFixed(0)}%
         </text>
       </svg>
-      <span style={{ fontSize: 10.5, color: textoEscuro ? corEscura.textoSecundario : cor.textoSecundario, textAlign: "center", lineHeight: 1.25 }}>
+      <span style={{ fontSize: 10.5, color: cor.textoSecundario, textAlign: "center", lineHeight: 1.25 }}>
         {rotulo}
       </span>
-      <span style={{ fontSize: 10, color: textoEscuro ? corEscura.textoTerciario : cor.textoTerciario }}>
+      <span style={{ fontSize: 10, color: cor.textoTerciario }}>
         {valor} de {total}
       </span>
     </div>

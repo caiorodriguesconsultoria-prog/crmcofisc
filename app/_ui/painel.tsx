@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { cor } from "@/lib/theme";
-import { corEscura } from "@/lib/tema-escuro";
 import TituloDestaque from "./titulo";
 
 export default function Painel({
@@ -11,7 +10,7 @@ export default function Painel({
   acao,
   conteudoTitulo,
   children,
-  temaEscuro,
+  fundoAurora,
 }: {
   titulo: string;
   subtitulo?: string;
@@ -22,17 +21,18 @@ export default function Painel({
   // Etapa 2 do redesenho) sem mudar nenhuma outra tela que não passe isso.
   conteudoTitulo?: React.ReactNode;
   children: React.ReactNode;
-  // Protótipo isolado (pedido do Caio, referência "Furniture CRM" + paleta
-  // de marrons) — só muda o fundo quando passado explicitamente; nenhuma
-  // outra tela é afetada. Ver lib/tema-escuro.ts.
-  temaEscuro?: boolean;
+  // Visual com fundo em degradê suave (referência que o Caio trouxe) +
+  // widgets em vidro claro flutuando por cima — só muda o fundo quando
+  // passado explicitamente; nenhuma outra tela é afetada. Ver
+  // .crm-fundo-aurora em globals.css.
+  fundoAurora?: boolean;
 }) {
   return (
-    <div className="crm-painel-fundo" style={temaEscuro ? { background: corEscura.fundo, minHeight: "100vh" } : undefined}>
+    <div className={fundoAurora ? "crm-painel-fundo crm-fundo-aurora" : "crm-painel-fundo"} style={fundoAurora ? { minHeight: "100vh" } : undefined}>
       <div
         className="crm-painel"
         style={
-          temaEscuro
+          fundoAurora
             ? { maxWidth, background: "transparent", boxShadow: "none", border: "none" }
             : { maxWidth }
         }
