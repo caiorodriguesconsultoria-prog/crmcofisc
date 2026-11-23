@@ -20,9 +20,6 @@ export default async function DashboardPage() {
   }
 
   const hoje = new Date().toISOString().slice(0, 10);
-  const emSeteDias = new Date();
-  emSeteDias.setDate(emSeteDias.getDate() + 7);
-  const emSeteDiasStr = emSeteDias.toISOString().slice(0, 10);
 
   const [
     { data: processos, error: erroProcessos },
@@ -72,26 +69,13 @@ export default async function DashboardPage() {
     ? await supabase.from("painel_layout").select("ordem_widgets").eq("pessoa_id", pessoaAtual.id).maybeSingle()
     : { data: null };
 
-  const hojeMeiaNoite = new Date();
-  hojeMeiaNoite.setHours(0, 0, 0, 0);
-  const hojeTime = hojeMeiaNoite.getTime();
-
   const ativos = (processos ?? []).filter((p) => !p.conclusao_tipo).length;
   const concluidos = (processos ?? []).filter((p) => p.conclusao_tipo).length;
-  const vencendoHoje = (processos ?? []).filter(
-    (p) => p.prazo_data && new Date(`${p.prazo_data}T00:00:00`).getTime() === hojeTime,
-  ).length;
   const emCoberturaFerias = (processos ?? []).filter(
     (p) => p.titular_id && p.responsavel_atual_id && p.titular_id !== p.responsavel_atual_id,
   ).length;
 
-  // KPIs da Etapa 2 do redesenho (grade bento do Painel) — calculados a
-  // partir do mesmo `processos` já buscado acima, sem consulta nova.
   const ativosProcessos = (processos ?? []).filter((p) => !p.conclusao_tipo);
-  const vencemEm7Dias = ativosProcessos.filter(
-    (p) => p.prazo_data && p.prazo_data >= hoje && p.prazo_data <= emSeteDiasStr,
-  ).length;
-  const comOcorrencia = ativosProcessos.filter((p) => (p.processo_tags ?? []).length > 0).length;
 
   const divisaoPorCoordenacao: { sigla: string; total: number }[] = (() => {
     const contagem = new Map<string, number>();
@@ -242,9 +226,6 @@ export default async function DashboardPage() {
           contagemPorEvento={contagemPorEvento}
           ativos={ativos}
           concluidos={concluidos}
-          vencendoHoje={vencendoHoje}
-          vencemEm7Dias={vencemEm7Dias}
-          comOcorrencia={comOcorrencia}
           emCoberturaFerias={emCoberturaFerias}
           divisaoPorCoordenacao={divisaoPorCoordenacao}
           processosAtividadeHoje={processosAtividadeHoje}

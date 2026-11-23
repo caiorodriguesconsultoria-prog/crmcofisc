@@ -193,6 +193,19 @@ th {
   }
 }
 
+/* Grades do Painel (KPIs, Agenda de hoje) — alinhadas à esquerda por
+   padrão (desktop), centralizadas só no celular (pedido do Caio). Classe
+   em vez de inline style porque justifyContent condicional por tamanho de
+   tela só dá pra fazer com media query. */
+.crm-grid-kpis-painel {
+  justify-content: start;
+}
+@media (max-width: 680px) {
+  .crm-grid-kpis-painel {
+    justify-content: center;
+  }
+}
+
 .crm-sidebar {
   width: 240px;
   position: sticky;
