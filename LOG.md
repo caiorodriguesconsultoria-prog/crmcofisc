@@ -1291,3 +1291,10 @@ Caio mandou referências de ícone de app do iPhone e pediu uma skill própria p
 - **Bug do vídeo (card do contrato "solto" no celular)**: o fundo da tela de detalhe (`.crm-painel-alto`, usada ao abrir por link direto) era branco opaco por cima do fundo aurora do `<body>` — e por dentro, o `card` genérico (usado em dados-principais, cronograma etc.) já tinha virado vidro translúcido numa rodada anterior. Vidro sobre branco opaco não tem nada atrás pra borrar, então a borda (8% de opacidade) ficava praticamente invisível — lia como "informação solta, sem card". Corrigido em duas frentes: `.crm-painel-alto` fica transparente no celular (deixa o aurora do body aparecer, mesmo padrão já usado no Painel) e o `card` genérico ganhou opacidade/borda um pouco mais fortes (.82→.88, borda 8%→12%), pra funcionar bem tanto sobre o aurora quanto sobre o branco sólido do modal (que continua opaco de propósito, é o padrão de popup com fundo escurecido). Não consegui assistir ao vídeo diretamente — fiz esse diagnóstico pela descrição; pode precisar de mais um ajuste depois que o Caio confirmar como ficou.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-23 · Coordenações: cards em mosaico (não deixa nenhum sozinho na linha)
+Caio confirmou que a correção do card "solto" no celular funcionou. Reportou que em Coordenações, um card mais baixo (menos membros de equipe) caía sozinho numa linha nova em vez de ficar ao lado dos outros.
+
+- `app/coordenacoes/grade.tsx`: grid comum trocado por colunas CSS (`columnWidth`/`columnGap` + `breakInside: avoid` em cada card) — os cards têm alturas bem diferentes (depende de quantos membros cada coordenação tem), e colunas CSS fluem isso em mosaico, sem o vão que o grid deixava.
+
+Build e `tsc --noEmit` limpos. Sem migração.

@@ -284,17 +284,23 @@ export default function GradeCoordenacoes({
   isAdmin: boolean;
 }) {
   return (
+    // Colunas CSS (não grid) de propósito — os cards têm alturas bem
+    // diferentes (depende de quantos membros de equipe cada coordenação
+    // tem), e um grid comum deixava o card mais baixo "sozinho" numa
+    // linha nova em vez de ficar ao lado dos outros (pedido do Caio pra
+    // corrigir). Colunas CSS fluem os cards um embaixo do outro dentro de
+    // cada coluna, como um mosaico, sem o vão que o grid deixava.
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-        gap: 16,
+        columnWidth: 320,
+        columnGap: 16,
         marginTop: 16,
-        alignItems: "start",
       }}
     >
       {coordenacoes.map((c, i) => (
-        <Card key={c.id} coordenacao={c} isAdmin={isAdmin} indice={i} />
+        <div key={c.id} style={{ breakInside: "avoid", marginBottom: 16 }}>
+          <Card coordenacao={c} isAdmin={isAdmin} indice={i} />
+        </div>
       ))}
     </div>
   );
