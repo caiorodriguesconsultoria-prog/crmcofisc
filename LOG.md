@@ -1228,3 +1228,15 @@ Caio pediu pra levar o vidro translúcido pra tudo (não só Painel/Contratos), 
 - Fonte Nunito confirmada — já é a mesma em todo o sistema (definida uma vez em `app/layout.tsx`, não por tela).
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-23 · Widgets menores (estilo iPhone), fonte Inter
+Caio viu o resultado e pediu pra diminuir as janelas do Painel (principalmente os gráficos de pizza, que tinham muito espaço vazio) pra caber mais conteúdo na primeira tela, no estilo widget de app do iPhone, e trocar a fonte de novo — Nunito (arredondada) ainda não batia com a referência.
+
+- **Fonte**: Nunito → **Inter** — olhando de novo, a referência (prints de app estilo Apple) não é arredondada, é neutra/geométrica, bem mais perto da própria system font da Apple (que não é de uso livre na web) do que de uma fonte "rounded" como Nunito.
+- **`CardBento` (`pequeno`)**: padding reduzido de 24 pra 14, título/subtítulo com fonte menor — antes o padding era igual pro card grande e pro pequeno, então um widget pequeno sobrava espaço vazio.
+- **Painel**: gráficos de pizza ("Contratos por etapa", "Eventos") viram cards `pequeno`, altura do gráfico cai de 260 pra 150px; `MedidorCircular` de 72 pra 60px. Grades de "Agenda de hoje", "Prazos da semana", "Divisão por coordenação" e "Contratos parados" com colunas mínimas menores (era 220-280px, agora 130-230px) e `gap`/títulos mais compactos — cabe mais widget por linha, mais conteúdo visível sem rolar.
+- Segue responsivo (grades usam `auto-fit`/`auto-fill`, que se ajustam sozinhas em qualquer largura de tela).
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
+Pendente de resposta do Caio: perguntou se gráfico de barra seria melhor que pizza pra "Contratos por etapa"/"Eventos" — build desta rodada manteve pizza (só compactada), aguardando confirmação antes de trocar o tipo de gráfico.

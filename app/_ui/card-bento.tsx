@@ -70,7 +70,11 @@ export default function CardBento({
         background: cor.branco,
         borderRadius: pequeno ? raio.cardPequeno : raio.card,
         border: `1px solid ${cor.borda}`,
-        padding: 24,
+        // `pequeno` ganhou padding menor (era 24 fixo pros dois tamanhos) —
+        // pedido do Caio: "diminua essas janelas, telas do tamanho de
+        // widgets como apps na tela do iPhone" — widget pequeno com o
+        // mesmo respiro de um card grande fica com espaço vazio sobrando.
+        padding: pequeno ? 14 : 24,
         cursor: clicavel ? "pointer" : undefined,
         boxShadow: "0 0px 0px rgba(32,31,29,0)",
         ...style,
@@ -78,11 +82,11 @@ export default function CardBento({
     >
       {corAcento && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 5, background: corAcento }} />}
       {(titulo || acao) && (
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: carregando ? 0 : 14 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: carregando ? 0 : pequeno ? 8 : 14 }}>
           <div style={{ minWidth: 0 }}>
-            {titulo && <div style={{ fontSize: 18, fontWeight: 600, color: cor.texto }}>{titulo}</div>}
+            {titulo && <div style={{ fontSize: pequeno ? 14 : 18, fontWeight: 600, color: cor.texto }}>{titulo}</div>}
             {subtitulo && (
-              <div style={{ fontSize: 13, color: cor.textoTerciario, marginTop: 2 }}>
+              <div style={{ fontSize: pequeno ? 11.5 : 13, color: cor.textoTerciario, marginTop: 2 }}>
                 {subtitulo}
               </div>
             )}
