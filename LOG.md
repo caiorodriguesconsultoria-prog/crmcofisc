@@ -1309,6 +1309,14 @@ Caio mandou a imagem de referência do documento original e pediu o Quadro Resum
 
 Build e `tsc --noEmit` limpos. **Depende de migração** — aguardando Caio confirmar que rodou o SQL antes de mergear pra `main`.
 
+## 2026-11-23 · Modelo de resumo de contrato (escrita humanizada) pra Fase 2 do agente de IA
+Caio mandou a skill `escrita-humanizada` e pediu um resumo de andamento de um contrato nesse estilo (texto corrido, sem negrito em cada rótulo, sem tabela/emoji) — gostou do resultado e pediu pra salvar como modelo pra próxima vez.
+
+- **`docs/modelo-resumo-contrato.md`** (novo): estrutura do resumo (dados principais em texto corrido → entregas/cronograma → tramitações em andamento → histórico recente só se der contexto → tags por último) + o exemplo aprovado. Fica como referência pra quando a Fase 2 do agente de IA (geração de relatório) for implementada — e pra qualquer resumo manual que eu mesmo escrever nesse meio tempo.
+- **Caio confirmou que rodou a migração 0050** (CATMAT + SEI da portaria) — segue pro merge em `main` nesta mesma rodada.
+
+Sem código novo além do documento. Sem migração.
+
 ## 2026-11-23 · Segundo bug de texto quebrando letra por letra (desta vez no desktop)
 Caio reportou o mesmo sintoma (texto quebrando letra por letra), agora no navegador/desktop, especificamente no campo Objeto de Dados principais — print mostrando "De/sm/op/res/sin/a/Ac/eta/to" numa coluna estreitíssima, enquanto Contratada e CNPJ ficavam largos ao lado.
 
