@@ -445,7 +445,7 @@ export default function ListaProcessos({
                 vidroClaro
                 style={corFundoLinha ? { background: corFundoLinha } : p.fundoStatusEntrega ? { background: p.fundoStatusEntrega } : undefined}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <Link
                       href={`/processos/${p.id}`}
@@ -516,69 +516,74 @@ export default function ListaProcessos({
                     </span>
                   </div>
 
-                  <p style={{ fontSize: 13.5, color: cor.texto, margin: 0, lineHeight: 1.4 }}>{p.objeto}</p>
+                  <p style={{ fontSize: 13.5, fontWeight: 500, color: cor.texto, margin: 0, lineHeight: 1.4 }}>{p.objeto}</p>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: cor.textoSecundario }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, color: cor.texto }}>
                     <span style={{ fontVariantNumeric: "tabular-nums" }}>{p.nup_principal}</span>
                     <BotaoCopiar texto={p.nup_principal} />
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5 }}>
                     <div>
-                      <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 600, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>
                         Coordenação
                       </div>
-                      <div style={{ color: cor.texto, marginTop: 1 }}>{p.coordenacoes?.sigla ?? "—"}</div>
+                      <div style={{ fontWeight: 500, color: cor.texto, marginTop: 1 }}>{p.coordenacoes?.sigla ?? "—"}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 600, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>
                         Fornecedor
                       </div>
-                      <div style={{ color: cor.texto, marginTop: 1, overflowWrap: "break-word" }}>
+                      <div style={{ fontWeight: 500, color: cor.texto, marginTop: 1, overflowWrap: "break-word" }}>
                         {p.fornecedores?.nome ?? "—"}
                       </div>
                     </div>
                   </div>
 
-                  {p.proximoAgendamento && (
-                    <div style={{ fontSize: 12, color: cor.textoTerciario }}>
-                      Próximo evento: {formatarDataAgendamento(p.proximoAgendamento.data)}{" "}
-                      {p.proximoAgendamento.horario ? p.proximoAgendamento.horario.slice(0, 5) : ""}
-                    </div>
-                  )}
-
+                  {/* Separador entre cada grupo de informação (pedido do
+                     Caio) — mesmo padrão já usado no último andamento logo
+                     abaixo: borda fina + respiro em cima, não só gap. */}
                   {p.tarefasAgendadas.length > 0 && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                      <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>
-                        Tarefas agendadas
-                      </div>
+                    <div style={{ borderTop: `1px solid ${cor.borda}`, paddingTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: cor.texto }}>Eventos</div>
                       {p.tarefasAgendadas.map((t, idx) => (
                         <div
                           key={idx}
-                          style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, color: cor.textoSecundario }}
+                          style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, fontWeight: 500, color: cor.texto }}
                         >
                           <span style={{ overflowWrap: "break-word" }}>{t.label}</span>
-                          <span style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{formatarDataAgendamento(t.data)}</span>
+                          <span style={{ flex: "none", fontVariantNumeric: "tabular-nums", color: cor.textoSecundario }}>
+                            {formatarDataAgendamento(t.data)}
+                          </span>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {p.proximaEntrega && (
-                    <div style={{ fontSize: 12, color: cor.textoSecundario }}>
-                      Próxima entrega: {ordinalParcela(p.proximaEntrega.numero)} — {formatarDataAgendamento(p.proximaEntrega.data)}
-                    </div>
-                  )}
-
-                  {p.entregaAtrasadaInfo && (
-                    <div style={{ fontSize: 12, fontWeight: 600, color: cor.urgente }}>
-                      Atraso na entrega: {ordinalParcela(p.entregaAtrasadaInfo.numero)} prevista para{" "}
-                      {formatarDataAgendamento(p.entregaAtrasadaInfo.data)}
+                  {(p.proximaEntrega || p.entregaAtrasadaInfo) && (
+                    <div style={{ borderTop: `1px solid ${cor.borda}`, paddingTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: cor.texto }}>Entregas</div>
+                      {p.proximaEntrega && (
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, fontWeight: 500, color: cor.texto }}>
+                          <span>{ordinalParcela(p.proximaEntrega.numero)}</span>
+                          <span style={{ flex: "none", fontVariantNumeric: "tabular-nums", color: cor.textoSecundario }}>
+                            {formatarDataAgendamento(p.proximaEntrega.data)}
+                          </span>
+                        </div>
+                      )}
+                      {p.entregaAtrasadaInfo && (
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, fontWeight: 700, color: cor.urgente }}>
+                          <span>Atraso — {ordinalParcela(p.entregaAtrasadaInfo.numero)}</span>
+                          <span style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>
+                            prevista para {formatarDataAgendamento(p.entregaAtrasadaInfo.data)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {p.processo_tags.filter((pt) => pt.tags).length > 0 && (
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    <div style={{ borderTop: `1px solid ${cor.borda}`, paddingTop: 10, display: "flex", gap: 4, flexWrap: "wrap" }}>
                       {p.processo_tags
                         .map((pt) => pt.tags)
                         .filter((t): t is { id: string; valor: string; cor: string | null } => !!t)
@@ -607,9 +612,10 @@ export default function ListaProcessos({
                     <div
                       style={{
                         fontSize: 12.5,
-                        color: cor.textoSecundario,
+                        fontWeight: 500,
+                        color: cor.texto,
                         borderTop: `1px solid ${cor.borda}`,
-                        paddingTop: 8,
+                        paddingTop: 10,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         display: "-webkit-box",
