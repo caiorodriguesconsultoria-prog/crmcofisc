@@ -1263,3 +1263,10 @@ Três coisas nesta rodada: o modo "Editar" que Caio pediu pra arrastar e reorgan
 - **Removidos**: widgets "Ação do dia" e "Entregas em atraso" do Painel (pedido direto do Caio). O cálculo de `entregasEmAtraso` continua existindo só pro ponto de alerta do sininho na barra de navegação; `prazosDaSemana`/`acaoDoDia` (que só alimentavam esses dois widgets) foram removidos de `app/dashboard/page.tsx`.
 
 Build e `tsc --noEmit` limpos.
+
+## 2026-11-23 · Fundo aurora trocado de verde pra azul
+Caio pediu pra trocar o tom do fundo em degradê de verde-sálvia/creme pra azul, mesma intensidade de antes, pra o vidro translúcido das janelas destacar melhor por cima.
+
+- `.crm-fundo-aurora`: manchas borradas recalibradas pros tons de azul já usados na marca do sistema (`cor.azul`/`azulEscuro`/`azulClaroDestaque` em `lib/theme.ts`), em vez de inventar uma paleta nova — mantém a cor do sistema coerente com o resto (links, pílula ativa, etc. já são desse mesmo azul).
+
+Build e `tsc --noEmit` limpos. Sem migração nesta mudança (a migração pendente de `painel_layout`, da rodada anterior, continua aguardando o Caio rodar).

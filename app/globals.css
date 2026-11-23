@@ -547,21 +547,24 @@ th {
   }
 }
 
-/* Fundo "aurora" — degradê suave em verde-sálvia/creme com manchas
-   borradas (referência que o Caio trouxe, print de app estilo Apple/
-   Instagram), atrás dos widgets de vidro claro no Painel. É uma exceção
-   deliberada à regra geral de "sem degradê no fundo" (sinal comum de
-   interface com cara de IA) — aqui é o visual que o Caio pediu
-   explicitamente a partir de uma referência, não um gradiente decorativo
-   gratuito. background-attachment fixed pra não repetir/deslocar as
-   manchas ao rolar a página. */
+/* Fundo "aurora" — degradê suave em tons de azul (era verde-sálvia/creme;
+   Caio pediu pra trocar pro azul da própria marca do sistema, na mesma
+   tonalidade/intensidade de antes, pra o vidro translúcido das janelas
+   destacar melhor por cima) com manchas borradas, atrás dos widgets de
+   vidro claro no Painel. Tons vêm da paleta de azul já usada no resto do
+   sistema (cor.azul/azulEscuro/azulClaroDestaque em lib/theme.ts), pra
+   ficar coerente com o resto da marca. É uma exceção deliberada à regra
+   geral de "sem degradê no fundo" (sinal comum de interface com cara de
+   IA) — aqui é o visual que o Caio pediu explicitamente a partir de uma
+   referência, não um gradiente decorativo gratuito. background-attachment
+   fixed pra não repetir/deslocar as manchas ao rolar a página. */
 .crm-fundo-aurora {
-  background-color: #f4f8f2;
+  background-color: #dce7f8;
   background-image:
-    radial-gradient(circle at 12% 12%, rgba(173, 209, 168, 0.55) 0%, rgba(173, 209, 168, 0) 42%),
-    radial-gradient(circle at 88% 18%, rgba(214, 232, 200, 0.55) 0%, rgba(214, 232, 200, 0) 45%),
-    radial-gradient(circle at 80% 88%, rgba(250, 233, 211, 0.5) 0%, rgba(250, 233, 211, 0) 48%),
-    radial-gradient(circle at 15% 90%, rgba(190, 221, 196, 0.45) 0%, rgba(190, 221, 196, 0) 45%);
+    radial-gradient(circle at 12% 12%, rgba(47, 95, 219, 0.35) 0%, rgba(47, 95, 219, 0) 42%),
+    radial-gradient(circle at 88% 18%, rgba(193, 232, 255, 0.6) 0%, rgba(193, 232, 255, 0) 45%),
+    radial-gradient(circle at 80% 88%, rgba(27, 63, 166, 0.3) 0%, rgba(27, 63, 166, 0) 48%),
+    radial-gradient(circle at 15% 90%, rgba(47, 95, 219, 0.25) 0%, rgba(47, 95, 219, 0) 45%);
   background-attachment: fixed;
 }
 
