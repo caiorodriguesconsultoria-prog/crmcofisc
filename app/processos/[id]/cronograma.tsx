@@ -147,6 +147,59 @@ function diasEmAtrasoAgora(dataPrevista: string | null, hoje: string) {
   return dias > 0 ? dias : null;
 }
 
+// Avaria/desvio "pendente" numa parcela = tem quantidade avariada/com
+// desvio lançada num item que ainda não tem reposição (lançamento filho)
+// do mesmo tipo resolvendo. Mesma regra de lib/status-entrega.ts (usada
+// pra colorir os cards de Contratos) — replicada aqui porque cronograma.tsx
+// é "use client" e já tem seus próprios tipos/helpers de data; mudança
+// numa tem que ser espelhada na outra.
+function temAvariaOuDesvioPendente(e: Execucao): boolean {
+  const todos = e.processo_entrega_lancamentos ?? [];
+  return todos.some((l) => {
+    if (l.tipo === "avaria" || l.tipo === "desvio") return false;
+    const precisaAvaria = l.quantidade_avaria > 0;
+    const precisaDesvio = l.quantidade_desvio > 0;
+    if (!precisaAvaria && !precisaDesvio) return false;
+    const reposicoes = todos.filter((r) => r.lancamento_pai_id === l.id);
+    const avariaResolvida = !precisaAvaria || reposicoes.some((r) => r.tipo === "avaria");
+    const desvioResolvido = !precisaDesvio || reposicoes.some((r) => r.tipo === "desvio");
+    return !(avariaResolvida && desvioResolvido);
+  });
+}
+
+type StatusEntregaCor = "vermelho" | "amarelo" | "verde" | null;
+
+// Regra pedida pelo Caio: vermelho = entrega/reposição de avaria ou desvio
+// atrasada; amarelo = dos 5 dias antes do prazo até o prazo, OU avaria/
+// desvio ainda sem reposição; verde = entregue (ou reposição feita) no
+// prazo. "neutro" (null) = fora dessas janelas, sem destaque nenhum.
+function statusParcelaCor(e: Execucao, hoje: string): StatusEntregaCor {
+  if (temAvariaOuDesvioPendente(e)) return "amarelo";
+  const dataEntrega = dataEntregaEfetiva(e);
+  const completa = totalLancado(e.processo_entrega_lancamentos ?? []) >= Number(e.quantidade);
+  if (dataEntrega && completa) {
+    const diff = diferencaDias(e.data_prevista, dataEntrega);
+    return diff !== null && diff > 0 ? "vermelho" : "verde";
+  }
+  const atrasoAgora = diasEmAtrasoAgora(e.data_prevista, hoje);
+  if (atrasoAgora !== null) return "vermelho";
+  if (!e.data_prevista) return null;
+  const faltamDias = Math.round(
+    (new Date(`${e.data_prevista}T00:00:00`).getTime() - new Date(`${hoje}T00:00:00`).getTime()) / (1000 * 60 * 60 * 24),
+  );
+  if (faltamDias >= 0 && faltamDias <= 5) return "amarelo";
+  return null;
+}
+
+// Cores suaves (pedido do Caio, "a cor pode ser mais suave") — reaproveita
+// os tons já usados no resto do sistema pros mesmos estados, em vez de
+// inventar uma paleta nova só pra entregas.
+const COR_STATUS_ENTREGA: Record<Exclude<StatusEntregaCor, null>, { fg: string; bg: string }> = {
+  vermelho: { fg: cor.urgente, bg: cor.urgenteFundo },
+  amarelo: { fg: cor.atencao, bg: cor.atencaoFundo },
+  verde: { fg: cor.verdeEscuro, bg: cor.verdeEscuroFundo },
+};
+
 function textoAtraso(
   dataPrevista: string | null,
   dataEntrega: string | null,
@@ -980,6 +1033,8 @@ export default function Cronograma({
             {execucoesOrdenadas.map((e) => {
               const selecionadaAgora = parcelaSelecionadaId === e.id && !novo;
               const diasAtraso = !dataEntregaEfetiva(e) ? diasEmAtrasoAgora(e.data_prevista, hoje) : null;
+              const statusCor = statusParcelaCor(e, hoje);
+              const corPar = statusCor ? COR_STATUS_ENTREGA[statusCor] : null;
               return (
                 <button
                   key={e.id}
@@ -995,8 +1050,8 @@ export default function Cronograma({
                     padding: "5px 12px",
                     borderRadius: 20,
                     border: "none",
-                    color: selecionadaAgora ? "#fff" : diasAtraso ? cor.urgente : cor.textoSecundario,
-                    background: selecionadaAgora ? (diasAtraso ? cor.urgente : cor.destaque) : diasAtraso ? cor.urgenteFundo : "rgba(96,93,93,.10)",
+                    color: selecionadaAgora ? "#fff" : corPar ? corPar.fg : cor.textoSecundario,
+                    background: selecionadaAgora ? (corPar ? corPar.fg : cor.destaque) : corPar ? corPar.bg : "rgba(96,93,93,.10)",
                   }}
                 >
                   {ordinal(e.numero)}
@@ -1053,8 +1108,17 @@ export default function Cronograma({
               todosLancamentos.filter((l) => l.lancamento_pai_id === paiId);
             const faltam = falta(e);
             const lancado = totalLancado(todosLancamentos);
+            const statusCorSelecionada = statusParcelaCor(e, hoje);
+            const corSelecionada = statusCorSelecionada ? COR_STATUS_ENTREGA[statusCorSelecionada] : null;
             return (
-              <div style={{ border: `1px solid ${cor.borda}`, borderRadius: 12, padding: 10 }}>
+              <div
+                style={{
+                  border: `1px solid ${corSelecionada ? corSelecionada.fg + "33" : cor.borda}`,
+                  borderRadius: 12,
+                  padding: 10,
+                  background: corSelecionada?.bg,
+                }}
+              >
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10 }}>
                   {editando && edicao ? (
                     <>

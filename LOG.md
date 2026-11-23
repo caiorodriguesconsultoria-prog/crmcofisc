@@ -1299,6 +1299,17 @@ Caio confirmou que a correção do card "solto" no celular funcionou. Reportou q
 
 Build e `tsc --noEmit` limpos. Sem migração.
 
+## 2026-11-23 · Cor de entrega no cronograma, card de Contratos com tarefas/próxima entrega, e card mais "abaulado"
+Caio pediu pra aplicar a mesma regra de cor (vermelho/amarelo/verde suave) já usada nos cards de Contratos também dentro do cronograma de cada contrato (pílula da parcela + card expandido), e pra enriquecer o card de Contratos com as tarefas agendadas e a data da próxima entrega/parcela — retirando a faixa lateral colorida. Também pediu reforço no efeito "abaulado/3D" dos cards de vidro.
+
+- **`app/processos/[id]/cronograma.tsx`**: novo `statusParcelaCor()` (réplica local das regras de `lib/status-entrega.ts`, mesma duplicação já documentada lá — componente client, módulo precisa rodar em servidor também) — aplica vermelho/amarelo/verde suave na pílula de cada parcela (antes só tinha vermelho-ou-cinza) e no fundo do card expandido da parcela selecionada (antes sem nenhuma cor de status).
+- **`lib/status-entrega.ts`**: `ParcelaStatus` ganhou `numero`; nova função `resumoEntregas()` devolve a próxima parcela pendente e, à parte, a mais atrasada (com número + data) — usada no card de Contratos.
+- **`app/processos/page.tsx`**: busca `numero` das execuções e `label` das tarefas agendadas; monta `tarefasAgendadas` (lista completa, não só a mais próxima), `proximaEntrega` e `entregaAtrasadaInfo` por contrato; `corStatusEntrega` (cor cheia, pro texto do aviso) e novo `fundoStatusEntrega` (versão suave, pro fundo do card inteiro).
+- **`app/processos/lista.tsx`**: card de Contratos ganhou a lista de tarefas agendadas (rótulo + data), a linha "Próxima entrega: Nª parcela — data" e, quando houver atraso, "Atraso na entrega: Nª parcela prevista para data" em vermelho. Retirada a faixa lateral colorida (`corAcento` no `CardBento`) a pedido do Caio — a cor do status agora tinge o fundo do card inteiro (suave) em vez de só uma faixa de 5px.
+- **`app/globals.css`** (`.crm-cartao-vidro-claro`): reforço do efeito "abaulado" — luz e sombra *inset* (dentro da borda, não só a sombra externa de baixo) simulam a curvatura de um ícone de app, e o degradê de luz ganhou uma camada radial no canto superior esquerdo (ponto de luz, não faixa uniforme). Caio sugeriu pintar o fundo com gradiente colorido como nos ícones de referência — optei por não fazer isso nos cards de dados (perderia legibilidade do texto), só reforcei luz/sombra.
+
+Build e `tsc --noEmit` limpos. Sem migração.
+
 ## 2026-11-23 · Barras mais juntas, tooltip com nome certo, janelas "flutuando"
 Caio reportou o tooltip dos gráficos mostrando "valor: 1" em vez do nome da etapa/evento, pediu as barras mais próximas (como a referência que mandou) e as janelas com efeito de flutuar de verdade sobre o fundo.
 

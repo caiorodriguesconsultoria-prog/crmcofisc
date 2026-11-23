@@ -18,6 +18,7 @@ export type LancamentoStatus = {
 };
 
 export type ParcelaStatus = {
+  numero: number;
   quantidade: number;
   data_prevista: string | null;
   lancamentos: LancamentoStatus[];
@@ -116,4 +117,25 @@ export function gradienteOuSolido(statusPresentes: StatusParcela[], cores: Recor
   if (lista.length === 0) return null;
   if (lista.length === 1) return cores[lista[0]];
   return `linear-gradient(90deg, ${lista.map((s) => cores[s]).join(", ")})`;
+}
+
+export type ResumoEntregaParcela = { numero: number; data: string };
+
+// Resumo pro card de Contratos (pedido do Caio): a próxima parcela ainda
+// não entregue (pode já estar atrasada) e, separadamente, a parcela mais
+// atrasada de todas — pra mostrar a data do atraso junto com a cor do card,
+// não só a cor sozinha.
+export function resumoEntregas(
+  parcelas: ParcelaStatus[],
+  hoje: string,
+): { proxima: ResumoEntregaParcela | null; atrasada: ResumoEntregaParcela | null } {
+  const pendentes = parcelas
+    .filter((p) => !!p.data_prevista && totalLancado(p.lancamentos) < p.quantidade)
+    .map((p) => ({ numero: p.numero, data: p.data_prevista as string, atrasada: (diasEmAtrasoAgora(p.data_prevista, hoje) ?? 0) > 0 }))
+    .sort((a, b) => a.data.localeCompare(b.data));
+  const atrasadas = pendentes.filter((p) => p.atrasada);
+  return {
+    proxima: pendentes[0] ? { numero: pendentes[0].numero, data: pendentes[0].data } : null,
+    atrasada: atrasadas[0] ? { numero: atrasadas[0].numero, data: atrasadas[0].data } : null,
+  };
 }

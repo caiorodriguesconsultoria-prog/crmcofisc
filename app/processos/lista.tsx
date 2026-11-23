@@ -52,13 +52,24 @@ export type Processo = {
   processo_eletronico_numero: string | null;
   processo_tags: { tags: { id: string; valor: string; cor: string | null } | null }[];
   proximoAgendamento: { data: string; horario: string | null } | null;
+  /** Tarefas do checklist com data marcada (ainda não concluídas) — pedido
+   * do Caio pra aparecerem todas no card, não só a mais próxima. */
+  tarefasAgendadas: { label: string; data: string }[];
+  /** Próxima parcela ainda não entregue (pode já estar atrasada) e, à
+   * parte, a parcela mais atrasada de todas — null quando não há nenhuma
+   * pendente. Ver lib/status-entrega.ts (resumoEntregas). */
+  proximaEntrega: { numero: number; data: string } | null;
+  entregaAtrasadaInfo: { numero: number; data: string } | null;
   ultimoAndamento: string | null;
   entregaAtrasada: boolean;
   relatorioDesatualizado: boolean;
   /** Cor (ou degradê, quando as parcelas estão em estados diferentes) do
    * status de entrega — null quando nenhuma parcela está num estado que
-   * mereça destaque. Ver lib/status-entrega.ts. */
+   * mereça destaque. Ver lib/status-entrega.ts. Usada só no texto do
+   * aviso de atraso (a faixa lateral que usava essa cor foi retirada). */
   corStatusEntrega: string | null;
+  /** Mesma lógica, versão suave — aplicada como fundo do card inteiro. */
+  fundoStatusEntrega: string | null;
 };
 
 // Cor de fundo da linha só quando o processo está de fato em cobertura de
@@ -75,6 +86,10 @@ function corDeFundoLinha(p: Processo, minhaPessoaId: string | null): string | un
 
 function formatarDataAgendamento(data: string) {
   return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+}
+
+function ordinalParcela(n: number) {
+  return `${n}ª parcela`;
 }
 
 type Opcao = { id: string; nome?: string; sigla?: string; valor?: string };
@@ -428,8 +443,7 @@ export default function ListaProcessos({
                 key={p.id}
                 indice={i}
                 vidroClaro
-                corAcento={p.corStatusEntrega ?? undefined}
-                style={corFundoLinha ? { background: corFundoLinha } : undefined}
+                style={corFundoLinha ? { background: corFundoLinha } : p.fundoStatusEntrega ? { background: p.fundoStatusEntrega } : undefined}
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
@@ -530,6 +544,36 @@ export default function ListaProcessos({
                     <div style={{ fontSize: 12, color: cor.textoTerciario }}>
                       Próximo evento: {formatarDataAgendamento(p.proximoAgendamento.data)}{" "}
                       {p.proximoAgendamento.horario ? p.proximoAgendamento.horario.slice(0, 5) : ""}
+                    </div>
+                  )}
+
+                  {p.tarefasAgendadas.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      <div style={{ fontSize: 10.5, color: cor.textoTerciario, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                        Tarefas agendadas
+                      </div>
+                      {p.tarefasAgendadas.map((t, idx) => (
+                        <div
+                          key={idx}
+                          style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, color: cor.textoSecundario }}
+                        >
+                          <span style={{ overflowWrap: "break-word" }}>{t.label}</span>
+                          <span style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{formatarDataAgendamento(t.data)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {p.proximaEntrega && (
+                    <div style={{ fontSize: 12, color: cor.textoSecundario }}>
+                      Próxima entrega: {ordinalParcela(p.proximaEntrega.numero)} — {formatarDataAgendamento(p.proximaEntrega.data)}
+                    </div>
+                  )}
+
+                  {p.entregaAtrasadaInfo && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: cor.urgente }}>
+                      Atraso na entrega: {ordinalParcela(p.entregaAtrasadaInfo.numero)} prevista para{" "}
+                      {formatarDataAgendamento(p.entregaAtrasadaInfo.data)}
                     </div>
                   )}
 
