@@ -1416,3 +1416,25 @@ Caio pediu 3 ajustes na tela de Contratos: diminuir o vão entre a BarraTopo e o
 - **`app/processos/[id]/dados-principais.tsx`**: novo campo "Coordenação" na mesma linha de Contratada/CNPJ/Objeto, clicável, abrindo um `PopupNome` com Nome/Telefone/Coordenador/E-mail do coordenador — mesmo padrão (e os mesmos dados) que `dados-processo.tsx` já usa pra sigla da coordenação, só que agora também dentro do card Dados principais.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-24 · Execução física no card de Contratos, skill de Performance Engineering + 3 otimizações, e Etapa 1 do redesenho Liquid Glass
+
+**Execução física (resposta de critério de indicador):** Caio pediu que o indicador de execução física virasse um anel de percentual (entregue/contratado, somando todas as parcelas) no card de Contratos, reaproveitando `MedidorCircular` (nunca fatia de pizza de verdade). Nova função `execucaoFisica()` em `lib/status-entrega.ts`, computada em `app/processos/page.tsx` e renderizada em `app/processos/lista.tsx` como seção própria do card.
+
+**Skill de Performance Engineering:** Caio trouxe uma lista fechada de 31 técnicas (frontend/rede/API/servidor/banco/monitoramento) + regras de Liquid Glass/motion + guarda-corpos de segurança, pra aplicar antes de qualquer redesign e em qualquer projeto futuro. Criada em `~/.claude/skills/performance-engineering/SKILL.md` (nível de usuário, não só deste projeto) — auditoria-primeiro, nunca implementar uma técnica sem gargalo real identificado.
+
+Rodada de auditoria no CRM-COFISC (sem código, só medição/classificação) apontou 4 itens de maior impacto/menor risco, implementados em 3 commits separados:
+- **Debounce na busca de Contratos** (`app/processos/lista.tsx`): filtro recalculava a cada tecla sobre a lista inteira; agora espera 200ms sem digitação.
+- **Memoização no Dashboard** (`app/dashboard/painel-dashboard.tsx`): `parados`/`dadosEtapas`/`dadosEventos` recalculavam em todo render (ex. ao abrir "reordenar seções") mesmo sem mudar as props de origem — agora em `useMemo`.
+- **Streaming + cancelamento no Assistente de IA** (`app/api/assistente/route.ts`, `app/assistente/chat.tsx`): a resposta só chegava inteira no fim; agora o `toolRunner` roda com `stream: true` e o texto é devolvido num `ReadableStream` conforme o Claude gera. Botão de enviar vira "Parar" durante a geração, cortando a requisição via `AbortController`. Validado com um teste isolado (5 cenários, sem precisar de chave de API) reproduzindo a lógica exata do loop de streaming/abort, já que não há `ANTHROPIC_API_KEY` neste ambiente pra um teste ao vivo.
+- Item de imagem (WebP/AVIF) **não** implementado — auditoria confirmou que não existe nenhuma imagem raster no app (logo é CSS, ícones são SVG), então não havia gargalo a corrigir.
+
+**CRM Premium — Etapa 1 (Liquid Glass): tokens, componentes, prova visual.** Primeira etapa do plano de 10 do `CRM_PREMIUM_SPEC.md` (seção 15), só depois da auditoria/8 pontos (Etapa 0) já entregue em rodada anterior. Escopo deliberadamente restrito a tokens/componentes novos + uma tela de prova isolada — nenhuma tela de produto foi tocada, exatamente pra não violar "preservar integralmente" antes da aprovação visual de cada etapa.
+
+- **`lib/theme.ts`**: `elevacao` (escala de z-index fundo→card→navegação→janela→popover→notificação), `corEscuro` (paleta do tema escuro, base no azul-marinho de marca já usado em `cor.escuro`) e `vidro` (presets de intensidade desktop/mobile — blur+saturação+opacidade calibrados juntos, não um valor de opacidade isolado).
+- **`app/globals.css`**: `.crm-cartao-vidro-escura` (análogo escuro de `.crm-cartao-vidro-claro`, mesma estrutura de luz/sombra inset), `.crm-fundo-aurora-escura`, e `--intenso` (classes adicionais, não uma mudança no comportamento de `.crm-cartao-vidro-claro` já em produção no Dashboard — isso ficaria pra quando a intensidade mobile for aprovada e aplicada de verdade).
+- **`app/_ui/controle-segmentado.tsx`** (novo): `SegmentedControl` reutilizável com indicador deslizante animado (`layoutId` do framer-motion), vai servir depois pras abas Resumo/Andamentos/Relatório (Etapa 5).
+- **`app/_ui/usar-tema-escuro-demo.ts`** (novo): hook de alternância de tema isolado (só usado na prova visual — não aplica `data-theme` em nenhuma tela real).
+- **`app/exemplo-liquid-glass/page.tsx`** (novo): tela temporária, fora do produto, demonstrando os dois temas, as duas intensidades e duas camadas de elevação (card + janela) empilhadas. Validada com Playwright (zero erro de console) e capturas de tela claro/escuro/intenso.
+
+Build e `tsc --noEmit` limpos em cada commit. Sem migração em nenhuma das mudanças desta entrada.

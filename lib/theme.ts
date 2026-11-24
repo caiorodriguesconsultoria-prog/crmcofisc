@@ -148,6 +148,51 @@ export const card: React.CSSProperties = {
   boxShadow: sombraCard,
 };
 
+// Escala de elevação (CRM Premium, Etapa 1 — "hierarquia de profundidade:
+// fundo → cards acetinados → navegação → janelas → popovers/modais →
+// notificações", seção 3.1 do CRM_PREMIUM_SPEC.md). Centralizado aqui pra
+// todo componente novo de vidro/janela usar o mesmo z-index em vez de cada
+// um inventar o seu — é exatamente o tipo de conflito (chat flutuante por
+// baixo de um modal, por exemplo) que a especificação pede pra evitar.
+export const elevacao = {
+  fundo: 0,
+  card: 10,
+  navegacao: 20,
+  janela: 30,
+  popover: 40,
+  notificacao: 50,
+};
+
+// Paleta escura (CRM Premium, Etapa 1 — tema escuro com preferência
+// persistida, seção 3.2). Reaproveita o azul-marinho que já é a cor
+// "escura" da marca (cor.escuro, usado no card de destaque e na cápsula
+// ativa da BarraTopo) como base do fundo, em vez de um neutro cinza
+// genérico — mantém "azul sobre azul" em claro e escuro. Usada por agora
+// só na prova visual de /exemplo-liquid-glass (Etapa 1); aplicar no app
+// inteiro é trabalho de etapa futura, com aprovação própria.
+export const corEscuro = {
+  fundo: "#060B16",
+  superficie: "#0E1526",
+  texto: "#EDEFF4",
+  textoSecundario: "#9BA3B4",
+  textoTerciario: "#7E8698",
+  borda: "rgba(255,255,255,.09)",
+  destaque: "#5B8CFF",
+  destaqueFundo: "rgba(91,140,255,.16)",
+};
+
+// Presets de material "vidro" por densidade de uso (CRM Premium, Etapa 1 —
+// seção 3.1: "desktop ~50%, mobile ~70%, esses percentuais não são
+// opacidade CSS"). Cada preset é a combinação calibrada de blur + saturação
+// + opacidade de fundo que LÊ como essa intensidade — não um valor de
+// opacidade isolado. `padrao` é o material já em produção (CardBento
+// vidroClaro / .crm-cartao-vidro-claro); `intenso` é a variante mais
+// "evidente" pedida pro mobile, usada por enquanto só na prova visual.
+export const vidro = {
+  padrao: { blur: 22, saturate: 180, alphaFundo: 0.82 },
+  intenso: { blur: 28, saturate: 190, alphaFundo: 0.74 },
+};
+
 export const botaoPrimario: React.CSSProperties = {
   // Cor plana — gradiente em botão é um dos sinais mais comuns de "cara de
   // IA" (ver auditoria de design, rodada 2); cor sólida com peso tipográfico

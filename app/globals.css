@@ -673,6 +673,81 @@ th {
   background-attachment: fixed;
 }
 
+/* CRM Premium, Etapa 1 (tema escuro — seção 3.2 do CRM_PREMIUM_SPEC.md):
+   mesma ideia do vidro claro (seção acima), em negativo — manchas de azul
+   mais escuras e discretas sobre um fundo quase preto, não um "cinza
+   chumbo" genérico. Só usada na prova visual de /exemplo-liquid-glass por
+   enquanto; não é o fundo real de nenhuma tela do produto nesta etapa. */
+.crm-fundo-aurora-escura {
+  background-color: #060b16;
+  background-image:
+    radial-gradient(circle at 12% 12%, rgba(91, 140, 255, 0.22) 0%, rgba(91, 140, 255, 0) 42%),
+    radial-gradient(circle at 88% 18%, rgba(47, 95, 219, 0.18) 0%, rgba(47, 95, 219, 0) 45%),
+    radial-gradient(circle at 80% 88%, rgba(14, 21, 38, 0.6) 0%, rgba(14, 21, 38, 0) 48%),
+    radial-gradient(circle at 15% 90%, rgba(91, 140, 255, 0.14) 0%, rgba(91, 140, 255, 0) 45%);
+  background-attachment: fixed;
+}
+
+/* Material "vidro" escuro — mesma estrutura de camadas do
+   .crm-cartao-vidro-claro (luz/sombra inset pro abaulado + sombra de
+   contato/elevação por fora), com os tons invertidos: destaque claro no
+   topo fica mais sutil (não existe "luz branca forte" sobre superfície
+   escura sem parecer um holofote), sombra de contato mais profunda porque
+   o fundo já é escuro e uma sombra clara "furaria" a ilusão de vidro. */
+.crm-cartao-vidro-escura {
+  background: radial-gradient(120% 90% at 18% 12%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 35%, rgba(0, 0, 0, 0.12) 100%),
+    rgba(14, 21, 38, 0.74) !important;
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border-left: 1px solid rgba(255, 255, 255, 0.04) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    inset 0 -10px 16px -8px rgba(0, 0, 0, 0.35),
+    inset 10px 0 16px -12px rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 20px 44px rgba(0, 0, 0, 0.5) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .crm-cartao-vidro-escura {
+    background: rgba(14, 21, 38, 0.98) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crm-cartao-vidro-escura {
+    transition: none;
+  }
+}
+
+/* Intensidade "mobile" do vidro (claro ou escuro) — seção 3.1 do
+   CRM_PREMIUM_SPEC.md pede o material mais evidente em telas pequenas
+   (~70%) do que no desktop (~50%). Classe adicional (`--intenso`), não uma
+   alteração do comportamento em telas pequenas de `.crm-cartao-vidro-claro`
+   já em produção no Painel — mudar essa classe existente mudaria o visual
+   do Dashboard hoje, fora do escopo desta etapa (só prova visual isolada).
+   Quem for aplicar essa intensidade numa tela de verdade combina as duas
+   classes (`crm-cartao-vidro-claro crm-cartao-vidro-claro--intenso`). */
+.crm-cartao-vidro-claro--intenso {
+  background: radial-gradient(120% 90% at 18% 12%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 35%, rgba(32, 31, 29, 0.05) 100%),
+    rgba(255, 255, 255, 0.74) !important;
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+}
+.crm-cartao-vidro-escura--intenso {
+  background: radial-gradient(120% 90% at 18% 12%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 35%, rgba(0, 0, 0, 0.14) 100%),
+    rgba(14, 21, 38, 0.66) !important;
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+}
+
 /* "Balançar" dos widgets no modo Editar do Painel (igual ícone de app no
    iPhone) — pedido do Caio: "clico em editar, eles começam a se mexer e
    eu organizo a tela". Puramente decorativo, some com prefers-reduced-motion. */
