@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { ChevronDown, type LucideIcon } from "lucide-react";
 import { cor, corEscuro, raio, elevacao, vidro, movimento } from "@/lib/theme";
 import { backdropRefracao } from "./refracao";
 
@@ -77,7 +78,7 @@ export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style
 export function GlassCard({ escuro, titulo, style, children }: PropsBase & { titulo?: string }) {
   const paleta = escuro ? corEscuro : cor;
   return (
-    <GlassSurface escuro={escuro} alphaFundo={0.5} style={{ padding: 16, ...style }}>
+    <GlassSurface escuro={escuro} alphaFundo={0.7} style={{ padding: 16, ...style }}>
       {titulo && <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{titulo}</div>}
       {children}
     </GlassSurface>
@@ -91,7 +92,7 @@ export function GlassCard({ escuro, titulo, style, children }: PropsBase & { tit
  * vidro excessivo em listas densas"). */
 export function GlassWindow({ escuro, style, children }: PropsBase) {
   return (
-    <GlassSurface escuro={escuro} intensidade="padrao" alphaFundo={0.3} style={{ borderRadius: raio.painel, zIndex: elevacao.janela, padding: 0, overflow: "hidden", ...style }}>
+    <GlassSurface escuro={escuro} intensidade="padrao" alphaFundo={0.5} style={{ borderRadius: raio.painel, zIndex: elevacao.janela, padding: 0, overflow: "hidden", ...style }}>
       {children}
     </GlassSurface>
   );
@@ -126,6 +127,76 @@ export function GlassTable({ escuro, colunas, linhas }: { escuro?: boolean; colu
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** Chip de ícone colorido (cabeçalho de KPI) — mesma linguagem visual da
+ * referência aprovada (ícone num círculo/quadrado pastel por card). */
+export function GlassIconChip({ Icone, cor: corIcone, fundo }: { Icone: LucideIcon; cor: string; fundo: string }) {
+  return (
+    <div style={{ width: 32, height: 32, borderRadius: 10, background: fundo, color: corIcone, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+      <Icone size={16} />
+    </div>
+  );
+}
+
+/** Donut/rosca com legenda — "Contratos por etapa" na referência usa rosca,
+ * não barra. Desenhado à mão (sem recharts) pra não empilhar outra
+ * dependência só pro laboratório: cada fatia é um `<circle>` com
+ * `strokeDasharray`/`strokeDashoffset` acumulado. */
+export function GlassDonut({
+  escuro,
+  dados,
+  total,
+  rotuloCentro,
+}: {
+  escuro?: boolean;
+  dados: { rotulo: string; valor: number; cor: string }[];
+  total: number;
+  rotuloCentro?: string;
+}) {
+  const paleta = escuro ? corEscuro : cor;
+  const r = 32;
+  const circunferencia = 2 * Math.PI * r;
+  let acumulado = 0;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
+      <div style={{ position: "relative", width: 84, height: 84, flex: "none" }}>
+        <svg width={84} height={84} viewBox="0 0 84 84" style={{ transform: "rotate(-90deg)" }}>
+          {dados.map((d) => {
+            const comprimento = (d.valor / total) * circunferencia;
+            const elemento = (
+              <circle
+                key={d.rotulo}
+                cx={42}
+                cy={42}
+                r={r}
+                fill="none"
+                stroke={d.cor}
+                strokeWidth={11}
+                strokeDasharray={`${comprimento} ${circunferencia - comprimento}`}
+                strokeDashoffset={-acumulado}
+              />
+            );
+            acumulado += comprimento;
+            return elemento;
+          })}
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: paleta.texto, lineHeight: 1 }}>{total}</div>
+          {rotuloCentro && <div style={{ fontSize: 8.5, color: paleta.textoTerciario, marginTop: 3 }}>{rotuloCentro}</div>}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: 11.5, minWidth: 0, flex: 1 }}>
+        {dados.map((d) => (
+          <div key={d.rotulo} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.cor, flex: "none" }} />
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: paleta.texto }}>{d.rotulo}</span>
+            <span style={{ color: paleta.textoTerciario, flex: "none" }}>{d.valor}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -320,7 +391,7 @@ export function GlassDock({
   itens,
 }: {
   escuro?: boolean;
-  itens: { rotulo: string; ativo?: boolean }[];
+  itens: { rotulo: string; Icone: LucideIcon; ativo?: boolean }[];
 }) {
   const paleta = escuro ? corEscuro : cor;
   return (
@@ -339,8 +410,8 @@ export function GlassDock({
       }}
     >
       {itens.map((i) => (
-        <div key={i.rotulo} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, fontSize: 10.5, fontWeight: 600, color: i.ativo ? paleta.destaque : paleta.textoTerciario }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: i.ativo ? paleta.destaque : "transparent" }} />
+        <div key={i.rotulo} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: i.ativo ? paleta.destaque : paleta.textoTerciario }}>
+          <i.Icone size={18} />
           {i.rotulo}
         </div>
       ))}
@@ -349,30 +420,96 @@ export function GlassDock({
 }
 
 /** Sidebar flutuante em vidro (desktop) — mesma estrutura da BarraLateral de
- * produção (app/_ui/barra-lateral.tsx), só com o material glass em vez da
- * classe .crm-cartao-vidro-claro, pra comparar lado a lado no laboratório. */
-export function GlassSidebar({ escuro, itens, children }: PropsBase & { itens: { rotulo: string; ativo?: boolean }[] }) {
+ * produção (app/_ui/barra-lateral.tsx: ícones por item, grupo "Cadastros"
+ * expansível, rodapé de conta), só com o material glass em vez da classe
+ * .crm-cartao-vidro-claro, pra comparar lado a lado no laboratório. */
+export function GlassSidebar({
+  escuro,
+  itens,
+  grupoCadastros,
+  contaNome = "COFISC",
+  contaEmail = "Administrador",
+  children,
+}: PropsBase & {
+  itens: { rotulo: string; Icone: LucideIcon; ativo?: boolean }[];
+  grupoCadastros?: { rotulo: string; Icone: LucideIcon }[];
+  contaNome?: string;
+  contaEmail?: string;
+}) {
+  const [aberto, setAberto] = useState(true);
   const paleta = escuro ? corEscuro : cor;
   return (
-    <aside style={{ position: "fixed", zIndex: elevacao.navegacao, left: 16, top: 16, bottom: 16, width: 240, display: "flex", flexDirection: "column", borderRadius: raio.painel, padding: "18px 12px", ...materialVidro("padrao", !!escuro) }}>
-      <div style={{ padding: "0 8px 14px", fontWeight: 800, fontSize: 16, color: paleta.texto }}>COFISC</div>
-      <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+    <aside style={{ position: "fixed", zIndex: elevacao.navegacao, left: 16, top: 16, bottom: 16, width: 240, display: "flex", flexDirection: "column", borderRadius: raio.painel, padding: "16px 10px", ...materialVidro("padrao", !!escuro) }}>
+      <div style={{ padding: "2px 10px 14px" }}>
+        <div style={{ fontWeight: 800, fontSize: 15, color: paleta.texto, letterSpacing: -0.2 }}>COFISC</div>
+        <div style={{ fontSize: 10.5, color: paleta.textoTerciario, marginTop: 1 }}>Gestão Contratual</div>
+      </div>
+
+      <nav style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
         {itens.map((i) => (
           <div
             key={i.rotulo}
             style={{
-              padding: "9px 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 9,
+              padding: "8px 10px",
               borderRadius: raio.campo,
-              fontSize: 13.5,
+              fontSize: 13,
               fontWeight: 600,
               color: i.ativo ? "#fff" : paleta.textoSecundario,
               background: i.ativo ? paleta.destaque : "transparent",
             }}
           >
-            {i.rotulo}
+            <i.Icone size={15} />
+            <span>{i.rotulo}</span>
           </div>
         ))}
+
+        {grupoCadastros && grupoCadastros.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setAberto((v) => !v)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                padding: "10px 10px 4px",
+                fontSize: 10.5,
+                fontWeight: 700,
+                color: paleta.textoTerciario,
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
+              }}
+            >
+              Cadastros
+              <ChevronDown size={13} style={{ transform: aberto ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .15s" }} />
+            </button>
+            {aberto &&
+              grupoCadastros.map((i) => (
+                <div key={i.rotulo} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: raio.campo, fontSize: 12.5, fontWeight: 600, color: paleta.textoSecundario }}>
+                  <i.Icone size={14} />
+                  <span>{i.rotulo}</span>
+                </div>
+              ))}
+          </>
+        )}
       </nav>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 10px 2px", borderTop: `1px solid ${paleta.borda}`, marginTop: 6 }}>
+        <div style={{ width: 28, height: 28, borderRadius: "50%", background: paleta.destaqueFundo, color: paleta.destaque, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+          CA
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: paleta.texto }}>{contaNome}</div>
+          <div style={{ fontSize: 10, color: paleta.textoTerciario, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contaEmail}</div>
+        </div>
+      </div>
       {children}
     </aside>
   );
