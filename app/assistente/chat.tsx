@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { card, cor, botaoPrimario } from "@/lib/theme";
 
 type Mensagem = { role: "user" | "assistant"; content: string };
@@ -15,6 +15,7 @@ export default function Chat() {
   const [pergunta, setPergunta] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   async function enviar(texto: string) {
     const pergunta = texto.trim();
@@ -24,23 +25,57 @@ export default function Chat() {
     setMensagens(historico);
     setPergunta("");
     setCarregando(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    // Resposta transmitida em partes (Performance Engineering, item 19) —
+    // o balão do assistente já aparece e cresce conforme o texto chega, em
+    // vez de ficar só "Consultando…" até a resposta inteira estar pronta.
+    // Adiciona o balão vazio já no histórico e vai completando esse mesmo item.
+    setMensagens([...historico, { role: "assistant", content: "" }]);
+
     try {
       const resp = await fetch("/api/assistente", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mensagens: historico }),
+        signal: controller.signal,
       });
-      const dados = await resp.json();
-      if (!resp.ok) {
-        setErro(dados.error === "IA não configurada" ? "Assistente ainda não configurado." : "Não consegui responder agora. Tenta de novo?");
+      if (!resp.ok || !resp.body) {
+        let mensagemErro = "Não consegui responder agora. Tenta de novo?";
+        try {
+          const dados = await resp.json();
+          if (dados.error === "IA não configurada") mensagemErro = "Assistente ainda não configurado.";
+        } catch {
+          // resposta sem corpo JSON (ex.: erro antes do stream começar) — mantém a mensagem padrão
+        }
+        setErro(mensagemErro);
+        setMensagens(historico);
         return;
       }
-      setMensagens([...historico, { role: "assistant", content: dados.resposta }]);
-    } catch {
-      setErro("Falha de conexão. Tenta de novo?");
+
+      const leitor = resp.body.getReader();
+      const decodificador = new TextDecoder();
+      let textoAcumulado = "";
+      for (;;) {
+        const { done, value } = await leitor.read();
+        if (done) break;
+        textoAcumulado += decodificador.decode(value, { stream: true });
+        setMensagens([...historico, { role: "assistant", content: textoAcumulado }]);
+      }
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") {
+        setErro("Falha de conexão. Tenta de novo?");
+      }
     } finally {
       setCarregando(false);
+      abortRef.current = null;
     }
+  }
+
+  function cancelar() {
+    abortRef.current?.abort();
   }
 
   return (
@@ -90,10 +125,9 @@ export default function Chat() {
               overflowWrap: "break-word",
             }}
           >
-            {m.content}
+            {m.content || (carregando && i === mensagens.length - 1 ? "…" : m.content)}
           </div>
         ))}
-        {carregando && <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Consultando…</p>}
       </div>
 
       {erro && <p style={{ color: cor.urgente, fontSize: 12.5, margin: 0 }}>{erro}</p>}
@@ -101,7 +135,11 @@ export default function Chat() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          enviar(pergunta);
+          if (carregando) {
+            cancelar();
+          } else {
+            enviar(pergunta);
+          }
         }}
         style={{ display: "flex", gap: 8 }}
       >
@@ -112,8 +150,8 @@ export default function Chat() {
           disabled={carregando}
           style={{ flex: 1, padding: "10px 14px" }}
         />
-        <button type="submit" disabled={carregando || !pergunta.trim()} style={botaoPrimario}>
-          Enviar
+        <button type="submit" disabled={!carregando && !pergunta.trim()} style={botaoPrimario}>
+          {carregando ? "Parar" : "Enviar"}
         </button>
       </form>
     </div>

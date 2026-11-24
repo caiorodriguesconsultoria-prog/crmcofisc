@@ -158,31 +158,63 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "conversa inválida" }, { status: 400 });
   }
 
-  try {
-    const anthropic = new Anthropic();
-    const finalMessage = await anthropic.beta.messages.toolRunner({
-      model: "claude-opus-5-5",
-      max_tokens: 4096,
-      system: SISTEMA,
-      tools: [buscarHistoricoContrato(supabase)],
-      messages: mensagens,
-    });
+  // Performance Engineering (item 19 — streaming nas respostas de IA): antes,
+  // a resposta só chegava ao navegador depois do toolRunner terminar por
+  // completo (podia levar vários segundos com a chamada de ferramenta no
+  // meio). Agora o texto é transmitido conforme o Claude gera, igual a um
+  // chat normal — e o encerramento da conexão pelo navegador (troca de aba,
+  // cancelamento) interrompe o consumo do stream em vez de continuar
+  // gerando uma resposta que ninguém vai ler.
+  const encoder = new TextEncoder();
+  let abortado = false;
+  request.signal.addEventListener("abort", () => {
+    abortado = true;
+  });
 
-    const texto = finalMessage.content
-      .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let enviouTexto = false;
+      try {
+        const anthropic = new Anthropic();
+        const runner = anthropic.beta.messages.toolRunner({
+          model: "claude-opus-5-5",
+          max_tokens: 4096,
+          system: SISTEMA,
+          tools: [buscarHistoricoContrato(supabase)],
+          messages: mensagens,
+          stream: true,
+        });
 
-    if (!texto) {
-      return NextResponse.json({ error: "sem resposta da IA" }, { status: 502 });
-    }
+        for await (const messageStream of runner) {
+          if (abortado) break;
+          for await (const event of messageStream) {
+            if (abortado) break;
+            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+              enviouTexto = true;
+              controller.enqueue(encoder.encode(event.delta.text));
+            }
+          }
+          if (abortado) break;
+          await messageStream.finalMessage();
+        }
 
-    return NextResponse.json({ resposta: texto });
-  } catch (erro) {
-    if (erro instanceof Anthropic.APIError) {
-      return NextResponse.json({ error: "falha ao chamar a IA" }, { status: 502 });
-    }
-    return NextResponse.json({ error: "erro inesperado" }, { status: 500 });
-  }
+        if (!enviouTexto && !abortado) {
+          controller.enqueue(encoder.encode("Não consegui gerar uma resposta agora. Tenta de novo?"));
+        }
+      } catch {
+        if (!abortado && !enviouTexto) {
+          controller.enqueue(encoder.encode("Não consegui consultar a IA agora. Tenta de novo?"));
+        }
+      } finally {
+        controller.close();
+      }
+    },
+    cancel() {
+      abortado = true;
+    },
+  });
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }
