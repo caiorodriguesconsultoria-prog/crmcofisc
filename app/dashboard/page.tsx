@@ -34,6 +34,7 @@ export default async function DashboardPage() {
     eventos,
     etapas,
     { count: atividadesConcluidas7Dias },
+    { data: tarefasPendentesRaw },
   ] = await Promise.all([
     supabase
       .from("processos")
@@ -67,6 +68,15 @@ export default async function DashboardPage() {
       .select("id", { count: "exact", head: true })
       .eq("concluida", true)
       .gte("concluida_em", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    // KPI "Tarefas pendentes" (Etapa 3) — "hoje + vencidas", critério
+    // confirmado pelo Caio ("igual já uso no resto do sistema"). Busca
+    // separada de `tarefasHoje` (que é só hoje, usada na Agenda de hoje) —
+    // juntar as duas inflaria a Agenda com tarefa atrasada de dia anterior.
+    supabase
+      .from("processo_tarefas")
+      .select("origem_tipo, origem_id")
+      .eq("concluida", false)
+      .lte("agendamento_data", hoje),
   ]);
 
   const erro = erroProcessos || erroKanban;
@@ -161,6 +171,16 @@ export default async function DashboardPage() {
   // andamentos com data marcada pra hoje.
   const processoIdPorOrigemKanban = new Map((kanbanAtivo ?? []).map((k) => [k.id, k.processo_id]));
   const processoIdPorOrigemTag = new Map((tagHistoricoAtivo ?? []).map((t) => [t.id, t.processo_id]));
+
+  // KPI "Tarefas pendentes" (hoje + vencidas) — só conta a tarefa se a
+  // origem (kanban/tag) ainda resolve pra um processo ATIVO; uma tarefa de
+  // uma etapa/tag que já saiu (contrato concluído ou etapa mudou) não
+  // aparece nos mapas acima, então fica de fora da contagem sozinha, sem
+  // precisar filtrar por conclusao_tipo de novo aqui.
+  const tarefasPendentes = (tarefasPendentesRaw ?? []).filter((t) => {
+    const processoId = t.origem_tipo === "kanban" ? processoIdPorOrigemKanban.get(t.origem_id) : processoIdPorOrigemTag.get(t.origem_id);
+    return !!processoId;
+  }).length;
 
   type ItemAtividade = { rotulo: string; horario: string | null; periodo?: "manha" | "tarde" | null };
   // Pra ordenar a lista: agendamento tem hora exata, tarefa só tem período —
@@ -270,6 +290,7 @@ export default async function DashboardPage() {
           contratosComEntregaAtrasada={contratosComEntregaAtrasada}
           entregasPrevistas={entregasPrevistas}
           atividadesConcluidas7Dias={atividadesConcluidas7Dias ?? 0}
+          tarefasPendentes={tarefasPendentes}
         />
       </Painel>
 

@@ -89,6 +89,7 @@ export default function PainelDashboard({
   contratosComEntregaAtrasada,
   entregasPrevistas,
   atividadesConcluidas7Dias,
+  tarefasPendentes,
 }: {
   /** ID da pessoa logada — usado só pra salvar a ordem dos widgets na
    * conta. Sem isso (caso raro, cadastro sem linha em `pessoas`), o modo
@@ -115,6 +116,8 @@ export default function PainelDashboard({
   entregasPrevistas: EntregaPrevista[];
   /** Tarefas concluídas nos últimos 7 dias (janela confirmada pelo Caio). */
   atividadesConcluidas7Dias: number;
+  /** Tarefas não concluídas com data de hoje ou já vencida ("hoje + vencidas", critério confirmado pelo Caio). */
+  tarefasPendentes: number;
 }) {
   const supabase = createClient();
   // "Sem movimentação" (Contratos parados) — 30 dias, critério confirmado
@@ -178,6 +181,7 @@ export default function PainelDashboard({
     { rotulo: "Entrega atrasada", valor: contratosComEntregaAtrasada, corNumero: cor.urgente, href: "/processos?filtro=atrasados" },
     { rotulo: "Relatório desatualizado", valor: relatoriosDesatualizados, corNumero: cor.vermelhoEscuro, href: "/processos?filtro=desatualizados" },
     { rotulo: "Atividades concluídas (7 dias)", valor: atividadesConcluidas7Dias, corNumero: cor.verdeEscuro },
+    { rotulo: "Tarefas pendentes", valor: tarefasPendentes, corNumero: cor.atencao },
   ];
 
   // Cada widget reorganizável vira um nó só, guardado num mapa por ID —

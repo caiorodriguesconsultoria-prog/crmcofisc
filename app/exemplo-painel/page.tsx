@@ -49,6 +49,7 @@ export default function ExemploPainelPage() {
           { id: "e3", processoId: "1", numeroContrato: "305/2026", numeroParcela: 1, data: new Date(Date.now() + 20 * 86400000).toISOString().slice(0, 10) },
         ]}
         atividadesConcluidas7Dias={12}
+        tarefasPendentes={4}
       />
     </Painel>
   );
