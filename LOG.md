@@ -1533,3 +1533,17 @@ Caio trouxe um documento complementar autorizando instalar bibliotecas/skills de
 Validado com Playwright: desktop 1440px claro/escuro, mobile 390px, janela desktop e mobile — zero erro de console, texto denso e tabela legíveis em todos os casos, fundo em ondas visível atrás do vidro nas duas telas. Nenhum componente de produto foi alterado — só o laboratório. Aguardando aprovação visual do Caio antes de migrar o Design System pro CRM funcional, por etapas, conforme o `CRM_PREMIUM_SPEC.md`.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (7) · Motor de refração óptica real no `/design-lab` (skill `premium-liquid-ui`)
+
+Caio pediu pra usar a skill `premium-liquid-ui` pra ajustar o vidro do laboratório. Antes de usá-la, conferi se os arquivos de verdade foram enviados (`find`/`ls` em `/root/.claude/uploads/...` e em `~/.claude/skills/`): só o `SKILL.md` (descrição) chegou — `assets/engine/liquid-glass.js`, `assets/templates/*`, `references/*.md`, `examples/*`, `scripts/*.py` e os wallpapers não existem no ambiente. Não dava pra reaproveitar o motor/scripts empacotados como pedido. Avisei o Caio disso e implementei o princípio técnico central da skill (refração de verdade, não só blur) do zero, sem dependência nova — mesma lógica da decisão da rodada (6) de não empilhar motores de terceiros em produção sem necessidade comprovada.
+
+- **`app/design-lab/_glass/refracao.tsx`** (novo): filtro SVG `#vidro-refracao` (`feTurbulence` baixa frequência + `feGaussianBlur` + `feDisplacementMap`) e `backdropRefracao(blur, saturate)`, que monta `backdrop-filter: url(#vidro-refracao) blur(...) saturate(...)`. Ao contrário de `blur()` isolado, isso desloca de verdade os pixels atrás do vidro (lente), não só borra. Montado uma vez por página (não por componente), mesmo espírito do `maxRefracted` da skill original — evita empilhar o filtro em cada superfície.
+- **`app/design-lab/_glass/componentes.tsx`**: `materialVidro()` passou a usar `backdropRefracao(...)` na propriedade `backdropFilter` (sem prefixo). `WebkitBackdropFilter` ficou deliberadamente como blur/saturate puro, sem `url()` — WebKit historicamente não aplica filtro de referência dentro de `backdrop-filter`, então isso é um fallback intencional pro Safari, não um descuido.
+- **`app/design-lab/page.tsx`** e **`app/design-lab/janela/page.tsx`**: passaram a montar `<FiltroRefracaoSVG />` uma vez no topo da página.
+
+**Verificação (não só visual)**: como a distorção é sutil contra o gradiente aurora suave, não basta olhar o print. Confirmei por `getComputedStyle()` no Chromium headless que a propriedade é aceita e aplicada de verdade (`url("#vidro-refracao") blur(22px) saturate(1.8)`, não descartada). Pra prova inequívoca de deslocamento real de pixel (não só blur), montei um teste isolado (grade preto/branco + painel com o mesmo filtro) fora do app — screenshot mostra as linhas da grade visivelmente curvadas perto da borda do vidro.
+
+**Limitação importante, por regra da própria skill ("não declare teste executado sem evidência")**: testado SÓ em Chromium headless via Playwright neste ambiente. Nenhuma evidência de Safari/WebKit ou Firefox — não afirmar suporte lá até testar de verdade (ou Caio confirmar manualmente).
+
+Nenhum componente de produto foi alterado — só o laboratório. Build e `tsc --noEmit` limpos. Sem migração.

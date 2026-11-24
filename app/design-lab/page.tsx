@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AmbientBackground from "./_glass/ambient-background";
+import FiltroRefracaoSVG from "./_glass/refracao";
 import { GlassCard, GlassButton, GlassInput, GlassTable, GlassAIButton, GlassSidebar, GlassDock, GlassSurface } from "./_glass/componentes";
 import { cor, corEscuro } from "@/lib/theme";
 
@@ -25,6 +26,7 @@ export default function DesignLabPage() {
 
   return (
     <div style={{ minHeight: "100vh", position: "relative" }}>
+      <FiltroRefracaoSVG />
       <AmbientBackground escuro={escuro} />
 
       {desktop && (

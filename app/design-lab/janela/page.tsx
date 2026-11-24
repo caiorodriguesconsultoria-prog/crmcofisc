@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AmbientBackground from "../_glass/ambient-background";
+import FiltroRefracaoSVG from "../_glass/refracao";
 import { GlassWindow, GlassTabs, GlassTable, GlassButton } from "../_glass/componentes";
 import { cor, corEscuro } from "@/lib/theme";
 
@@ -15,6 +16,7 @@ export default function DesignLabJanelaPage() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <FiltroRefracaoSVG />
       <AmbientBackground escuro={escuro} />
 
       <GlassWindow escuro={escuro} style={{ width: "100%", maxWidth: 760 }}>

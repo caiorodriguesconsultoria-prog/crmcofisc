@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cor, corEscuro, raio, elevacao, vidro, movimento } from "@/lib/theme";
+import { backdropRefracao } from "./refracao";
 
 // Design System Liquid Glass reutilizável — CRM_LIQUID_GLASS_SKILLS.md,
 // seção 6. Protótipo isolado em /design-lab (nenhum componente de produto
@@ -26,7 +27,15 @@ function materialVidro(intensidade: Intensidade, escuro: boolean): React.CSSProp
     background: `radial-gradient(130% 100% at 20% 0%, rgba(${luz},${escuro ? 0.1 : 0.55}) 0%, rgba(${luz},0) 55%),
       linear-gradient(180deg, rgba(${luz},${escuro ? 0.07 : 0.35}) 0%, rgba(${luz},0) 32%, rgba(${sombraBase},${escuro ? 0.3 : 0.04}) 100%),
       ${escuro ? `rgba(14,21,38,${preset.alphaFundo - 0.08})` : `rgba(255,255,255,${preset.alphaFundo})`}`,
-    backdropFilter: `blur(${preset.blur}px) saturate(${preset.saturate}%)`,
+    // Propriedade sem prefixo recebe a refração (feDisplacementMap via
+    // url(#vidro-refracao), ver refracao.tsx) — motores que não entendem
+    // filtro de referência em backdrop-filter (WebKit, historicamente)
+    // simplesmente ignoram a propriedade inteira. Por isso a versão
+    // -webkit- continua só com blur/saturate puro, como fallback real do
+    // Safari/iOS, não decorativo — sem isso, Safari perderia o vidro por
+    // completo em vez de cair pro blur. Só testado em Chromium (Playwright)
+    // neste ambiente; sem evidência de WebKit/Firefox.
+    backdropFilter: backdropRefracao(preset.blur, preset.saturate),
     WebkitBackdropFilter: `blur(${preset.blur}px) saturate(${preset.saturate}%)`,
     borderLeft: `1px solid rgba(${escuro ? "255,255,255" : sombraBase},${escuro ? 0.05 : 0.06})`,
     borderRight: `1px solid rgba(${escuro ? "255,255,255" : sombraBase},${escuro ? 0.08 : 0.09})`,
