@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Reorder } from "framer-motion";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -100,17 +100,30 @@ export default function PainelDashboard({
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
-  const parados = processos
-    .filter((p) => p.diasParado !== null && p.diasParado >= limiteDias)
-    .sort((a, b) => (b.diasParado ?? 0) - (a.diasParado ?? 0));
+  // Performance Engineering (item 9): essas três listas derivadas não
+  // dependiam de `editando`/`salvando`, mas recalculavam a cada render
+  // mesmo assim (ex. ao abrir o painel de reordenar seções) — memoizadas
+  // pras dependências reais de cada uma.
+  const parados = useMemo(
+    () =>
+      processos
+        .filter((p) => p.diasParado !== null && p.diasParado >= limiteDias)
+        .sort((a, b) => (b.diasParado ?? 0) - (a.diasParado ?? 0)),
+    [processos, limiteDias],
+  );
 
-  const dadosEtapas = etapas
-    .map((et) => ({ nome: et.nome, valor: contagemPorEtapa[et.nome] ?? 0 }))
-    .filter((d) => d.valor > 0);
+  const dadosEtapas = useMemo(
+    () => etapas.map((et) => ({ nome: et.nome, valor: contagemPorEtapa[et.nome] ?? 0 })).filter((d) => d.valor > 0),
+    [etapas, contagemPorEtapa],
+  );
 
-  const dadosEventos = eventos
-    .map((ev) => ({ nome: ev.valor, valor: contagemPorEvento[ev.id] ?? 0, cor: corEvento(ev.id, ev.cor).texto }))
-    .filter((d) => d.valor > 0);
+  const dadosEventos = useMemo(
+    () =>
+      eventos
+        .map((ev) => ({ nome: ev.valor, valor: contagemPorEvento[ev.id] ?? 0, cor: corEvento(ev.id, ev.cor).texto }))
+        .filter((d) => d.valor > 0),
+    [eventos, contagemPorEvento],
+  );
 
   // Fundo do card em branco plano, igual a todos os outros cards do
   // sistema — cada KPI tinha um fundo colorido/degradê diferente (5 tons de
