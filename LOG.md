@@ -1509,3 +1509,12 @@ Caio pediu pra tentar o vidro na janela mesmo assim, "seguindo as especificaçõ
 - **`app/exemplo-janela-vidro/page.tsx`** (novo, temporário): prova visual sobre fundo aurora com texto denso e tabela dentro, pra conferir legibilidade de verdade — validada visualmente (print) e por leitura de estilo computado (confirma que o fallback de transparência reduzida funciona).
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (5) · Vidro mais intenso na janela (confirmando os 50%/70% da especificação)
+
+Caio pediu mais vidro, "como na imagem" de referência, e perguntou se a especificação não dizia 50%/70% — confirmei que sim (seção 3.1 do `CRM_PREMIUM_SPEC.md`: "~50%" desktop, "~70%" mobile, intensidade conceitual, não opacidade CSS literal). A calibração "quase opaca" (95%) da rodada anterior ficou legível mas fraca demais — subi pra mesma calibração já usada nos cards do Painel (`vidro.padrao`/`.crm-cartao-vidro-claro`: blur 22px, saturate 180%, ~82% de opacidade de fundo).
+
+- **`app/globals.css`**: `.crm-painel-alto-fundo` (fundo atrás da janela de tela cheia do contrato) ganhou o mesmo fundo aurora do resto do sistema — pedido do Caio ("pode ser o mesmo fundo"). Sem isso o vidro não tinha nada atrás pra refratar, que foi exatamente a causa da primeira tentativa (rodada anterior a esta) ter parecido "sem graça". `.crm-painel-alto`/`.crm-modal-painel` (≥681px) atualizados pra essa intensidade mais forte, com a mesma luz/sombra em camadas (abaulado) dos cards.
+- **`app/exemplo-janela-vidro/pagina-cheia/page.tsx`** (novo, temporário): prova visual usando `PainelAlto` (versão de tela cheia) em vez de `PainelAltoModal` — a versão de modal tem uma camada escura (`.crm-modal-fundo`, o scrim) entre a página e a janela, que diluía o efeito e escondia o resultado real nos prints anteriores. Com o fundo aurora direto atrás (sem o scrim), o vidro aparece de verdade nas bordas/cantos da janela, com o texto denso e a tabela continuando legíveis.
+
+Build e `tsc --noEmit` limpos. Sem migração.
