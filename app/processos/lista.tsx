@@ -10,6 +10,7 @@ import { corEtapa } from "@/lib/cor-etapa";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
 import CardBento from "@/app/_ui/card-bento";
+import MedidorCircular from "@/app/_ui/medidor-circular";
 
 type DocumentComTransicao = Document & {
   startViewTransition?: (callback: () => void | Promise<void>) => void;
@@ -70,6 +71,10 @@ export type Processo = {
   corStatusEntrega: string | null;
   /** Mesma lógica, versão suave — aplicada como fundo do card inteiro. */
   fundoStatusEntrega: string | null;
+  /** Execução física do contrato (soma entregue / soma contratado entre
+   * todas as parcelas) — pedido do Caio pro anel de percentual no card.
+   * null quando o contrato não tem parcelas cadastradas. */
+  execucaoFisica: { entregue: number; contratado: number } | null;
 };
 
 // Cor de fundo da linha só quando o processo está de fato em cobertura de
@@ -539,6 +544,34 @@ export default function ListaProcessos({
                       </div>
                     </div>
                   </div>
+
+                  {/* Execução física (pedido do Caio): anel de percentual
+                     entregue/contratado somando todas as parcelas — reusa
+                     MedidorCircular (nunca fatia de pizza de verdade, ver
+                     comentário no próprio componente) pra ficar consistente
+                     com o resto do sistema. Só aparece quando há parcelas. */}
+                  {p.execucaoFisica && p.execucaoFisica.contratado > 0 && (
+                    <div
+                      style={{
+                        borderTop: `1px solid ${cor.borda}`,
+                        paddingTop: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: cor.texto }}>Execução física</div>
+                      <MedidorCircular
+                        valor={p.execucaoFisica.entregue}
+                        total={p.execucaoFisica.contratado}
+                        corPreenchido={cor.destaque}
+                        corTrilha={cor.borda}
+                        rotulo=""
+                        tamanho={56}
+                      />
+                    </div>
+                  )}
 
                   {/* Separador entre cada grupo de informação (pedido do
                      Caio) — mesmo padrão já usado no último andamento logo

@@ -8,7 +8,7 @@ import BarraTopo from "@/app/_ui/barra-topo";
 import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
 import Atividades from "@/app/_nav/atividades";
 import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
-import { statusContrato, gradienteOuSolido, resumoEntregas, type ParcelaStatus } from "@/lib/status-entrega";
+import { statusContrato, gradienteOuSolido, resumoEntregas, execucaoFisica, type ParcelaStatus } from "@/lib/status-entrega";
 
 export default async function ProcessosPage({
   searchParams,
@@ -198,6 +198,7 @@ export default async function ProcessosPage({
       relatorioDesatualizado: relatorioDesatualizado(p.relatorio_atualizado_em),
       corStatusEntrega: gradienteOuSolido(statusContrato(parcelas, hoje), corStatusEntrega),
       fundoStatusEntrega: gradienteOuSolido(statusContrato(parcelas, hoje), corStatusEntregaFundo),
+      execucaoFisica: parcelas.length > 0 ? execucaoFisica(parcelas) : null,
     };
   });
 

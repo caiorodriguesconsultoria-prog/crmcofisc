@@ -119,6 +119,20 @@ export function gradienteOuSolido(statusPresentes: StatusParcela[], cores: Recor
   return `linear-gradient(90deg, ${lista.map((s) => cores[s]).join(", ")})`;
 }
 
+// Execução física do contrato (pedido do Caio): soma do que já foi
+// entregue (por parcela, mesma regra de totalLancado — exclui avaria/
+// desvio pra não contar duas vezes) dividida pela soma do contratado. Vira
+// o anel de percentual no card de Contratos.
+export function execucaoFisica(parcelas: ParcelaStatus[]): { entregue: number; contratado: number } {
+  return parcelas.reduce(
+    (soma, p) => ({
+      entregue: soma.entregue + totalLancado(p.lancamentos),
+      contratado: soma.contratado + p.quantidade,
+    }),
+    { entregue: 0, contratado: 0 },
+  );
+}
+
 export type ResumoEntregaParcela = { numero: number; data: string };
 
 // Resumo pro card de Contratos (pedido do Caio): a próxima parcela ainda
