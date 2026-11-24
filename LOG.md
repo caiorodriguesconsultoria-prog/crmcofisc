@@ -1547,3 +1547,13 @@ Caio pediu pra usar a skill `premium-liquid-ui` pra ajustar o vidro do laborató
 **Limitação importante, por regra da própria skill ("não declare teste executado sem evidência")**: testado SÓ em Chromium headless via Playwright neste ambiente. Nenhuma evidência de Safari/WebKit ou Firefox — não afirmar suporte lá até testar de verdade (ou Caio confirmar manualmente).
 
 Nenhum componente de produto foi alterado — só o laboratório. Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (8) · Opacidade recalibrada (janela 50% / cards 70%) + layout sem rolagem no desktop
+
+Caio esclareceu a relação opacidade/transparência (opacidade alta = menos transparente) e pediu valores explícitos: ~50% na janela do contrato, ~70% nos cards do painel. Também pediu que os cards do `/design-lab` ficassem mais organizados (tamanho, alinhamento, proximidade) pra caber a tela inteira no desktop sem precisar rolar pra cima/baixo.
+
+- **`app/design-lab/_glass/componentes.tsx`**: `materialVidro()` ganhou um parâmetro opcional `alphaFundoOverride`, sem alterar os presets compartilhados `vidro.padrao`/`vidro.intenso` (sidebar/dock/popover continuam como estavam — não foi pedido mexer neles). `GlassCard` passou a fixar `alphaFundo={0.7}`; `GlassWindow` passou a fixar `alphaFundo={0.5}` (mais vidro, mais transparente, porque é a superfície decorativa principal, não de leitura densa).
+- **`app/design-lab/page.tsx`** (reorganizado): no desktop, o container inteiro (`main`) passou a ter `height: 100vh` + `overflow: hidden`, com cabeçalho/busca compactos, KPIs em grade fixa de 5 colunas, e uma grade bento 3×2 ocupando o espaço restante (`flex: 1 1 auto`, `minHeight: 0`) em vez de empilhar seções com `marginBottom`. Isso também preencheu uma lacuna já identificada numa comparação com a referência: adicionado o card "Contratos com atraso" que faltava (completa a grade 3×2) e uma barra de progresso real em "Cobertura de férias" (antes só tinha o número). No mobile o comportamento não mudou — continua rolando normalmente, a restrição de altura é só pra desktop.
+- Verificado por script Playwright (`document.documentElement.scrollHeight === window.innerHeight` em 1440×900): sem rolagem vertical.
+
+Nenhum componente de produto foi alterado — só o laboratório. Build e `tsc --noEmit` limpos. Sem migração.

@@ -10,6 +10,11 @@ import { cor, corEscuro } from "@/lib/theme";
 // dados fictícios, sem mutação real, não é tela do produto. Objetivo:
 // comparar o Design System Liquid Glass novo com a referência aprovada
 // ANTES de tocar no CRM funcional (seção 10 — aguardar aprovação visual).
+//
+// Layout no desktop (Caio: "ver tudo sem rolar pra cima e pra baixo"):
+// cabeçalho + KPIs + grade 3x2 ocupam a altura inteira do viewport
+// (100vh, sem scroll), com gaps/paddings mais justos. No mobile continua
+// rolando normalmente — a restrição é só pra tela cheia de desktop.
 export default function DesignLabPage() {
   const [escuro, setEscuro] = useState(false);
   // Protótipo de laboratório, não produto — só pra ter paridade mínima com
@@ -25,7 +30,7 @@ export default function DesignLabPage() {
   const paleta = escuro ? corEscuro : cor;
 
   return (
-    <div style={{ minHeight: "100vh", position: "relative" }}>
+    <div style={{ height: desktop ? "100vh" : "auto", minHeight: "100vh", position: "relative", overflow: desktop ? "hidden" : "visible" }}>
       <FiltroRefracaoSVG />
       <AmbientBackground escuro={escuro} />
 
@@ -41,13 +46,24 @@ export default function DesignLabPage() {
         />
       )}
 
-      <main style={{ marginLeft: desktop ? 296 : 0, padding: desktop ? "24px 24px 100px" : "16px 16px 90px", maxWidth: 1400 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 20 }}>
+      <main
+        style={{
+          marginLeft: desktop ? 288 : 0,
+          padding: desktop ? "16px 20px" : "16px 16px 90px",
+          maxWidth: 1400,
+          height: desktop ? "100vh" : "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          boxSizing: "border-box",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", flex: "0 0 auto" }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: paleta.texto }}>Painel</h1>
-            <p style={{ margin: "2px 0 0", fontSize: 13, color: paleta.textoTerciario }}>Visão geral da gestão contratual</p>
+            <h1 style={{ margin: 0, fontSize: 19, fontWeight: 700, color: paleta.texto }}>Painel</h1>
+            <p style={{ margin: "1px 0 0", fontSize: 12, color: paleta.textoTerciario }}>Visão geral da gestão contratual</p>
           </div>
-          <div style={{ flex: "1 1 280px", maxWidth: 420 }}>
+          <div style={{ flex: "1 1 260px", maxWidth: 400 }}>
             <GlassInput escuro={escuro} placeholder="Buscar contrato, medicamento, processo..." />
           </div>
           <GlassButton escuro={escuro} onClick={() => setEscuro((v) => !v)}>
@@ -55,7 +71,7 @@ export default function DesignLabPage() {
           </GlassButton>
         </div>
 
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, flex: "0 0 auto" }}>
           {[
             { rotulo: "Contratos", valor: "17" },
             { rotulo: "Concluídos", valor: "5" },
@@ -63,24 +79,22 @@ export default function DesignLabPage() {
             { rotulo: "Relatório desatualizado", valor: "9" },
             { rotulo: "Tarefas pendentes", valor: "2" },
           ].map((k) => (
-            <div key={k.rotulo} style={{ flex: "1 1 150px", maxWidth: 220 }}>
-              <GlassCard escuro={escuro} titulo={k.rotulo}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: paleta.texto }}>{k.valor}</div>
-              </GlassCard>
-            </div>
+            <GlassCard key={k.rotulo} escuro={escuro} titulo={k.rotulo} style={{ padding: 12 }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: paleta.texto }}>{k.valor}</div>
+            </GlassCard>
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 16 }}>
-          <GlassCard escuro={escuro} titulo="Contratos por etapa">
-            <div style={{ display: "flex", gap: 10, alignItems: "flex-end", height: 110, marginTop: 6 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridTemplateRows: "repeat(2, 1fr)", gap: 10, flex: "1 1 auto", minHeight: 0 }}>
+          <GlassCard escuro={escuro} titulo="Contratos por etapa" style={{ minHeight: 0, overflow: "hidden" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 70, marginTop: 4 }}>
               {[{ v: 10, c: "#3578B8" }, { v: 4, c: "#D19936" }, { v: 3, c: "#2D9570" }, { v: 2, c: "#C66846" }].map((b, i) => (
-                <div key={i} style={{ width: 28, height: `${b.v * 9}px`, borderRadius: "8px 8px 0 0", background: b.c }} />
+                <div key={i} style={{ width: 22, height: `${b.v * 6}px`, borderRadius: "6px 6px 0 0", background: b.c }} />
               ))}
             </div>
           </GlassCard>
 
-          <GlassCard escuro={escuro} titulo="Entregas previstas · próximos 30 dias">
+          <GlassCard escuro={escuro} titulo="Entregas previstas · próximos 30 dias" style={{ minHeight: 0, overflow: "hidden" }}>
             <GlassTable
               escuro={escuro}
               colunas={["Contrato", "Parcela", "Data"]}
@@ -92,23 +106,37 @@ export default function DesignLabPage() {
             />
           </GlassCard>
 
-          <GlassCard escuro={escuro} titulo="Cobertura de férias">
-            <div style={{ fontSize: 28, fontWeight: 700, color: paleta.texto }}>75%</div>
-            <div style={{ fontSize: 12, color: paleta.textoTerciario, marginTop: 2 }}>3 de 4 coordenações</div>
+          <GlassCard escuro={escuro} titulo="Cobertura de férias" style={{ minHeight: 0, overflow: "hidden" }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: paleta.texto }}>75%</div>
+            <div style={{ fontSize: 11, color: paleta.textoTerciario, marginTop: 2, marginBottom: 6 }}>3 de 4 coordenações</div>
+            <div style={{ height: 6, borderRadius: 999, background: escuro ? "rgba(255,255,255,.12)" : "rgba(32,31,29,.08)" }}>
+              <div style={{ width: "75%", height: "100%", borderRadius: 999, background: cor.verdeEscuro }} />
+            </div>
           </GlassCard>
-        </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
-          <GlassCard escuro={escuro} titulo="Atividades prioritárias">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: paleta.texto }}>
+          <GlassCard escuro={escuro} titulo="Atividades prioritárias" style={{ minHeight: 0, overflow: "hidden" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, color: paleta.texto }}>
               <div>☐ Inserir pauta de distribuição — Hoje</div>
               <div>☐ Atualizar cronograma de entregas — 26 nov</div>
             </div>
           </GlassCard>
 
-          <GlassSurface escuro={escuro} style={{ padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#9B7A2E", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Insights da IA · beta</div>
-            <p style={{ fontSize: 13, color: paleta.texto, margin: "0 0 10px" }}>2 entregas podem atrasar nos próximos 15 dias.</p>
+          <GlassCard escuro={escuro} titulo="Contratos com atraso" style={{ minHeight: 0, overflow: "hidden" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, color: paleta.texto }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>294/2026</span>
+                <span style={{ color: cor.atencao, fontWeight: 600 }}>84 dias</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>255/2026</span>
+                <span style={{ color: cor.atencao, fontWeight: 600 }}>56 dias</span>
+              </div>
+            </div>
+          </GlassCard>
+
+          <GlassSurface escuro={escuro} style={{ padding: 12, minHeight: 0, overflow: "hidden" }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: "#9B7A2E", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 5 }}>Insights da IA · beta</div>
+            <p style={{ fontSize: 12.5, color: paleta.texto, margin: "0 0 8px" }}>2 entregas podem atrasar nos próximos 15 dias.</p>
             <GlassButton escuro={escuro} primario>
               Analisar com a IA
             </GlassButton>

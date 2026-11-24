@@ -19,14 +19,18 @@ import { backdropRefracao } from "./refracao";
 
 type Intensidade = "padrao" | "intenso";
 
-function materialVidro(intensidade: Intensidade, escuro: boolean): React.CSSProperties {
+function materialVidro(intensidade: Intensidade, escuro: boolean, alphaFundoOverride?: number): React.CSSProperties {
   const preset = vidro[intensidade];
+  // Override pontual (Caio: janela ~50% opaco/mais vidro, cards ~70% opaco/
+  // mais sólido) — não mexe nos presets padrao/intenso compartilhados
+  // (sidebar, dock, popover continuam na calibração anterior).
+  const alphaFundo = alphaFundoOverride ?? preset.alphaFundo;
   const luz = escuro ? "255,255,255" : "255,255,255";
   const sombraBase = escuro ? "0,0,0" : "32,31,29";
   return {
     background: `radial-gradient(130% 100% at 20% 0%, rgba(${luz},${escuro ? 0.1 : 0.55}) 0%, rgba(${luz},0) 55%),
       linear-gradient(180deg, rgba(${luz},${escuro ? 0.07 : 0.35}) 0%, rgba(${luz},0) 32%, rgba(${sombraBase},${escuro ? 0.3 : 0.04}) 100%),
-      ${escuro ? `rgba(14,21,38,${preset.alphaFundo - 0.08})` : `rgba(255,255,255,${preset.alphaFundo})`}`,
+      ${escuro ? `rgba(14,21,38,${alphaFundo - 0.08})` : `rgba(255,255,255,${alphaFundo})`}`,
     // Propriedade sem prefixo recebe a refração (feDisplacementMap via
     // url(#vidro-refracao), ver refracao.tsx) — motores que não entendem
     // filtro de referência em backdrop-filter (WebKit, historicamente)
@@ -54,37 +58,40 @@ function materialVidro(intensidade: Intensidade, escuro: boolean): React.CSSProp
 type PropsBase = {
   escuro?: boolean;
   intensidade?: Intensidade;
+  alphaFundo?: number;
   style?: React.CSSProperties;
   children?: React.ReactNode;
 };
 
 /** Superfície de vidro genérica — base de todos os outros componentes. */
-export function GlassSurface({ escuro, intensidade = "padrao", style, children }: PropsBase) {
+export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style, children }: PropsBase) {
   return (
-    <div style={{ borderRadius: raio.card, zIndex: elevacao.card, ...materialVidro(intensidade, !!escuro), ...style }}>
+    <div style={{ borderRadius: raio.card, zIndex: elevacao.card, ...materialVidro(intensidade, !!escuro, alphaFundo), ...style }}>
       {children}
     </div>
   );
 }
 
-/** Card pequeno (KPI, widget) — mesmo material, padding/raio menores. */
+/** Card pequeno (KPI, widget) — ~70% opaco (Caio): mais sólido que a janela,
+ * já que carrega número/texto curto, mas ainda com vidro visível. */
 export function GlassCard({ escuro, titulo, style, children }: PropsBase & { titulo?: string }) {
   const paleta = escuro ? corEscuro : cor;
   return (
-    <GlassSurface escuro={escuro} style={{ padding: 16, ...style }}>
+    <GlassSurface escuro={escuro} alphaFundo={0.7} style={{ padding: 16, ...style }}>
       {titulo && <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{titulo}</div>}
       {children}
     </GlassSurface>
   );
 }
 
-/** Janela elevada (contrato aberto, modais) — elevação maior, vidro padrão
- * (~50%), nunca "intenso" aqui: janela carrega texto denso/tabela, intensidade
+/** Janela elevada (contrato aberto, modais) — ~50% opaco (Caio): mais vidro,
+ * mais transparente que os cards, porque é a superfície decorativa principal
+ * da tela; nunca "intenso" aqui: janela carrega texto denso/tabela, intensidade
  * alta é reservada pra elementos de navegação/decoração (seção 6: "evitar
  * vidro excessivo em listas densas"). */
 export function GlassWindow({ escuro, style, children }: PropsBase) {
   return (
-    <GlassSurface escuro={escuro} intensidade="padrao" style={{ borderRadius: raio.painel, zIndex: elevacao.janela, padding: 0, overflow: "hidden", ...style }}>
+    <GlassSurface escuro={escuro} intensidade="padrao" alphaFundo={0.5} style={{ borderRadius: raio.painel, zIndex: elevacao.janela, padding: 0, overflow: "hidden", ...style }}>
       {children}
     </GlassSurface>
   );
