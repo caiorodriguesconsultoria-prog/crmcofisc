@@ -145,6 +145,16 @@ export default function ListaProcessos({
     setEventosState(eventos);
   }, [eventos]);
 
+  // Debounce da busca (Performance Engineering, item 3): o filtro roda sobre
+  // a lista inteira de contratos a cada letra digitada — sem isso, recalcula
+  // (e re-renderiza a lista) em cada tecla. O campo em si fica instantâneo
+  // (usa `busca`, não `buscaDebounced`), só o filtro espera a digitação parar.
+  const [buscaDebounced, setBuscaDebounced] = useState(busca);
+  useEffect(() => {
+    const id = setTimeout(() => setBuscaDebounced(busca), 200);
+    return () => clearTimeout(id);
+  }, [busca]);
+
   async function criarEtapa() {
     if (!nomeNovaEtapa.trim()) return;
     setSalvandoNovo(true);
@@ -189,7 +199,7 @@ export default function ListaProcessos({
 
   const filtrados = useMemo(() => {
     const hoje = new Date().toISOString().slice(0, 10);
-    const termo = busca.trim().toLowerCase();
+    const termo = buscaDebounced.trim().toLowerCase();
     const lista = processos.filter((p) => {
       const concluido = p.situacao === "concluido";
       if (aba === "ativos" && concluido) return false;
@@ -215,7 +225,7 @@ export default function ListaProcessos({
     // moderno), então quem não tem evento hoje mantém a ordem que já tinha.
     const comEventoHoje = (p: Processo) => p.proximoAgendamento?.data === hoje;
     return [...lista].sort((a, b) => Number(comEventoHoje(b)) - Number(comEventoHoje(a)));
-  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, somenteAtrasados, somenteDesatualizados, busca, aba]);
+  }, [processos, coordenacaoId, formaEntregaId, eventoId, responsavelId, etapa, somenteAtrasados, somenteDesatualizados, buscaDebounced, aba]);
 
   const totalConcluidos = useMemo(() => processos.filter((p) => p.situacao === "concluido").length, [processos]);
   const totalAtivos = processos.length - totalConcluidos;
