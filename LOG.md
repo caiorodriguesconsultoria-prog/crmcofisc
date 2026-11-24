@@ -1487,3 +1487,16 @@ Quarta etapa do plano de 10 (seção 6 do `CRM_PREMIUM_SPEC.md` — "Contratos e
 Validei a troca de redirect com Playwright (navegação real: `/processos/concluidos` → `/processos` → `/login`, confirmando a cadeia, já que não há sessão de verdade neste ambiente). A lógica de `estaAtivo()` com query string foi conferida por leitura de código (rastreei os dois casos — com e sem `?aba=concluidos`) em vez de screenshot ao vivo, porque a tela de prova usada neste ambiente não roda na rota `/processos` de verdade (não dá pra autenticar aqui).
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (3) · CRM Premium — Etapa 5: controle segmentado animado no contrato aberto
+
+Quinta etapa do plano de 10 (seção 7 do `CRM_PREMIUM_SPEC.md` — "Contrato aberto: Resumo, Andamentos, Relatório"). Ao investigar o cabeçalho do contrato aberto (`app/processos/[id]/conteudo.tsx`), confirmei que número, coordenação, etapa, eventos, NUP, cópia, prazo/pendência, navegação anterior/próximo, fechar e concluir já existem — a especificação pede exatamente isso, sem nada novo a fazer aí. O único item explicitamente pedido e ainda não implementado era o "controle segmentado animado Resumo/Andamentos/Relatório".
+
+- **`app/processos/[id]/abas.tsx`**: o seletor de abas (que já existia, com fundo branco estático atrás da aba ativa) virou o `ControleSegmentado` (componente da Etapa 1, com indicador deslizante via `layoutId` do framer-motion) — mesma lógica de estado e de montagem preguiçosa (`jaAbriu`) de antes, só trocado o visual do seletor em si.
+- **`app/exemplo-abas/page.tsx`** (novo, temporário): prova visual do controle nas três abas, sem precisar de login.
+
+**Decisão deliberada de NÃO mexer nesta rodada**: a especificação (seção 7) pede "janela flutuante com material tridimensional" pro contrato aberto — ou seja, vidro translúcido na janela/modal. Isso contraria uma decisão já tomada e validada com o Caio em rodada anterior (documentada em `lib/theme.ts`, comentário do objeto `card`): vidro translúcido sobre fundo branco sólido (que é o caso do modal/tela cheia do contrato — `.crm-painel-alto`/`.crm-modal-painel`) já causou perda de contraste e leitura de "informação sumiu" quando testado. Preferi não reverter essa decisão sem confirmação explícita, em vez de aplicar e arriscar o mesmo problema de novo. Pergunta em aberto pro Caio: aplicar vidro na janela do contrato mesmo assim (sabendo do risco já visto) ou manter opaca?
+
+**Fora do escopo desta rodada** (seções 8/9 do spec — Andamentos estilo "Apple Notes" e Relatório estilo "Apple Pages"): são redesenhos visuais bem maiores, de telas com muita informação densa (tabelas, timeline, formulários) — ficam para rodadas próprias, com aprovação visual separada, em vez de arriscar tudo de uma vez.
+
+Build e `tsc --noEmit` limpos. Sem migração.
