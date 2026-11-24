@@ -1452,3 +1452,23 @@ Segunda etapa do plano de 10 (seção 15 do `CRM_PREMIUM_SPEC.md`), usando a ima
 Validado com Playwright numa tela de prova isolada (`app/exemplo-navegacao/page.tsx`, sem precisar de login) em desktop e mobile, incluindo o popover de conta e o menu "Mais" — zero erro de console, screenshots revisadas.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 · CRM Premium — Etapa 3: indicadores novos do Painel
+
+Terceira etapa do plano de 10 (seção 5/5.1 do `CRM_PREMIUM_SPEC.md`). Critérios usados são os já confirmados pelo Caio na rodada de perguntas (seletor 7/15/30 dias; 30 dias pra "sem movimentação"; 7 dias pra "atividades concluídas") ou reaproveitados de regra já existente no sistema — nenhum foi inventado. Indicadores que dependem de algo ainda não implementado ou ainda ambíguo ficaram de fora desta rodada (ver pendências abaixo).
+
+- **`lib/relatorio-status.ts`** (novo): `relatorioDesatualizado()` centralizado — antes duplicado em `app/processos/page.tsx` e `app/api/assistente/route.ts`, agora os dois importam daqui; usado também no novo KPI do Painel.
+- **`app/dashboard/page.tsx`**: três novos cálculos, todos reaproveitando dados/consultas que já existiam (`execucoesPendentesRaw` já alimentava o sininho de alerta) — `relatoriosDesatualizados` e `contratosComEntregaAtrasada` contam CONTRATOS distintos, não parcelas (pedido explícito da especificação); `entregasPrevistas` é a lista completa de parcelas pendentes futuras (o widget filtra pela janela). Nova consulta pra `atividadesConcluidas7Dias` (tarefas concluídas nos últimos 7 dias).
+- **`app/dashboard/painel-dashboard.tsx`**: KPIs novos (Entrega atrasada, Relatório desatualizado, Atividades concluídas) ao lado dos dois já existentes; novo widget "Entregas previstas" com `ControleSegmentado` (7/15/30 dias, componente da Etapa 1); limite padrão de "Contratos parados" (sem movimentação) ajustado de 15 para 30 dias.
+- **`app/processos/lista.tsx`**: os filtros rápidos "Entrega Atrasada"/"Relatório Desatualizado" (já existiam como toggle) agora também abrem via `?filtro=atrasados`/`?filtro=desatualizados` — os dois KPIs novos do Painel linkam pra cá já filtrado, conforme a especificação pede ("todo KPI deve abrir os registros com o filtro correspondente").
+- **`app/exemplo-painel/page.tsx`** (novo, temporário): prova visual dos indicadores novos com dados fictícios, sem precisar de login — achei e corrigi de passagem uma fragilidade de build (a página tentava pré-renderizar estaticamente e quebrava sem as variáveis do Supabase, mesmo não precisando de nenhuma; virou `export const dynamic = "force-dynamic"`).
+
+**Pendências desta etapa (não implementadas, registradas pra retomar depois):**
+- KPI "Tarefas pendentes" (aparece na imagem de referência) — não implementei porque a definição exata não foi confirmada ainda (hoje+vencidas? só hoje? + futuras?). Preciso perguntar ao Caio antes de inventar o critério.
+- "Insights da IA" (seção 5.1, sob pedido confirmado) — é uma funcionalidade nova (chamada à IA sob demanda), não só um indicador; fica pra ser desenhada/auditada à parte, não implementada junto dos KPIs.
+- "Execução física" agregada no Painel (todo o sistema, não por contrato) — a especificação avisa explicitamente pra não somar unidades incompatíveis entre itens diferentes; preciso entender melhor os dados antes de agregar.
+- "Próximos vencimentos contratuais" considerando aditivos — depende do Termo Aditivo (Feature A, ainda não implementada).
+- "Aguardando defesa prévia/área técnica/assinatura" — depende da pergunta sobre etapas/tags que ficou em aberto há algumas rodadas.
+- Gráfico "Contratos por etapa" continua em barras, não em rosca (donut) como a imagem de referência — é só visual, mudança de baixo risco, fica pra uma rodada de polimento.
+
+Build e `tsc --noEmit` limpos (testados inclusive sem nenhuma variável de ambiente configurada). Sem migração.

@@ -12,6 +12,7 @@ import MedidorCircular from "@/app/_ui/medidor-circular";
 import { BotaoCopiar } from "@/app/_ui/campo";
 import CardBento from "@/app/_ui/card-bento";
 import Kpi from "@/app/_ui/kpi";
+import ControleSegmentado from "@/app/_ui/controle-segmentado";
 
 type Processo = {
   id: string;
@@ -35,16 +36,24 @@ type ProcessoAtividadeHoje = {
 
 type Evento = { id: string; valor: string; cor: string | null };
 type Etapa = { id: string; nome: string };
+type EntregaPrevista = { id: string; processoId: string; numeroContrato: string; numeroParcela: number; data: string };
 
 // IDs fixos dos widgets reorganizáveis do Painel (modo "Editar", pedido do
 // Caio) — a ordem escolhida fica salva em `painel_layout` (ver migração
 // 0049). ORDEM_PADRAO é a ordem de fábrica, usada quando a pessoa ainda não
 // reorganizou nada ou quando um widget novo aparece (entra no fim).
-type SecaoId = "kpis" | "agenda" | "coordenacao" | "graficos" | "parados";
+type SecaoId = "kpis" | "coordenacao" | "entregas" | "agenda" | "graficos" | "parados";
 // "coordenacao" logo depois de "kpis" — pedido do Caio, pra formar uma
 // grade única (KPIs em cima, coordenações embaixo) em vez de aparecer só
-// depois da Agenda.
-const ORDEM_PADRAO: SecaoId[] = ["kpis", "coordenacao", "agenda", "graficos", "parados"];
+// depois da Agenda. "entregas" (CRM Premium, Etapa 3) logo depois —
+// monitoramento de prioridades vem antes de Agenda/gráficos, seguindo a
+// ordem "visão executiva → prioridades → monitoramento → análise" da
+// seção 5.2 do CRM_PREMIUM_SPEC.md.
+const ORDEM_PADRAO: SecaoId[] = ["kpis", "coordenacao", "entregas", "agenda", "graficos", "parados"];
+
+function formatarDataCurta(data: string) {
+  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
 
 // Tooltip escuro padrão dos gráficos do Painel — só o nome e o valor, sem
 // nenhuma legenda fixa na tela (pedido do Caio: "não precisa colocar os
@@ -76,6 +85,10 @@ export default function PainelDashboard({
   processosAtividadeHoje,
   eventos,
   etapas,
+  relatoriosDesatualizados,
+  contratosComEntregaAtrasada,
+  entregasPrevistas,
+  atividadesConcluidas7Dias,
 }: {
   /** ID da pessoa logada — usado só pra salvar a ordem dos widgets na
    * conta. Sem isso (caso raro, cadastro sem linha em `pessoas`), o modo
@@ -94,11 +107,24 @@ export default function PainelDashboard({
   processosAtividadeHoje: ProcessoAtividadeHoje[];
   eventos: Evento[];
   etapas: Etapa[];
+  /** Contratos ativos distintos (não parcelas) com relatório desatualizado — CRM Premium, Etapa 3. */
+  relatoriosDesatualizados: number;
+  /** Contratos ativos distintos (não parcelas) com ao menos uma parcela em atraso. */
+  contratosComEntregaAtrasada: number;
+  /** Parcelas pendentes com data prevista hoje ou no futuro (todas — o widget filtra pela janela escolhida). */
+  entregasPrevistas: EntregaPrevista[];
+  /** Tarefas concluídas nos últimos 7 dias (janela confirmada pelo Caio). */
+  atividadesConcluidas7Dias: number;
 }) {
   const supabase = createClient();
-  const [limiteDias, setLimiteDias] = useState(15);
+  // "Sem movimentação" (Contratos parados) — 30 dias, critério confirmado
+  // pelo Caio na rodada de indicadores (era 15, ajustado nesta etapa).
+  const [limiteDias, setLimiteDias] = useState(30);
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  // "Entregas previstas" — seletor 7/15/30 dias, critério confirmado pelo
+  // Caio ("seletor 7/15/30 dias").
+  const [janelaEntregas, setJanelaEntregas] = useState<"7" | "15" | "30">("15");
 
   // Performance Engineering (item 9): essas três listas derivadas não
   // dependiam de `editando`/`salvando`, mas recalculavam a cada render
@@ -125,16 +151,33 @@ export default function PainelDashboard({
     [eventos, contagemPorEvento],
   );
 
+  const entregasNaJanela = useMemo(() => {
+    const dias = Number(janelaEntregas);
+    const hoje = new Date().toISOString().slice(0, 10);
+    const limite = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return entregasPrevistas.filter((e) => e.data >= hoje && e.data <= limite);
+  }, [entregasPrevistas, janelaEntregas]);
+
   // Fundo do card em branco plano, igual a todos os outros cards do
   // sistema — cada KPI tinha um fundo colorido/degradê diferente (5 tons de
   // "chrome" diferentes na mesma tela), que é exatamente o padrão que a
   // auditoria de design pede pra evitar: cor deve ficar no conteúdo (o
   // número, via corNumero), não espalhada pelo fundo do card.
   // Pedido do Caio: tirar "Vencem em 7 dias", "Com ocorrência" e "Vencendo
-  // hoje" — ficam só os dois KPIs abaixo.
+  // hoje" — ficavam só os dois primeiros KPIs abaixo. CRM Premium, Etapa 3
+  // (seção 5.1) acrescentou os três seguintes, com critério já reaproveitado
+  // de regra existente (nunca inventado): Entregas atrasadas e Relatórios
+  // desatualizados usam a mesma lógica já usada em Contratos/Assistente de
+  // IA, contando CONTRATOS distintos, não parcelas. Atividades concluídas
+  // usa a janela de 7 dias confirmada pelo Caio; sem link porque não existe
+  // uma lista agregada de tarefas no sistema (tarefa vive dentro de cada
+  // contrato) — ficaria "filtro" nenhum pra abrir.
   const kpis = [
     { rotulo: "Contratos ativos", valor: ativos, corNumero: cor.azulEscuro },
     { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, href: "/processos/concluidos" },
+    { rotulo: "Entrega atrasada", valor: contratosComEntregaAtrasada, corNumero: cor.urgente, href: "/processos?filtro=atrasados" },
+    { rotulo: "Relatório desatualizado", valor: relatoriosDesatualizados, corNumero: cor.vermelhoEscuro, href: "/processos?filtro=desatualizados" },
+    { rotulo: "Atividades concluídas (7 dias)", valor: atividadesConcluidas7Dias, corNumero: cor.verdeEscuro },
   ];
 
   // Cada widget reorganizável vira um nó só, guardado num mapa por ID —
@@ -255,6 +298,43 @@ export default function PainelDashboard({
                   <Kpi rotulo={c.sigla} valor={c.total} corNumero={PALETA_VIVA[i % PALETA_VIVA.length]} centralizado />
                 </CardBento>
               </div>
+            ))}
+          </div>
+        )}
+      </div>
+    ),
+    entregas: (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: cor.texto, margin: 0 }}>Entregas previstas</h2>
+          <div style={{ marginLeft: "auto" }}>
+            <ControleSegmentado
+              tamanho="compacto"
+              opcoes={[
+                { valor: "7" as const, rotulo: "7 dias" },
+                { valor: "15" as const, rotulo: "15 dias" },
+                { valor: "30" as const, rotulo: "30 dias" },
+              ]}
+              valor={janelaEntregas}
+              aoMudar={setJanelaEntregas}
+            />
+          </div>
+        </div>
+        <p style={{ fontSize: 11.5, color: cor.textoTerciario, margin: "0 0 8px" }}>Parcelas pendentes com prazo dentro da janela escolhida</p>
+        {entregasNaJanela.length === 0 ? (
+          <p style={{ color: cor.textoTerciario, fontSize: 13, margin: 0 }}>Nenhuma entrega prevista nessa janela.</p>
+        ) : (
+          <div className="crm-grid-kpis-painel" style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            {entregasNaJanela.map((e, i) => (
+              <Link key={e.id} href={`/processos/${e.processoId}`} style={{ textDecoration: "none", display: "block", flex: "1 1 170px", maxWidth: 220, minWidth: 0 }}>
+                <CardBento indice={i} clicavel pequeno vidroClaro>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <strong style={{ fontSize: 14, color: cor.texto }}>{e.numeroContrato}</strong>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: cor.textoSecundario }}>{e.numeroParcela}ª parcela</span>
+                    <span style={{ fontSize: 12, color: cor.destaque, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatarDataCurta(e.data)}</span>
+                  </div>
+                </CardBento>
+              </Link>
             ))}
           </div>
         )}

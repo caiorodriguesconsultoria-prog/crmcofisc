@@ -4,6 +4,7 @@ import { betaTool } from "@anthropic-ai/sdk/helpers/beta/json-schema";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { statusParcela, type ParcelaStatus } from "@/lib/status-entrega";
+import { relatorioDesatualizado } from "@/lib/relatorio-status";
 
 // Assistente de IA do CRM (Fase 1: pesquisa sobre contratos) — pedido do
 // Caio pra responder perguntas em linguagem natural usando os dados do
@@ -14,14 +15,6 @@ import { statusParcela, type ParcelaStatus } from "@/lib/status-entrega";
 // sozinho o que essa pessoa pode ver (hoje só o Caio; quando a equipe
 // entrar, cada um continua vendo só o que já veria em qualquer outra tela
 // do CRM — nenhum acesso "admin" solto aqui).
-
-const LIMITE_DIAS_RELATORIO = 10;
-
-function relatorioDesatualizado(relatorioAtualizadoEm: string | null): boolean {
-  if (!relatorioAtualizadoEm) return true;
-  const dias = (Date.now() - new Date(relatorioAtualizadoEm).getTime()) / (1000 * 60 * 60 * 24);
-  return dias > LIMITE_DIAS_RELATORIO;
-}
 
 const SISTEMA = `Você é o assistente de IA do CRM-COFISC (Coordenação-Geral de Fiscalização de Contratos, DAF/SCTIE, Ministério da Saúde). Ajuda o Caio a pesquisar informações sobre os contratos cadastrados no sistema.
 

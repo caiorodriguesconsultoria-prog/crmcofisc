@@ -126,8 +126,11 @@ export default function ListaProcessos({
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
   const [busca, setBusca] = useState(() => searchParams.get("q") ?? "");
   const [aba, setAba] = useState<"ativos" | "concluidos">("ativos");
-  const [somenteAtrasados, setSomenteAtrasados] = useState(false);
-  const [somenteDesatualizados, setSomenteDesatualizados] = useState(false);
+  // CRM Premium, Etapa 3 — KPIs do Painel linkam pra cá com
+  // ?filtro=atrasados/desatualizados ("todo KPI deve abrir os registros
+  // com o filtro correspondente", seção 5.2 do CRM_PREMIUM_SPEC.md).
+  const [somenteAtrasados, setSomenteAtrasados] = useState(() => searchParams.get("filtro") === "atrasados");
+  const [somenteDesatualizados, setSomenteDesatualizados] = useState(() => searchParams.get("filtro") === "desatualizados");
 
   const [etapasState, setEtapasState] = useState(etapas);
   const [eventosState, setEventosState] = useState(eventos);
@@ -195,6 +198,8 @@ export default function ListaProcessos({
     setEtapa(searchParams.get("etapa") ?? "");
     setEventoId(searchParams.get("evento") ?? "");
     setBusca(searchParams.get("q") ?? "");
+    setSomenteAtrasados(searchParams.get("filtro") === "atrasados");
+    setSomenteDesatualizados(searchParams.get("filtro") === "desatualizados");
   }, [searchParams]);
 
   const filtrados = useMemo(() => {

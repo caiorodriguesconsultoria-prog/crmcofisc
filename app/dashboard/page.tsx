@@ -7,6 +7,7 @@ import BarraTopo from "@/app/_ui/barra-topo";
 import BuscaGlobal from "@/app/_ui/busca-global";
 import { getTagsEvento, getEtapasKanban } from "@/lib/dados-referencia";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
+import { relatorioDesatualizado } from "@/lib/relatorio-status";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -32,11 +33,12 @@ export default async function DashboardPage() {
     { data: pessoaAtual },
     eventos,
     etapas,
+    { count: atividadesConcluidas7Dias },
   ] = await Promise.all([
     supabase
       .from("processos")
       .select(
-        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, titular_id, responsavel_atual_id, coordenacao_id, coordenacoes(sigla), fornecedores(nome), processo_tags(tags(id, valor, cor))",
+        "id, numero_contrato, nup_principal, objeto, etapa_atual, prazo_data, conclusao_tipo, titular_id, responsavel_atual_id, coordenacao_id, relatorio_atualizado_em, coordenacoes(sigla), fornecedores(nome), processo_tags(tags(id, valor, cor))",
       ),
     supabase.from("processo_kanban_historico").select("id, processo_id, entrada_em").is("saida_em", null),
     supabase.from("processo_tag_historico").select("id, processo_id").is("fim_em", null),
@@ -52,12 +54,19 @@ export default async function DashboardPage() {
       .eq("agendamento_data", hoje),
     supabase
       .from("processo_execucoes")
-      .select("id, numero, data_prevista, processos(id, numero_contrato)")
+      .select("id, numero, data_prevista, processos(id, numero_contrato, conclusao_tipo)")
       .is("data_entrega", null)
       .not("data_prevista", "is", null),
     supabase.from("pessoas").select("id").eq("auth_user_id", user.id).maybeSingle(),
     getTagsEvento(),
     getEtapasKanban(),
+    // CRM Premium, Etapa 3 (indicador "Atividades concluídas" — janela de
+    // 7 dias confirmada pelo Caio na rodada de critérios).
+    supabase
+      .from("processo_tarefas")
+      .select("id", { count: "exact", head: true })
+      .eq("concluida", true)
+      .gte("concluida_em", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
   ]);
 
   const erro = erroProcessos || erroKanban;
@@ -76,6 +85,32 @@ export default async function DashboardPage() {
   ).length;
 
   const ativosProcessos = (processos ?? []).filter((p) => !p.conclusao_tipo);
+
+  // CRM Premium, Etapa 3 — indicadores novos do Painel (seção 5.1 do
+  // CRM_PREMIUM_SPEC.md), critérios já confirmados com o Caio ou
+  // reaproveitados de regras já existentes (nunca inventados):
+  // - "Relatórios desatualizados": mesma regra de app/processos/page.tsx.
+  // - "Entregas atrasadas"/"Entregas previstas": mesma consulta que já
+  //   alimentava o sininho de alerta (execucoesPendentesRaw) — só conta
+  //   CONTRATOS distintos (não parcelas), como a especificação pede, e
+  //   ignora contrato concluído (não deveria ter parcela pendente, mas por
+  //   segurança). "Entregas previstas" tem janela de 7/15/30 dias (ver
+  //   PainelDashboard) escolhida pelo Caio ("seletor 7/15/30").
+  const execucoesPendentesAtivas = (execucoesPendentesRaw ?? []).filter((e: any) => e.processos && !e.processos.conclusao_tipo);
+  const relatoriosDesatualizados = ativosProcessos.filter((p) => relatorioDesatualizado(p.relatorio_atualizado_em)).length;
+  const contratosComEntregaAtrasada = new Set(
+    execucoesPendentesAtivas.filter((e: any) => e.data_prevista < hoje).map((e: any) => e.processos.id),
+  ).size;
+  const entregasPrevistas = execucoesPendentesAtivas
+    .filter((e: any) => e.data_prevista >= hoje)
+    .map((e: any) => ({
+      id: e.id as string,
+      processoId: e.processos.id as string,
+      numeroContrato: numeroContratoSemSei(e.processos.numero_contrato),
+      numeroParcela: e.numero as number,
+      data: e.data_prevista as string,
+    }))
+    .sort((a, b) => a.data.localeCompare(b.data));
 
   const divisaoPorCoordenacao: { sigla: string; total: number }[] = (() => {
     const contagem = new Map<string, number>();
@@ -231,6 +266,10 @@ export default async function DashboardPage() {
           processosAtividadeHoje={processosAtividadeHoje}
           eventos={eventos ?? []}
           etapas={etapas ?? []}
+          relatoriosDesatualizados={relatoriosDesatualizados}
+          contratosComEntregaAtrasada={contratosComEntregaAtrasada}
+          entregasPrevistas={entregasPrevistas}
+          atividadesConcluidas7Dias={atividadesConcluidas7Dias ?? 0}
         />
       </Painel>
 

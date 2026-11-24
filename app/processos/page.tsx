@@ -9,6 +9,7 @@ import CartaoColapsavel from "@/app/_ui/cartao-colapsavel";
 import Atividades from "@/app/_nav/atividades";
 import { getEtapasKanban, getPessoasAtivas, getTagsEvento } from "@/lib/dados-referencia";
 import { statusContrato, gradienteOuSolido, resumoEntregas, execucaoFisica, type ParcelaStatus } from "@/lib/status-entrega";
+import { relatorioDesatualizado } from "@/lib/relatorio-status";
 
 export default async function ProcessosPage({
   searchParams,
@@ -145,16 +146,6 @@ export default async function ProcessosPage({
   }
 
   const processosComEntregaAtrasada = new Set((execucoesPendentesRaw ?? []).map((e) => e.processo_id));
-
-  // Relatório "desatualizado" quando nunca foi marcado como atualizado ou
-  // quando a última marcação já passou de 10 dias.
-  const LIMITE_DIAS_RELATORIO = 10;
-  const agora = Date.now();
-  function relatorioDesatualizado(relatorioAtualizadoEm: string | null) {
-    if (!relatorioAtualizadoEm) return true;
-    const dias = (agora - new Date(relatorioAtualizadoEm).getTime()) / (1000 * 60 * 60 * 24);
-    return dias > LIMITE_DIAS_RELATORIO;
-  }
 
   // Status de entrega por contrato (verde/amarelo/vermelho, ou degradê entre
   // eles quando as parcelas estão em estados diferentes) — pedido do Caio.
