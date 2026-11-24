@@ -1500,3 +1500,12 @@ Quinta etapa do plano de 10 (seção 7 do `CRM_PREMIUM_SPEC.md` — "Contrato ab
 **Fora do escopo desta rodada** (seções 8/9 do spec — Andamentos estilo "Apple Notes" e Relatório estilo "Apple Pages"): são redesenhos visuais bem maiores, de telas com muita informação densa (tabelas, timeline, formulários) — ficam para rodadas próprias, com aprovação visual separada, em vez de arriscar tudo de uma vez.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (4) · Vidro na janela do contrato aberto (segunda tentativa, calibrada)
+
+Caio pediu pra tentar o vidro na janela mesmo assim, "seguindo as especificações corretas". A primeira tentativa (rodada anterior) tinha falhado porque usou a MESMA classe de vidro dos cards do Painel (`.crm-cartao-vidro-claro`, ~82% de opacidade, calibrada pro fundo aurora) numa superfície que fica sobre fundo branco sólido — sem nada atrás pra borrar, a borda sumia e lia como "informação sumiu". A correção não é abandonar o material, é calibrar um vidro NOVO especificamente pra essa superfície, seguindo o que a própria seção 3.1 do `CRM_PREMIUM_SPEC.md` pede: "superfícies de leitura sólidas ou quase opacas".
+
+- **`app/globals.css`**: `.crm-painel-alto`/`.crm-modal-painel` (≥681px, desktop) ganharam um vidro calibrado no topo da faixa de opacidade da especificação (95%, não os ~82% dos cards do Painel) — luz/sombra em camadas (destaque no canto superior, borda de cima mais clara, sombra dupla contato+elevação) dão a sensação de espessura ("material tridimensional") sem depender de transparência forte, então o corpo denso de texto/tabela continua totalmente legível. Fallback pra `prefers-reduced-transparency` (vira sólido 99%, sem blur) verificado via CDP do Chromium: a media query bate certo e o `background-image`/`backdrop-filter` somem de verdade, não só visualmente parecido. Celular (≤680px) não foi tocado — já era intencionalmente transparente por outro motivo (deixa o fundo aurora da tela aparecer direto, com os cards internos em vidro).
+- **`app/exemplo-janela-vidro/page.tsx`** (novo, temporário): prova visual sobre fundo aurora com texto denso e tabela dentro, pra conferir legibilidade de verdade — validada visualmente (print) e por leitura de estilo computado (confirma que o fallback de transparência reduzida funciona).
+
+Build e `tsc --noEmit` limpos. Sem migração.
