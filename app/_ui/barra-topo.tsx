@@ -29,7 +29,7 @@ const ABAS = [
 // não tem botão fixo), conteúdo ajustado: Gestores/Fiscais virou uma entrada
 // só (unificação da Etapa 2) e Agenda entrou aqui (saiu do menu principal).
 const MAIS = [
-  { href: "/processos/concluidos", label: "Concluídos" },
+  { href: "/processos?aba=concluidos", label: "Concluídos" },
   { href: "/agenda", label: "Agenda" },
   { href: "/assistente", label: "Assistente (IA)" },
   { href: "/avisos", label: "Avisos" },

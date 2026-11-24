@@ -1473,3 +1473,17 @@ KPI "Tarefas pendentes" adicionado logo em seguida, já com o critério confirma
 - Gráfico "Contratos por etapa" continua em barras, não em rosca (donut) como a imagem de referência — é só visual, mudança de baixo risco, fica pra uma rodada de polimento.
 
 Build e `tsc --noEmit` limpos (testados inclusive sem nenhuma variável de ambiente configurada). Sem migração.
+
+## 2026-11-25 (2) · CRM Premium — Etapa 4: Concluídos dentro de Contratos
+
+Quarta etapa do plano de 10 (seção 6 do `CRM_PREMIUM_SPEC.md` — "Contratos e concluídos, preservação integral"). Ao investigar, descobri que `app/processos/page.tsx` já busca TODOS os contratos (ativos e concluídos) numa única consulta, e `app/processos/lista.tsx` já tinha um toggle Ativos/Concluídos que filtra esse mesmo array — ou seja, boa parte do pedido da especificação ("Concluídos acessível dentro de Contratos, não em tela separada") já estava funcionando; só a rota dedicada `/processos/concluidos` continuava existindo, duplicada.
+
+- **`app/processos/concluidos/page.tsx`**: virou um redirect pra `/processos?aba=concluidos` (mesmo padrão do `/fiscais` na Etapa 2) — preserva link antigo/favorito/histórico, sem manter uma segunda consulta/tela fazendo a mesma coisa.
+- **`app/processos/lista.tsx`**: a aba (ativos/concluidos) agora também lê da URL (`?aba=concluidos`), igual já acontecia com etapa/evento/busca/filtro; os dois botões "Ativos"/"Concluídos" viraram um `ControleSegmentado` (componente da Etapa 1), em vez de dois botões soltos.
+- **`app/_ui/barra-topo.tsx`, `app/_ui/barra-lateral.tsx`, `app/dashboard/painel-dashboard.tsx`**: links de "Concluídos" atualizados pra apontar direto pra `/processos?aba=concluidos`.
+- **`app/_ui/barra-lateral.tsx`**: `estaAtivo()` passou a comparar também a query string (não só o caminho) — sem isso, "Contratos" e "Concluídos" acendiam juntos sempre que a pessoa estivesse em `/processos`, já que os dois agora apontam pra mesma rota.
+- **Bug de build encontrado e corrigido de passagem** (não desta etapa, mas exposto por ela): `BarraLateral` passou a usar `useSearchParams()`, e a tela de prova `/exemplo-navegacao` (sem nenhuma API dinâmica própria) quebrava o build pedindo um Suspense boundary — virou `export const dynamic = "force-dynamic"`, igual já tinha sido feito em `/exemplo-painel` por um motivo parecido (Supabase).
+
+Validei a troca de redirect com Playwright (navegação real: `/processos/concluidos` → `/processos` → `/login`, confirmando a cadeia, já que não há sessão de verdade neste ambiente). A lógica de `estaAtivo()` com query string foi conferida por leitura de código (rastreei os dois casos — com e sem `?aba=concluidos`) em vez de screenshot ao vivo, porque a tela de prova usada neste ambiente não roda na rota `/processos` de verdade (não dá pra autenticar aqui).
+
+Build e `tsc --noEmit` limpos. Sem migração.

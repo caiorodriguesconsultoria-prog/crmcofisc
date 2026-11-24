@@ -11,6 +11,7 @@ import { BotaoCopiar } from "@/app/_ui/campo";
 import { numeroContratoSemSei } from "@/lib/numero-contrato";
 import CardBento from "@/app/_ui/card-bento";
 import MedidorCircular from "@/app/_ui/medidor-circular";
+import ControleSegmentado from "@/app/_ui/controle-segmentado";
 
 type DocumentComTransicao = Document & {
   startViewTransition?: (callback: () => void | Promise<void>) => void;
@@ -125,7 +126,12 @@ export default function ListaProcessos({
   const [responsavelId, setResponsavelId] = useState("");
   const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
   const [busca, setBusca] = useState(() => searchParams.get("q") ?? "");
-  const [aba, setAba] = useState<"ativos" | "concluidos">("ativos");
+  // CRM Premium, Etapa 4 (seção 6 do CRM_PREMIUM_SPEC.md) — Concluídos
+  // precisa ficar acessível dentro de Contratos, com rota antiga preservada
+  // (ver app/processos/concluidos/page.tsx, agora um redirect pra cá com
+  // ?aba=concluidos) e compatível com busca/filtros, inclusive histórico
+  // do navegador.
+  const [aba, setAba] = useState<"ativos" | "concluidos">(() => (searchParams.get("aba") === "concluidos" ? "concluidos" : "ativos"));
   // CRM Premium, Etapa 3 — KPIs do Painel linkam pra cá com
   // ?filtro=atrasados/desatualizados ("todo KPI deve abrir os registros
   // com o filtro correspondente", seção 5.2 do CRM_PREMIUM_SPEC.md).
@@ -200,6 +206,7 @@ export default function ListaProcessos({
     setBusca(searchParams.get("q") ?? "");
     setSomenteAtrasados(searchParams.get("filtro") === "atrasados");
     setSomenteDesatualizados(searchParams.get("filtro") === "desatualizados");
+    setAba(searchParams.get("aba") === "concluidos" ? "concluidos" : "ativos");
   }, [searchParams]);
 
   const filtrados = useMemo(() => {
@@ -248,37 +255,15 @@ export default function ListaProcessos({
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 6, marginTop: 16 }}>
-        <button
-          type="button"
-          onClick={() => setAba("ativos")}
-          style={{
-            fontSize: 12.5,
-            fontWeight: 600,
-            padding: "7px 16px",
-            borderRadius: 20,
-            border: "none",
-            color: aba === "ativos" ? "#fff" : cor.textoSecundario,
-            background: aba === "ativos" ? cor.destaque : "rgba(96,93,93,.10)",
-          }}
-        >
-          Ativos ({totalAtivos})
-        </button>
-        <button
-          type="button"
-          onClick={() => setAba("concluidos")}
-          style={{
-            fontSize: 12.5,
-            fontWeight: 600,
-            padding: "7px 16px",
-            borderRadius: 20,
-            border: "none",
-            color: aba === "concluidos" ? "#fff" : cor.textoSecundario,
-            background: aba === "concluidos" ? cor.destaque : "rgba(96,93,93,.10)",
-          }}
-        >
-          Concluídos ({totalConcluidos})
-        </button>
+      <div style={{ display: "flex", gap: 6, marginTop: 16, flexWrap: "wrap" }}>
+        <ControleSegmentado
+          opcoes={[
+            { valor: "ativos" as const, rotulo: `Ativos (${totalAtivos})` },
+            { valor: "concluidos" as const, rotulo: `Concluídos (${totalConcluidos})` },
+          ]}
+          valor={aba}
+          aoMudar={setAba}
+        />
         {aba === "ativos" && totalEntregaAtrasada > 0 && (
           <button
             type="button"

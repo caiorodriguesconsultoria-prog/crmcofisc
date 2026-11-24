@@ -2,6 +2,13 @@ import BarraTopo from "@/app/_ui/barra-topo";
 import Painel from "@/app/_ui/painel";
 import { cor } from "@/lib/theme";
 
+// BarraLateral (dentro de BarraTopo) usa useSearchParams (Etapa 4, pra
+// saber se a aba de Concluídos está ativa) — sem isso o build tentaria
+// pré-renderizar esta página estaticamente e exigiria um Suspense boundary
+// à toa. Igual ao /exemplo-painel, esta tela nunca tem motivo pra ser
+// estática mesmo.
+export const dynamic = "force-dynamic";
+
 // Tela temporária da Etapa 2 do CRM Premium — prova visual da nova
 // navegação (sidebar flutuante no desktop, barra inferior Painel/Contratos/
 // Dados/Mais no celular), SEM precisar de login/Supabase de verdade (dados

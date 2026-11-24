@@ -177,7 +177,7 @@ export default function PainelDashboard({
   // contrato) — ficaria "filtro" nenhum pra abrir.
   const kpis = [
     { rotulo: "Contratos ativos", valor: ativos, corNumero: cor.azulEscuro },
-    { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, href: "/processos/concluidos" },
+    { rotulo: "Concluídos", valor: concluidos, corNumero: cor.verdeEscuro, href: "/processos?aba=concluidos" },
     { rotulo: "Entrega atrasada", valor: contratosComEntregaAtrasada, corNumero: cor.urgente, href: "/processos?filtro=atrasados" },
     { rotulo: "Relatório desatualizado", valor: relatoriosDesatualizados, corNumero: cor.vermelhoEscuro, href: "/processos?filtro=desatualizados" },
     { rotulo: "Atividades concluídas (7 dias)", valor: atividadesConcluidas7Dias, corNumero: cor.verdeEscuro },

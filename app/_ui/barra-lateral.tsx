@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LayoutGrid, FileText, BarChart3, Users, Building2, Tag, Truck, Calendar, Sparkles, Bell, CheckCircle2, LogOut, type LucideIcon } from "lucide-react";
 import { cor, raio, elevacao, botaoPrimario } from "@/lib/theme";
 import NotificacoesPush from "@/app/_nav/notificacoes-push";
@@ -34,7 +34,7 @@ const ITENS_CADASTROS = [
 // Ressurgem em local definitivo nas Etapas 3 (Painel) e 6 (assistente
 // flutuante/notificações); até lá ficam aqui, visíveis, não escondidos.
 const ITENS_MAIS = [
-  { href: "/processos/concluidos", label: "Concluídos", Icone: CheckCircle2 },
+  { href: "/processos?aba=concluidos", label: "Concluídos", Icone: CheckCircle2 },
   { href: "/agenda", label: "Agenda", Icone: Calendar, contador: "agenda" as const },
   { href: "/assistente", label: "Assistente (IA)", Icone: Sparkles },
   { href: "/avisos", label: "Avisos", Icone: Bell, alerta: true },
@@ -113,6 +113,7 @@ export default function BarraLateral({
   emailUsuario?: string;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [menuAberto, setMenuAberto] = useState(false);
 
   const contadores: Record<string, number> = {
@@ -120,8 +121,19 @@ export default function BarraLateral({
     agenda: contagemAgendaHoje,
   };
 
+  // "Concluídos" usa a mesma rota de "Contratos" com ?aba=concluidos (Etapa
+  // 4) — sem comparar a query string os dois itens acenderiam juntos
+  // sempre que a pessoa estivesse em /processos, não só quando a aba de
+  // concluídos estiver de fato selecionada.
   function estaAtivo(href: string) {
-    return pathname === href || pathname.startsWith(href + "/");
+    const [caminho, query] = href.split("?");
+    if (pathname !== caminho && !pathname.startsWith(caminho + "/")) return false;
+    if (!query) return searchParams.get("aba") !== "concluidos";
+    const esperado = new URLSearchParams(query);
+    for (const [chave, valor] of esperado) {
+      if (searchParams.get(chave) !== valor) return false;
+    }
+    return true;
   }
 
   return (
