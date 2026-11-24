@@ -170,6 +170,17 @@ th {
   justify-content: center;
 }
 
+/* Espaço reservado pra sidebar flutuante no desktop (CRM Premium, Etapa 2
+   — ver app/_ui/barra-lateral.tsx). Só ≥768px, que é onde a sidebar
+   aparece (abaixo disso ela vira a barra inferior de sempre, sem reservar
+   espaço nenhum). 240px de largura + 16px de margem de cada lado + 24px de
+   respiro até o conteúdo = 296px. */
+@media (min-width: 768px) {
+  .crm-painel-fundo {
+    padding-left: 296px;
+  }
+}
+
 /* Vão grande demais entre a BarraTopo e o título da página nas telas com
    fundo aurora (Contratos, Dados etc.) — pedido do Caio pra diminuir.
    Only aplica quando o Painel usa fundoAurora (as duas classes juntas no
@@ -306,6 +317,30 @@ th {
   }
 }
 
+/* CRM Premium, Etapa 2 — sidebar flutuante (app/_ui/barra-lateral.tsx).
+   Fixa, independente do scroll/do contêiner centralizado do resto da tela
+   (por isso position:fixed, não relative/sticky) — "flutuante" de verdade,
+   como pede a seção 3.1 do CRM_PREMIUM_SPEC.md ("inspiração macOS Tahoe,
+   sidebar flutuante"). Larguras/posição batem com o padding-left reservado
+   em .crm-painel-fundo, acima. Escondida abaixo de 768px — nessa largura a
+   navegação principal continua sendo .crm-barra-topo-mobile (barra inferior
+   já existente), não a sidebar encolhida/virada em gaveta. */
+.crm-barra-lateral {
+  display: none;
+}
+@media (min-width: 768px) {
+  .crm-barra-lateral {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    z-index: 20;
+    left: 16px;
+    top: 16px;
+    bottom: 16px;
+    width: 240px;
+  }
+}
+
 .crm-barra-topo-abas {
   display: flex;
   align-items: center;
@@ -381,11 +416,34 @@ th {
     height: 44px !important;
   }
   .crm-barra-topo-mais-painel {
+    /* Bug pré-existente (não é da Etapa 2): ficava `position: absolute`
+       (herdado da regra base, pensada pro desktop, relativa a
+       .crm-barra-topo) com `bottom` calculado como se fosse relativo à
+       viewport — as duas coisas juntas jogavam o painel pra fora da tela
+       (o contêiner .crm-barra-topo é baixo, sobra pouco espaço acima do
+       "bottom" pedido). Precisa ser fixed de verdade, como a própria barra
+       inferior (.crm-barra-topo-mobile) já é. */
+    position: fixed;
     top: auto;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 60px);
     left: 10px;
     right: 10px;
     min-width: 0;
+  }
+}
+
+/* CRM Premium, Etapa 2 — linha1/linha2 da BarraTopo (logo+ações,
+   breadcrumb) saem de cena no desktop — a sidebar flutuante
+   (.crm-barra-lateral) cobre navegação+conta+"Novo contrato", e o título de
+   cada tela já vem do próprio componente Painel. Só a barra inferior do
+   celular usa essas duas linhas como cabeçalho; nesta largura elas ficariam
+   redundantes flutuando sozinhas no topo. Regra colocada depois das
+   declarações base de .crm-barra-topo-linha1/linha2 de propósito — mesma
+   especificidade, então a ordem no arquivo decide, e esta precisa vencer. */
+@media (min-width: 768px) {
+  .crm-barra-topo-linha1,
+  .crm-barra-topo-linha2 {
+    display: none;
   }
 }
 

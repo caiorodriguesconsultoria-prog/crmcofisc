@@ -6,31 +6,36 @@ import { usePathname } from "next/navigation";
 import { Bell, Menu } from "lucide-react";
 import { cor, raio } from "@/lib/theme";
 import NotificacoesPush from "@/app/_nav/notificacoes-push";
+import BarraLateral from "./barra-lateral";
 
-// Navegação de todo o sistema autenticado, no formato de cápsulas do novo
-// design (ver design-system/REGRAS.md). Rolou tela por tela nas Etapas 2, 3
-// e 5 do redesenho; a gaveta lateral antiga (app/_nav/sidebar.tsx) foi
-// desligada por completo no fim da Etapa 6 — o arquivo continua existindo só
-// pelo tipo `Atividade` que app/_nav/grupos-atividades.tsx ainda usa.
+// Navegação de todo o sistema autenticado. Desde a Etapa 2 do CRM Premium
+// (CRM_PREMIUM_SPEC.md, seção 4), a navegação principal do DESKTOP passou
+// pra sidebar flutuante (BarraLateral, renderizada aqui dentro — qualquer
+// tela que já usa <BarraTopo>/<TelaComBarraTopo> ganha a sidebar sem
+// precisar mudar o próprio page.tsx). ABAS/MAIS abaixo continuam valendo só
+// pra barra INFERIOR do celular (Painel/Contratos/Dados + "Mais"), que não
+// mudou de mecanismo, só de conteúdo (Dados entrou no lugar de Agenda, que
+// foi pro "Mais" — pedido explícito da especificação: "retirar Agenda do
+// menu, não seus dados"). A gaveta lateral ANTIGA (app/_nav/sidebar.tsx,
+// de antes do redesenho bento/dashboard) continua desligada — não é a
+// mesma coisa que esta sidebar nova.
 const ABAS = [
   { href: "/dashboard", label: "Painel" },
   { href: "/processos", label: "Contratos" },
-  { href: "/agenda", label: "Agenda" },
+  { href: "/dados", label: "Dados" },
 ];
 
-// Itens que ainda não têm cápsula própria — ficam no menu "Mais" pra não
-// perder nenhum acesso que já existia na gaveta lateral.
+// Itens do menu "Mais" do celular — mesmo papel de antes (acesso a tudo que
+// não tem botão fixo), conteúdo ajustado: Gestores/Fiscais virou uma entrada
+// só (unificação da Etapa 2) e Agenda entrou aqui (saiu do menu principal).
 const MAIS = [
-  // Fase 1 do agente de IA (pesquisa sobre contratos) — fica no "Mais"
-  // enquanto é novo/em teste; sobe pra cápsula própria se pegar uso.
-  { href: "/assistente", label: "Assistente (IA)" },
   { href: "/processos/concluidos", label: "Concluídos" },
-  { href: "/dados", label: "Dados" },
+  { href: "/agenda", label: "Agenda" },
+  { href: "/assistente", label: "Assistente (IA)" },
   { href: "/avisos", label: "Avisos" },
   { href: "/tags", label: "Tags" },
   { href: "/coordenacoes", label: "Coordenações" },
-  { href: "/gestores", label: "Gestores" },
-  { href: "/fiscais", label: "Fiscais" },
+  { href: "/gestores", label: "Gestores e Fiscais" },
   { href: "/fornecedores", label: "Fornecedores" },
 ];
 
@@ -63,6 +68,13 @@ export default function BarraTopo({
 
   return (
     <div className="crm-barra-topo">
+      <BarraLateral
+        contagemProcessosAtivos={contagemProcessosAtivos}
+        contagemAgendaHoje={contagemAgendaHoje}
+        temAlerta={temAlerta}
+        iniciaisUsuario={iniciaisUsuario}
+        emailUsuario={emailUsuario}
+      />
       <div className="crm-barra-topo-linha1">
         {/* Era um degradê arco-íris (teal/verde/amarelo) — destoava do resto
            do cabeçalho, todo na paleta azul da marca ("+ Novo contrato" já
@@ -83,54 +95,12 @@ export default function BarraTopo({
           COFISC
         </span>
 
-        <nav className="crm-barra-topo-abas" aria-label="Navegação principal">
-          {[...ABAS, ...MAIS].map((a) => {
-            const ativa = pathname === a.href || pathname.startsWith(a.href + "/");
-            const contador = contadores[a.href];
-            // /processos/concluidos e /processos/novo têm o mesmo formato de URL
-            // da rota interceptada do modal /processos/[id] — <a> normal força
-            // navegação completa, mesma causa raiz já tratada em outros links.
-            const Tag = a.href === "/processos/concluidos" ? "a" : Link;
-            return (
-              <Tag
-                key={a.href}
-                href={a.href}
-                className="crm-pilula-hover"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "9px 16px",
-                  borderRadius: raio.pilula,
-                  fontSize: 14.5,
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                  color: ativa ? "#fff" : cor.textoSecundario,
-                  background: ativa ? cor.escuro : "transparent",
-                  flex: "none",
-                }}
-              >
-                {a.label}
-                {contador != null && contador > 0 && (
-                  <span
-                    style={{
-                      fontSize: 10.5,
-                      fontWeight: 700,
-                      padding: "1px 6px",
-                      borderRadius: raio.pilula,
-                      background: ativa ? "rgba(255,255,255,.22)" : cor.borda,
-                      color: ativa ? "#fff" : cor.textoSecundario,
-                    }}
-                  >
-                    {contador}
-                  </span>
-                )}
-              </Tag>
-            );
-          })}
-        </nav>
-
+        {/* A navegação principal de desktop (pílulas Painel/Contratos/Dados +
+           Mais) saiu daqui na Etapa 2 — virou a BarraLateral acima. Esta
+           linha agora só aparece de fato no celular (escondida ≥768px via
+           CSS), onde ainda é só o cabeçalho (logo + ações); a navegação do
+           celular em si é a barra inferior (.crm-barra-topo-mobile), mais
+           abaixo neste componente. */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto", flex: "none" }}>
           <a
             href="/processos/novo"

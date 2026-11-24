@@ -17,16 +17,20 @@ export default async function GestoresPage() {
 
   const [{ data: pessoa }, { data: papeis, error }, contexto] = await Promise.all([
     supabase.from("pessoas").select("is_admin").eq("auth_user_id", user.id).maybeSingle(),
+    // CRM Premium, Etapa 2 — unificação de Gestores e Fiscais numa página só
+    // (seção 4 do CRM_PREMIUM_SPEC.md): busca os dois papéis juntos agora,
+    // sem o .eq("papel", ...) que separava as duas páginas antigas.
     supabase
       .from("pessoa_papeis")
-      .select("pessoa_id, pessoas(id, nome, matricula, ausencia_inicio, ausencia_fim)")
-      .eq("papel", "gestor"),
+      .select("pessoa_id, papel, pessoas(id, nome, matricula, ausencia_inicio, ausencia_fim)")
+      .in("papel", ["gestor", "fiscal"]),
     getContextoBarraTopo(supabase, user.email ?? null),
   ]);
 
   const itens = (papeis ?? [])
     .map((p: any) => ({
       id: p.pessoas?.id ?? p.pessoa_id,
+      papel: p.papel as "gestor" | "fiscal",
       nome: p.pessoas?.nome ?? "",
       matricula: p.pessoas?.matricula ?? null,
       ausenciaInicio: p.pessoas?.ausencia_inicio ?? null,
@@ -35,15 +39,8 @@ export default async function GestoresPage() {
     .sort((a, b) => a.nome.localeCompare(b.nome));
 
   return (
-    <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Gestores">
-      <ListaPessoasPapel
-        titulo="Gestores"
-        papel="gestor"
-        novoHref="/gestores/novo"
-        isAdmin={pessoa?.is_admin ?? false}
-        itens={itens}
-        erro={error?.message}
-      />
+    <TelaComBarraTopo {...contexto} emailUsuario={user.email ?? undefined} migalha="Gestores e Fiscais">
+      <ListaPessoasPapel isAdmin={pessoa?.is_admin ?? false} itens={itens} erro={error?.message} />
     </TelaComBarraTopo>
   );
 }

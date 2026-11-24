@@ -1438,3 +1438,17 @@ Rodada de auditoria no CRM-COFISC (sem código, só medição/classificação) a
 - **`app/exemplo-liquid-glass/page.tsx`** (novo): tela temporária, fora do produto, demonstrando os dois temas, as duas intensidades e duas camadas de elevação (card + janela) empilhadas. Validada com Playwright (zero erro de console) e capturas de tela claro/escuro/intenso.
 
 Build e `tsc --noEmit` limpos em cada commit. Sem migração em nenhuma das mudanças desta entrada.
+
+## 2026-11-24 (2) · CRM Premium — Etapa 2: nova navegação (sidebar flutuante) + unificação Gestores/Fiscais
+
+Segunda etapa do plano de 10 (seção 15 do `CRM_PREMIUM_SPEC.md`), usando a imagem de referência que o Caio mandou. Escopo: só a navegação em si (seção 4) — layout/widgets do Painel ficam pra Etapa 3.
+
+- **`app/_ui/barra-lateral.tsx`** (novo): sidebar flutuante do desktop (vidro da Etapa 1, elevação `elevacao.navegacao`) — logo, "+ Novo contrato", Painel/Contratos/Dados, grupo Cadastros (Gestores e Fiscais/Coordenações/Tags/Fornecedores) e grupo Mais (Concluídos/Agenda/Assistente/Avisos — ainda sem local definitivo, ressurgem nas Etapas 3/6), bloco de conta no rodapé com popover (notificações push + Sair).
+- **`app/_ui/barra-topo.tsx`**: renderiza `<BarraLateral>` internamente — qualquer tela que já usa `BarraTopo`/`TelaComBarraTopo` ganha a sidebar sem precisar mudar o próprio `page.tsx`. Removida a navegação em pílulas do topo (virou a sidebar no desktop); `ABAS` da barra inferior do celular passou de Painel/Contratos/Agenda pra Painel/Contratos/Dados (Agenda foi pro menu "Mais", pedido explícito da especificação: "retirar Agenda do menu, não seus dados").
+- **`app/_pessoas-papel/lista.tsx`, `app/gestores/page.tsx`, `app/fiscais/page.tsx`**: Gestores e Fiscais viraram uma página só (`/gestores`) com filtro Todos/Gestores/Fiscais (reaproveitando o `ControleSegmentado` da Etapa 1) — sem mudar o banco (`pessoa_papeis` continua com uma linha por vínculo; uma pessoa com os dois papéis aparece duas vezes, uma por vínculo, como já acontecia). `/fiscais` virou um redirect pra `/gestores?papel=fiscal`, preservando link antigo.
+- **`app/globals.css`**: reservado espaço (`padding-left`) em `.crm-painel-fundo` pra sidebar no desktop; `.crm-barra-topo-linha1`/`linha2` (cabeçalho antigo) escondidos ≥768px, onde a sidebar cobre navegação+conta.
+- **Bug pré-existente corrigido de passagem** (não introduzido nesta etapa, achado testando o menu "Mais" no celular): `.crm-barra-topo-mais-painel` ficava `position: absolute` com `bottom` calculado como se fosse relativo à viewport — o painel nascia fora da tela, inacessível no celular. Virou `position: fixed` de verdade.
+
+Validado com Playwright numa tela de prova isolada (`app/exemplo-navegacao/page.tsx`, sem precisar de login) em desktop e mobile, incluindo o popover de conta e o menu "Mais" — zero erro de console, screenshots revisadas.
+
+Build e `tsc --noEmit` limpos. Sem migração.
