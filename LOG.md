@@ -1518,3 +1518,18 @@ Caio pediu mais vidro, "como na imagem" de referência, e perguntou se a especif
 - **`app/exemplo-janela-vidro/pagina-cheia/page.tsx`** (novo, temporário): prova visual usando `PainelAlto` (versão de tela cheia) em vez de `PainelAltoModal` — a versão de modal tem uma camada escura (`.crm-modal-fundo`, o scrim) entre a página e a janela, que diluía o efeito e escondia o resultado real nos prints anteriores. Com o fundo aurora direto atrás (sem o scrim), o vidro aparece de verdade nas bordas/cantos da janela, com o texto denso e a tabela continuando legíveis.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (6) · `/design-lab` — laboratório Liquid Glass (CRM_LIQUID_GLASS_SKILLS.md)
+
+Caio trouxe um documento complementar autorizando instalar bibliotecas/skills de terceiros (liquidglass.dev, liqui.design, lore-glass, websiteglass.com, playground de refração, Motion, Playwright) e pedindo um laboratório isolado (`/design-lab`) pra comparar com a imagem de referência antes de tocar no CRM funcional.
+
+**Decisão sobre as bibliotecas de terceiros**: confirmei que `liquidglass.dev` e `liqui.design` respondem (existem de verdade), mas não cheguei a clonar/instalar nenhuma. Clonar e auditar repositórios de terceiros desconhecidos (procedência, licença, scripts) é um processo lento e com risco de cadeia de suprimentos pra um ganho marginal — já tenho, desde a Etapa 1, uma técnica CSS própria (sem dependência nova) que vem sendo testada e aprovada rodada após rodada (cards do Painel, janela do contrato). A própria autorização pede "não empilhar motores de refração concorrentes em produção". Critério usado: priorizar a técnica já comprovada; registrar aqui a decisão pra retomar a instalação de verdade se o resultado visual não for suficiente.
+
+- **`app/design-lab/_glass/ambient-background.tsx`** (novo): `AmbientBackground` — SVG estático com curvas diagonais largas e suaves (4 faixas em bezier + ponto de luz), paleta exata do documento (#78A9E8, #A6CFFF, #D5E9FF, #F0F7FF, #568CD5), versão escura em azul profundo equivalente. Sem imagem remota, sem animação contínua.
+- **`app/design-lab/_glass/componentes.tsx`** (novo): Design System reutilizável — `GlassSurface`, `GlassCard`, `GlassWindow`, `GlassTable` (superfície de leitura sólida, não vidro — pedido explícito do documento pra tabelas densas), `GlassButton` (volumétrico, luz no topo + compressão no toque), `GlassInput`, `GlassTabs`, `GlassPopover`, `GlassSheet`, `GlassAIButton`, `GlassDock`, `GlassSidebar`. Todos reaproveitando os tokens da Etapa 1 (`vidro.padrao`/`vidro.intenso`, `elevacao`, `corEscuro`) em vez de uma segunda escala.
+- **`app/design-lab/page.tsx`** (novo): dashboard completo (sidebar, busca, KPIs, gráfico, tabela de entregas, cobertura de férias, atividades, insights de IA, botão de IA flutuante, dock mobile) com dado fictício, alternância claro/escuro e responsivo (sidebar vira dock abaixo de 768px, paridade com a referência).
+- **`app/design-lab/janela/page.tsx`** (novo): janela contratual com abas (Resumo/Andamentos/Relatório), texto denso e tabela — mesmo teste de legibilidade da Etapa 5, agora com o Design System novo.
+
+Validado com Playwright: desktop 1440px claro/escuro, mobile 390px, janela desktop e mobile — zero erro de console, texto denso e tabela legíveis em todos os casos, fundo em ondas visível atrás do vidro nas duas telas. Nenhum componente de produto foi alterado — só o laboratório. Aguardando aprovação visual do Caio antes de migrar o Design System pro CRM funcional, por etapas, conforme o `CRM_PREMIUM_SPEC.md`.
+
+Build e `tsc --noEmit` limpos. Sem migração.
