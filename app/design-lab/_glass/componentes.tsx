@@ -77,7 +77,7 @@ export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style
 export function GlassCard({ escuro, titulo, style, children }: PropsBase & { titulo?: string }) {
   const paleta = escuro ? corEscuro : cor;
   return (
-    <GlassSurface escuro={escuro} alphaFundo={0.7} style={{ padding: 16, ...style }}>
+    <GlassSurface escuro={escuro} alphaFundo={0.5} style={{ padding: 16, ...style }}>
       {titulo && <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{titulo}</div>}
       {children}
     </GlassSurface>
@@ -91,7 +91,7 @@ export function GlassCard({ escuro, titulo, style, children }: PropsBase & { tit
  * vidro excessivo em listas densas"). */
 export function GlassWindow({ escuro, style, children }: PropsBase) {
   return (
-    <GlassSurface escuro={escuro} intensidade="padrao" alphaFundo={0.5} style={{ borderRadius: raio.painel, zIndex: elevacao.janela, padding: 0, overflow: "hidden", ...style }}>
+    <GlassSurface escuro={escuro} intensidade="padrao" alphaFundo={0.3} style={{ borderRadius: raio.painel, zIndex: elevacao.janela, padding: 0, overflow: "hidden", ...style }}>
       {children}
     </GlassSurface>
   );

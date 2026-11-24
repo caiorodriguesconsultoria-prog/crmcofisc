@@ -1557,3 +1557,9 @@ Caio esclareceu a relação opacidade/transparência (opacidade alta = menos tra
 - Verificado por script Playwright (`document.documentElement.scrollHeight === window.innerHeight` em 1440×900): sem rolagem vertical.
 
 Nenhum componente de produto foi alterado — só o laboratório. Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (9) · Teste de opacidade mais transparente (janela 30% / cards 50%)
+
+Caio pediu pra testar valores ainda mais transparentes que a rodada anterior, só pra comparação visual — janela ~30% opaca (era 50%), cards ~70% (era 70%, baixou pra 50%). Ajuste pontual nos overrides de `GlassWindow`/`GlassCard` em `app/design-lab/_glass/componentes.tsx`. Enviados prints pro Caio comparar com a rodada anterior; aguardando ele decidir qual calibração fica (esta, a anterior de 50%/70%, ou outra).
+
+Build e `tsc --noEmit` limpos. Sem migração. Nenhum componente de produto foi alterado — só o laboratório.
