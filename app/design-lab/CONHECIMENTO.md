@@ -37,12 +37,26 @@ Todos em `app/design-lab/_glass/componentes.tsx`, documentados com comentário d
 | Pacote | Decisão | Licença | Motivo |
 |---|---|---|---|
 | `@number-flow/react` 0.6.2 | ✅ Instalado | MIT | 25KB, zero dependências, anima dígito de KPI — ganho real, risco mínimo |
-| `@paper-design/shaders-react` | ⏳ Candidato, não instalado | Apache-2.0 | WebGL, ~430KB — vale testar desempenho antes de trocar o fundo SVG atual |
+| `@paper-design/shaders-react` | ✅ Instalado, testado — ver abaixo | Apache-2.0 | `MeshGradient` (animado) é caro demais; `StaticMeshGradient` empata com o SVG atual em custo e é visualmente superior |
 | shadcn/ui, Tremor | ❌ Rejeitado | MIT/Apache | Exigem Tailwind CSS como base — projeto não usa; trocar de paradigma de estilo só por isso contraria "evitar dependências redundantes" (já tenho `GlassButton`/`GlassDonut` com o mesmo papel) |
 | 21st.dev | ❌ Rejeitado | Não declarada por componente | Registro copy-paste que embrulha bibliotecas de terceiros (Aceternity, Magic UI) sem licença clara por peça |
 | motion-primitives.com, designeer.xyz | ❌ Não avaliado | Site bloqueou acesso (403) | Sem conseguir ver licença/conteúdo, não instalo — não é possível confirmar critério de "licença adequada" |
 | ReactBits, MagicUI | ❌ Rejeitado | Variável | Genéricos de marketing, fora da linguagem visual já estabelecida; risco de licença por componente |
 | Mobbin | — Referência | N/A | Galeria de prints reais, não é biblioteca de código |
+
+## Teste de desempenho: `@paper-design/shaders-react` (fundo ambiental)
+
+Comparação em `/design-lab/shader-teste` (3 modos lado a lado), medido via CDP `Performance.getMetrics` (não estimativa — `TaskDuration` real somado num intervalo de 3s parado, sem interação):
+
+| Modo | Custo de CPU (3s parado) | Visual |
+|---|---|---|
+| SVG atual (`AmbientBackground`) | ~0% de 1 núcleo | Curvas bezier desenhadas à mão, boas mas "retas demais" em alguns ângulos |
+| `MeshGradient` (shader **animado**) | **~104% de 1 núcleo, o tempo todo** | Muito fluido, orgânico |
+| `StaticMeshGradient` (shader **sem animação**, renderiza 1x e para) | ~0% de 1 núcleo — empata com o SVG | Mesma riqueza visual do animado, sem o custo |
+
+**Limitação importante da medição** (regra da própria skill: não declarar sem evidência): o Chromium headless deste ambiente não tem GPU real — `WEBGL_debug_renderer_info` confirma `SwiftShader` (renderização por software, via CPU). O número de ~104% do `MeshGradient` é především o custo de rodar o shader SEM aceleração de hardware; numa máquina real com GPU (mesmo integrada), isso tende a cair bastante. Não testei em hardware real — não afirmo que o `MeshGradient` animado é inviável em produção, só que não dá pra confirmar sem testar lá.
+
+**Decisão**: `StaticMeshGradient` é o candidato recomendado — visual rico, custo medido igual ao SVG atual (não depende de GPU real pra essa conclusão, já que o custo em ambos os casos é efetivamente zero depois do primeiro frame). `MeshGradient` animado fica descartado por padrão (custo alto e não verificável em hardware real), podível reconsiderar só se Caio confirmar que roda bem na máquina dele.
 
 ## Erros encontrados e soluções
 

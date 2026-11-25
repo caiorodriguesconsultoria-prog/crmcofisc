@@ -1651,3 +1651,19 @@ Validado com Playwright: clique real no botão "Simular atualização" (não só
 Nenhum componente de produto foi alterado — ainda só o laboratório. Os passos 2-10 do plano do Caio (consolidar o Design System, modernizar dashboard/janelas/Andamentos-Relatórios, mobile independente, assistente de IA, microinterações, testes finais) ficam pras próximas rodadas, uma de cada vez, com validação entre elas — mesmo ritmo das fases 6-10.
 
 Sem migração.
+
+## 2026-11-25 (16) · Fase 11 (continuação) — teste de desempenho do @paper-design/shaders-react
+
+Caio pediu pra testar o candidato mais arriscado da lista antes de seguir pro resto do plano. Medi de verdade, não estimei: CDP `Performance.getMetrics` (`TaskDuration` real, 3s parado, sem interação) comparando três modos em `/design-lab/shader-teste` (novo, página de comparação lado a lado).
+
+- **SVG atual**: ~0% de 1 núcleo.
+- **`MeshGradient` (shader animado)**: ~104% de 1 núcleo, o tempo todo — alto demais pra decorar fundo de dashboard sem justificativa forte.
+- **`StaticMeshGradient` (mesma biblioteca, sem animação — renderiza uma vez e para)**: ~0%, empata com o SVG atual, e visualmente igual de rico ao animado.
+
+**Ressalva registrada** (regra da skill: não declarar sem evidência): o Chromium headless deste ambiente não tem GPU real (`WEBGL_debug_renderer_info` confirma `SwiftShader`/software). O custo de 104% do shader animado é em grande parte efeito de rodar sem aceleração de hardware — numa máquina real isso tende a cair. Não afirmo que o animado é inviável em produção, só que não consigo confirmar sem testar em hardware real.
+
+- `@paper-design/shaders-react` instalado (Apache-2.0, confirmado antes de instalar). Nenhuma vulnerabilidade nova via `npm audit` (mesmas 7 já sinalizadas, preexistentes).
+- **`app/design-lab/shader-teste/page.tsx`** (novo): 3 botões alternam entre fundo SVG atual, shader animado e shader estático, no mesmo layout — pra comparação visual direta.
+- **`app/design-lab/CONHECIMENTO.md`** atualizado com a tabela de medição e a decisão: `StaticMeshGradient` é candidato recomendado (visual superior, custo igual ao atual); `MeshGradient` animado fica descartado por padrão até alguém confirmar em hardware real.
+
+Build e `tsc --noEmit` limpos. Validado com Playwright (zero erro de console/página nos 3 modos + regressão completa do resto do laboratório). Nenhum componente de produto foi alterado — ainda decisão em aberto pro Caio: aplicar o `StaticMeshGradient` no `AmbientBackground` do laboratório (próximo passo natural) ou manter o SVG por enquanto. Sem migração.
