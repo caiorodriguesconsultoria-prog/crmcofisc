@@ -1612,3 +1612,26 @@ Caio pediu pra seguir pra "fase 9". Esta cobre o último bloco do checklist orig
 - **Alvos de toque abaixo de 44px**: sino de notificação (38px → 44px), itens do `GlassDock` (sem área mínima → 44×44), itens de `GlassSidebar`/grupo Cadastros (sem altura mínima → 44/40px), `GlassButton` (sem altura mínima → 44px), abas de `GlassTabs` (44px só quando `(max-width: 767px)`, no desktop fica compacto como antes — inflar a pílula no desktop ficaria estranho à toa).
 
 Nenhum componente de produto foi alterado — só o laboratório. Validado com Playwright (Tab de teclado, emulação de mídia via CDP, amostragem de pixel pra contraste real) nos dois temas. Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (14) · Fase 10 — regressão final e fechamento do laboratório
+
+Última fase antes do pedido de aprovação visual (seção 10 do `CRM_LIQUID_GLASS_SKILLS.md`: "aguardar aprovação visual antes de aplicar o Design System ao CRM funcional"). Rodei uma regressão completa em tudo que foi construído nas fases 1-9, em vez de assumir que ainda funcionava.
+
+Validado nesta rodada (Playwright, não inspeção visual só): dashboard desktop claro/escuro sem rolagem, dashboard mobile, janela do contrato desktop/mobile com as 3 abas clicadas de verdade e troca de tema, navegação por teclado (Tab chega em itens da sidebar) — zero erro de console/página em qualquer combinação. `tsc --noEmit` e `npm run build` limpos.
+
+**Resumo consolidado do que existe em `/design-lab` hoje** (10 fases, todas revertíveis, nenhuma tocou o CRM funcional):
+1. Fundo ambiental (`AmbientBackground`) e Design System base (`componentes.tsx`), paridade inicial com a imagem de referência.
+2. Refino de calibração de vidro (primeira rodada de opacidade).
+3. *(cobertas em conjunto com as fases 1-2 e com as Etapas 1-5 anteriores do redesenho de produção — não repetidas aqui)*.
+4–5. *(idem)*.
+6. Dashboard completo: KPIs com ícone/tendência, donut "Contratos por etapa", "Entregas previstas" com ícone-avatar, "Cobertura de férias" com barra de progresso, "Contratos com atraso", "Insights da IA", sidebar com grupo "Cadastros", sino de notificação — grade alinhada, cabe no desktop sem rolar.
+7. Janela do contrato com as 3 abas (Resumo/Andamentos/Relatório) de verdade — corrigido bug onde a navegação entre abas não trocava o conteúdo — e "Cronograma de entregas" em timeline.
+8. Motion Design: entrada escalonada dos cards, crossfade de abas, grupo expansível animado, respiração sutil no botão de IA/notificação — tudo com `prefers-reduced-motion`.
+9. Acessibilidade: foco de teclado real (trocado `<div>` por `<button>`), contraste medido empiricamente (achou e corrigiu 2 links abaixo de 4,5:1), `prefers-reduced-transparency`/`prefers-contrast` de verdade, alvos de toque ≥44px no mobile.
+10. Esta — regressão final, documentação consolidada, pedido de aprovação.
+
+**Limitação que permanece, por regra da própria skill `premium-liquid-ui` ("não declare teste executado sem evidência")**: tudo testado só em Chromium headless (Playwright) neste ambiente. Nenhuma evidência de Safari/WebKit, Firefox ou dispositivo iOS/Android real — o fallback de `-webkit-backdrop-filter` (blur simples, sem refração) é uma medida preventiva, não uma confirmação de que funciona lá.
+
+**Aguardando aprovação visual do Caio** antes de começar a migrar qualquer parte do Design System pro CRM funcional — conforme a seção 10 do documento de autorização. Nenhum componente de produto foi alterado em nenhuma das 10 fases.
+
+Build e `tsc --noEmit` limpos. Sem migração.
