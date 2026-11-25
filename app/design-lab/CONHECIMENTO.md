@@ -56,7 +56,24 @@ Comparação em `/design-lab/shader-teste` (3 modos lado a lado), medido via CDP
 
 **Limitação importante da medição** (regra da própria skill: não declarar sem evidência): o Chromium headless deste ambiente não tem GPU real — `WEBGL_debug_renderer_info` confirma `SwiftShader` (renderização por software, via CPU). O número de ~104% do `MeshGradient` é především o custo de rodar o shader SEM aceleração de hardware; numa máquina real com GPU (mesmo integrada), isso tende a cair bastante. Não testei em hardware real — não afirmo que o `MeshGradient` animado é inviável em produção, só que não dá pra confirmar sem testar lá.
 
-**Decisão**: `StaticMeshGradient` é o candidato recomendado — visual rico, custo medido igual ao SVG atual (não depende de GPU real pra essa conclusão, já que o custo em ambos os casos é efetivamente zero depois do primeiro frame). `MeshGradient` animado fica descartado por padrão (custo alto e não verificável em hardware real), podível reconsiderar só se Caio confirmar que roda bem na máquina dele.
+**Decisão original (incompleta — corrigida abaixo)**: a primeira leitura, baseada só no teste isolado (página vazia, só o fundo), apontava `StaticMeshGradient` como custo zero, igual ao SVG. **Essa conclusão estava errada por medir fora de contexto.**
+
+### Correção: custo real aparece só com a página completa
+
+Ao aplicar de verdade no `AmbientBackground` (usado por trás das telas reais do laboratório, com `GlassCard`/`GlassWindow`/botão de IA com glow pulsante etc.), o custo **voltou a aparecer, e de forma consistente** (3 execuções seguidas contra build de produção, não dev):
+
+| Cenário (build de produção, não dev) | Custo de CPU (3s parado) |
+|---|---|
+| Dashboard completo, fundo SVG (antes) | ~1.8–2.2% de 1 núcleo |
+| Dashboard completo, fundo `StaticMeshGradient` (depois) | **~55–60% de 1 núcleo, consistente em 3/3 execuções** |
+| Fundo `StaticMeshGradient` sozinho, página vazia | ~0% |
+| Fundo `StaticMeshGradient` + 1 `GlassCard` isolado | ~0% (não reproduziu sozinho) |
+
+**Causa provável**: o dashboard tem animações contínuas decorativas já existentes (glow do botão de IA, pulso do sino — ambas da fase 8, independentes deste teste). Isoladas, com o SVG antigo, custam ~1,9% no total. Com o canvas WebGL por trás, parece que cada frame dessas animações força uma recomposição cara do canvas (ainda que ele mesmo não esteja desenhando nada novo) — bem mais caro que recompor pixels de um SVG estático. Um `GlassCard` sozinho, sem nenhuma animação contínua rodando, não reproduziu o custo — reforça que o gatilho é a combinação "canvas WebGL + algo animando continuamente em cima", não o shader ou o vidro isoladamente.
+
+**Decisão final**: revertido. `AmbientBackground` voltou a usar o SVG. Dependência `@paper-design/shaders-react` continua instalada (não é problema em si — já provou license/qualidade boas) e a página `/design-lab/shader-teste` continua existindo como ferramenta de comparação, mas **não virou o fundo padrão**. Pra reconsiderar isso no futuro: (a) testar em hardware real com GPU de verdade (a ressalva do `SwiftShader`/software continua valendo — não sei quanto desse custo é específico deste sandbox), e (b) se for usar, considerar remover/pausar as animações contínuas decorativas enquanto o fundo for WebGL, já que parecem ser o gatilho do custo alto.
+
+**Lição pro processo**: medir um recurso isolado não basta quando ele vai conviver com outras partes dinâmicas da tela real — o teste tem que incluir o contexto completo antes de declarar "sem custo".
 
 ## Erros encontrados e soluções
 
