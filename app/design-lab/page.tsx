@@ -120,8 +120,8 @@ export default function DesignLabPage() {
             aria-label="Notificações"
             style={{
               position: "relative",
-              width: 38,
-              height: 38,
+              width: 44,
+              height: 44,
               borderRadius: "50%",
               border: `1px solid ${paleta.borda}`,
               background: escuro ? "rgba(255,255,255,.08)" : "rgba(255,255,255,.55)",
@@ -240,7 +240,11 @@ export default function DesignLabPage() {
                 <span style={{ fontSize: 10.5, color: paleta.textoTerciario, flex: "none" }}>29 nov</span>
               </div>
             </div>
-            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600, color: paleta.destaque, marginTop: 10 }}>
+            {/* fase 9: cor.destaque sobre o vidro translúcido do card media
+               4.23:1 numa amostragem real (abaixo do mínimo 4,5:1 da WCAG AA
+               pra texto pequeno) — cor.azulEscuro é o mesmo acento, mais
+               escuro, só pra texto/link em cima de vidro claro. */}
+            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600, color: escuro ? paleta.destaque : cor.azulEscuro, marginTop: 10 }}>
               Ver todas as tarefas <ArrowRight size={12} />
             </span>
           </GlassCard>
@@ -268,7 +272,7 @@ export default function DesignLabPage() {
               <div>• 1 relatório está há mais de 30 dias sem atualização.</div>
               <div>• Considere pactuar nova data para o contrato 294/2026.</div>
             </div>
-            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12.5, fontWeight: 700, color: paleta.destaque, marginTop: 10 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12.5, fontWeight: 700, color: escuro ? paleta.destaque : cor.azulEscuro, marginTop: 10 }}>
               Analisar com a IA <ArrowRight size={13} />
             </span>
           </GlassSurface>

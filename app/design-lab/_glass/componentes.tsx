@@ -1,10 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { cor, corEscuro, raio, elevacao, vidro, movimento } from "@/lib/theme";
 import { backdropRefracao } from "./refracao";
+
+// Fase 9 (CRM_LIQUID_GLASS_SKILLS.md / regra da skill premium-liquid-ui:
+// "respeite prefers-reduced-transparency e prefers-contrast"). Estilo
+// inline não aceita @media — só dá pra reagir a isso com matchMedia em
+// runtime. Hook genérico, reaproveitado pelas duas preferências.
+function usePreferenciaMidia(query: string): boolean {
+  const [ativo, setAtivo] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    setAtivo(mq.matches);
+    const ouvir = (e: MediaQueryListEvent) => setAtivo(e.matches);
+    mq.addEventListener("change", ouvir);
+    return () => mq.removeEventListener("change", ouvir);
+  }, [query]);
+  return ativo;
+}
 
 // Design System Liquid Glass reutilizável — CRM_LIQUID_GLASS_SKILLS.md,
 // seção 6. Protótipo isolado em /design-lab (nenhum componente de produto
@@ -20,14 +36,26 @@ import { backdropRefracao } from "./refracao";
 
 type Intensidade = "padrao" | "intenso";
 
-function materialVidro(intensidade: Intensidade, escuro: boolean, alphaFundoOverride?: number): React.CSSProperties {
+function materialVidro(
+  intensidade: Intensidade,
+  escuro: boolean,
+  alphaFundoOverride?: number,
+  transparenciaReduzida?: boolean,
+  maisContraste?: boolean
+): React.CSSProperties {
   const preset = vidro[intensidade];
   // Override pontual (Caio: janela ~50% opaco/mais vidro, cards ~70% opaco/
   // mais sólido) — não mexe nos presets padrao/intenso compartilhados
   // (sidebar, dock, popover continuam na calibração anterior).
-  const alphaFundo = alphaFundoOverride ?? preset.alphaFundo;
+  const alphaFundo = transparenciaReduzida ? 0.97 : alphaFundoOverride ?? preset.alphaFundo;
   const luz = escuro ? "255,255,255" : "255,255,255";
   const sombraBase = escuro ? "0,0,0" : "32,31,29";
+  // prefers-reduced-transparency: igual ao fallback já validado em produção
+  // (.crm-painel-alto, ver app/globals.css) — quase opaco, SEM
+  // backdrop-filter nenhum (nem o blur simples do Safari). prefers-contrast:
+  // more reforça a borda (mais visível = mais fácil de perceber o limite
+  // do card contra o fundo).
+  const bordaAlpha = maisContraste ? { l: 0.18, r: 0.22, b: 0.26, t: escuro ? 0.4 : 1 } : { l: escuro ? 0.05 : 0.06, r: escuro ? 0.08 : 0.09, b: escuro ? 0.09 : 0.1, t: escuro ? 0.22 : 0.95 };
   return {
     background: `radial-gradient(130% 100% at 20% 0%, rgba(${luz},${escuro ? 0.1 : 0.55}) 0%, rgba(${luz},0) 55%),
       linear-gradient(180deg, rgba(${luz},${escuro ? 0.07 : 0.35}) 0%, rgba(${luz},0) 32%, rgba(${sombraBase},${escuro ? 0.3 : 0.04}) 100%),
@@ -40,12 +68,12 @@ function materialVidro(intensidade: Intensidade, escuro: boolean, alphaFundoOver
     // Safari/iOS, não decorativo — sem isso, Safari perderia o vidro por
     // completo em vez de cair pro blur. Só testado em Chromium (Playwright)
     // neste ambiente; sem evidência de WebKit/Firefox.
-    backdropFilter: backdropRefracao(preset.blur, preset.saturate),
-    WebkitBackdropFilter: `blur(${preset.blur}px) saturate(${preset.saturate}%)`,
-    borderLeft: `1px solid rgba(${escuro ? "255,255,255" : sombraBase},${escuro ? 0.05 : 0.06})`,
-    borderRight: `1px solid rgba(${escuro ? "255,255,255" : sombraBase},${escuro ? 0.08 : 0.09})`,
-    borderBottom: `1px solid rgba(${escuro ? "255,255,255" : sombraBase},${escuro ? 0.09 : 0.1})`,
-    borderTop: `1px solid rgba(255,255,255,${escuro ? 0.22 : 0.95})`,
+    backdropFilter: transparenciaReduzida ? "none" : backdropRefracao(preset.blur, preset.saturate),
+    WebkitBackdropFilter: transparenciaReduzida ? "none" : `blur(${preset.blur}px) saturate(${preset.saturate}%)`,
+    borderLeft: `1px solid rgba(${escuro ? "255,255,255" : sombraBase},${bordaAlpha.l})`,
+    borderRight: `1px solid rgba(${escuro ? "255,255,255" : sombraBase},${bordaAlpha.r})`,
+    borderBottom: `1px solid rgba(${escuro ? "255,255,255" : sombraBase},${bordaAlpha.b})`,
+    borderTop: `1px solid rgba(255,255,255,${bordaAlpha.t})`,
     boxShadow: [
       `inset 0 1px 1px rgba(255,255,255,${escuro ? 0.12 : 0.8})`,
       `inset 0 -10px 16px -8px rgba(${sombraBase},${escuro ? 0.4 : 0.1})`,
@@ -72,12 +100,14 @@ type PropsBase = {
 
 /** Superfície de vidro genérica — base de todos os outros componentes. */
 export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style, children, variants, initial, animate }: PropsBase) {
+  const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
+  const maisContraste = usePreferenciaMidia("(prefers-contrast: more)");
   return (
     <motion.div
       variants={variants}
       initial={initial}
       animate={animate}
-      style={{ borderRadius: raio.card, zIndex: elevacao.card, ...materialVidro(intensidade, !!escuro, alphaFundo), ...style }}
+      style={{ borderRadius: raio.card, zIndex: elevacao.card, ...materialVidro(intensidade, !!escuro, alphaFundo, transparenciaReduzida, maisContraste), ...style }}
     >
       {children}
     </motion.div>
@@ -267,6 +297,7 @@ export function GlassButton({
       style={{
         cursor: "pointer",
         padding: "10px 18px",
+        minHeight: 44,
         borderRadius: raio.pilula,
         fontSize: 13.5,
         fontWeight: 700,
@@ -320,6 +351,10 @@ export function GlassTabs<T extends string>({
 }) {
   const reduzido = useReducedMotion();
   const paleta = escuro ? corEscuro : cor;
+  // Alvo de toque de 44px é regra pra mobile (fase 9) — no desktop a pílula
+  // compacta de 13/16px já é alvo de mouse normal, inflar pra 44 ali deixaria
+  // a aba gigante e feia à toa.
+  const mobile = usePreferenciaMidia("(max-width: 767px)");
   const idGrupo = `glass-tabs-${opcoes.map((o) => o.valor).join("-")}`;
   return (
     <div
@@ -341,7 +376,18 @@ export function GlassTabs<T extends string>({
             role="tab"
             type="button"
             onClick={() => aoMudar(o.valor)}
-            style={{ position: "relative", border: "none", background: "transparent", cursor: "pointer", padding: "7px 16px", fontSize: 13, fontWeight: 600, color: ativo ? "#fff" : paleta.textoSecundario, borderRadius: raio.pilula }}
+            style={{
+              position: "relative",
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              padding: "7px 16px",
+              minHeight: mobile ? 44 : undefined,
+              fontSize: 13,
+              fontWeight: 600,
+              color: ativo ? "#fff" : paleta.textoSecundario,
+              borderRadius: raio.pilula,
+            }}
           >
             {ativo && (
               <motion.span
@@ -370,6 +416,8 @@ export function GlassPopover({ escuro, style, children }: PropsBase) {
 /** Sheet (mobile) — vidro intenso (~70%), sobe do rodapé. */
 export function GlassSheet({ escuro, aberto, children }: PropsBase & { aberto: boolean }) {
   const reduzido = useReducedMotion();
+  const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
+  const maisContraste = usePreferenciaMidia("(prefers-contrast: more)");
   if (!aberto) return null;
   return (
     <motion.div
@@ -385,7 +433,7 @@ export function GlassSheet({ escuro, aberto, children }: PropsBase & { aberto: b
         borderTopLeftRadius: raio.painel,
         borderTopRightRadius: raio.painel,
         padding: 18,
-        ...materialVidro("intenso", !!escuro),
+        ...materialVidro("intenso", !!escuro, undefined, transparenciaReduzida, maisContraste),
       }}
     >
       {children}
@@ -445,6 +493,8 @@ export function GlassDock({
   itens: { rotulo: string; Icone: LucideIcon; ativo?: boolean }[];
 }) {
   const paleta = escuro ? corEscuro : cor;
+  const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
+  const maisContraste = usePreferenciaMidia("(prefers-contrast: more)");
   return (
     <div
       style={{
@@ -457,14 +507,39 @@ export function GlassDock({
         padding: "10px 8px",
         display: "flex",
         justifyContent: "space-around",
-        ...materialVidro("intenso", !!escuro),
+        ...materialVidro("intenso", !!escuro, undefined, transparenciaReduzida, maisContraste),
       }}
     >
       {itens.map((i) => (
-        <div key={i.rotulo} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: i.ativo ? paleta.destaque : paleta.textoTerciario }}>
+        // <button>, não <div> — alvo de toque real (fase 9: acessibilidade).
+        // Min. 44px de altura (WCAG 2.5.5/skill premium-liquid-ui) e SEM
+        // `outline: none`: o anel de foco padrão do navegador continua
+        // visível no teclado, de propósito.
+        <button
+          key={i.rotulo}
+          type="button"
+          aria-current={i.ativo ? "page" : undefined}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 3,
+            minWidth: 44,
+            minHeight: 44,
+            padding: "4px 10px",
+            border: "none",
+            background: "transparent",
+            cursor: "pointer",
+            borderRadius: raio.campo,
+            fontSize: 10,
+            fontWeight: 600,
+            color: i.ativo ? paleta.destaque : paleta.textoTerciario,
+          }}
+        >
           <i.Icone size={18} />
           {i.rotulo}
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -490,8 +565,10 @@ export function GlassSidebar({
   const [aberto, setAberto] = useState(true);
   const paleta = escuro ? corEscuro : cor;
   const reduzido = useReducedMotion();
+  const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
+  const maisContraste = usePreferenciaMidia("(prefers-contrast: more)");
   return (
-    <aside style={{ position: "fixed", zIndex: elevacao.navegacao, left: 16, top: 16, bottom: 16, width: 240, display: "flex", flexDirection: "column", borderRadius: raio.painel, padding: "16px 10px", ...materialVidro("padrao", !!escuro) }}>
+    <aside style={{ position: "fixed", zIndex: elevacao.navegacao, left: 16, top: 16, bottom: 16, width: 240, display: "flex", flexDirection: "column", borderRadius: raio.painel, padding: "16px 10px", ...materialVidro("padrao", !!escuro, undefined, transparenciaReduzida, maisContraste) }}>
       <div style={{ padding: "2px 10px 14px" }}>
         <div style={{ fontWeight: 800, fontSize: 15, color: paleta.texto, letterSpacing: -0.2 }}>COFISC</div>
         <div style={{ fontSize: 10.5, color: paleta.textoTerciario, marginTop: 1 }}>Gestão Contratual</div>
@@ -499,23 +576,32 @@ export function GlassSidebar({
 
       <nav style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
         {itens.map((i) => (
-          <div
+          // <button>, não <div> (fase 9): sem isso o item nunca recebia foco
+          // de teclado — parecia navegável, mas Tab pulava direto por cima.
+          <button
             key={i.rotulo}
+            type="button"
+            aria-current={i.ativo ? "page" : undefined}
             style={{
               display: "flex",
               alignItems: "center",
               gap: 9,
+              width: "100%",
+              minHeight: 44,
               padding: "8px 10px",
+              border: "none",
               borderRadius: raio.campo,
               fontSize: 13,
               fontWeight: 600,
+              textAlign: "left",
+              cursor: "pointer",
               color: i.ativo ? "#fff" : paleta.textoSecundario,
               background: i.ativo ? paleta.destaque : "transparent",
             }}
           >
             <i.Icone size={15} />
             <span>{i.rotulo}</span>
-          </div>
+          </button>
         ))}
 
         {grupoCadastros && grupoCadastros.length > 0 && (
@@ -555,10 +641,29 @@ export function GlassSidebar({
                   style={{ overflow: "hidden" }}
                 >
                   {grupoCadastros.map((i) => (
-                    <div key={i.rotulo} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: raio.campo, fontSize: 12.5, fontWeight: 600, color: paleta.textoSecundario }}>
+                    <button
+                      key={i.rotulo}
+                      type="button"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        width: "100%",
+                        minHeight: 40,
+                        padding: "7px 10px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        borderRadius: raio.campo,
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        color: paleta.textoSecundario,
+                      }}
+                    >
                       <i.Icone size={14} />
                       <span>{i.rotulo}</span>
-                    </div>
+                    </button>
                   ))}
                 </motion.div>
               )}
