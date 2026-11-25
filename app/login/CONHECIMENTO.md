@@ -4,7 +4,8 @@
 > telas de autenticação futuras (recuperação de senha, convite, etc.) e
 > pra alimentar a skill `premium-liquid-ui`/Skill Studio quando existirem
 > de verdade neste ambiente (ver `app/design-lab/CONHECIMENTO.md` pra mais
-> contexto sobre essa limitação).
+> contexto sobre essa limitação). Documento consolidado do sistema:
+> `design-system/LIQUID_GLASS.md`.
 
 ## Referência
 

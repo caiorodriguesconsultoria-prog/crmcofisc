@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronDown, type LucideIcon } from "lucide-react";
-import { cor, corEscuro, raio, elevacao, vidro, movimento } from "@/lib/theme";
+import { cor, corEscuro, raio, elevacao, vidro, vidroNivel, movimento } from "@/lib/theme";
 import { backdropRefracao } from "./refracao";
 
 // Fase 9 (CRM_LIQUID_GLASS_SKILLS.md / regra da skill premium-liquid-ui:
@@ -119,7 +119,7 @@ export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style
 export function GlassCard({ escuro, titulo, style, children, variants, initial, animate }: PropsBase & { titulo?: string }) {
   const paleta = escuro ? corEscuro : cor;
   return (
-    <GlassSurface escuro={escuro} alphaFundo={0.7} variants={variants} initial={initial} animate={animate} style={{ padding: 16, ...style }}>
+    <GlassSurface escuro={escuro} alphaFundo={vidroNivel.cartao} variants={variants} initial={initial} animate={animate} style={{ padding: 16, ...style }}>
       {titulo && <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{titulo}</div>}
       {children}
     </GlassSurface>
@@ -133,7 +133,7 @@ export function GlassCard({ escuro, titulo, style, children, variants, initial, 
  * vidro excessivo em listas densas"). */
 export function GlassWindow({ escuro, style, children }: PropsBase) {
   return (
-    <GlassSurface escuro={escuro} intensidade="padrao" alphaFundo={0.5} style={{ borderRadius: raio.painel, zIndex: elevacao.janela, padding: 0, overflow: "hidden", ...style }}>
+    <GlassSurface escuro={escuro} intensidade="padrao" alphaFundo={vidroNivel.janela} style={{ borderRadius: raio.painel, zIndex: elevacao.janela, padding: 0, overflow: "hidden", ...style }}>
       {children}
     </GlassSurface>
   );

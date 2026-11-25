@@ -193,6 +193,27 @@ export const vidro = {
   intenso: { blur: 28, saturate: 190, alphaFundo: 0.74 },
 };
 
+// Passo 2 do "CRM Premium" (consolidar o Design System proprietário):
+// antes desses nomes, os overrides de opacidade do /design-lab viviam como
+// números soltos (`alphaFundo={0.7}`, `{0.5}`) repetidos em vários
+// arquivos, cada um com seu próprio comentário explicando "por que 70%" —
+// fonte única agora. Valores exatamente os já calibrados/aprovados pelo
+// Caio (ver app/design-lab/CONHECIMENTO.md e design-system/LIQUID_GLASS.md
+// pro histórico de decisão); nenhuma mudança visual neste refactor.
+export const vidroNivel = {
+  /** Janela de contrato/modal — superfície decorativa, mais vidro (mais
+   * transparente) porque não carrega texto denso linha a linha sozinha. */
+  janela: 0.5,
+  /** Card/KPI de dashboard — mais sólido que a janela, carrega número e
+   * texto curto que precisa ficar legível mesmo com o fundo variando. */
+  cartao: 0.7,
+  /** Sidebar/popover — sem override, usa o blur/saturate padrão também
+   * pra opacidade (preset `padrao` já definido acima). */
+  navegacao: vidro.padrao.alphaFundo,
+  /** Dock mobile/sheet — sem override, usa o preset `intenso`. */
+  dock: vidro.intenso.alphaFundo,
+};
+
 export const botaoPrimario: React.CSSProperties = {
   // Cor plana — gradiente em botão é um dos sinais mais comuns de "cara de
   // IA" (ver auditoria de design, rodada 2); cor sólida com peso tipográfico

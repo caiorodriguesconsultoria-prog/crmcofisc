@@ -1693,3 +1693,16 @@ Validado com Playwright: preenchimento + toggle de senha + submit (confirma que 
 **Limitação**: fluxo de autenticação real (Supabase + Google OAuth de verdade) não pôde ser testado — sem credenciais reais neste ambiente. Testado só em Chromium headless.
 
 Sem migração de schema. Aguardando revisão visual do Caio antes de prosseguir pro passo 2 (consolidar o Design System).
+
+## 2026-11-26 (2) · Passo 2 — consolidação do Design System proprietário
+
+Caio aprovou a tela de login e pediu pra seguir pro passo 2 do plano "CRM Premium" (consolidar o Design System). Duas frentes: (a) um refactor mecânico sem mudança visual, e (b) o documento consolidado em si.
+
+- **`lib/theme.ts`**: novo export `vidroNivel` — formaliza os níveis de opacidade do vidro (`janela` 0.5, `cartao` 0.7, `navegacao` 0.82, `dock` 0.74) que antes viviam como números soltos (`alphaFundo={0.7}`, `{0.5}`) repetidos com comentário próprio em `app/design-lab/_glass/componentes.tsx`. Fonte única agora. Nenhuma mudança visual — confirmado por regressão completa (screenshots + teste funcional do login) antes e depois.
+- **`design-system/LIQUID_GLASS.md`** (novo): documento consolidado do sistema — explica que coexiste com `REGRAS.md` (bento/dashboard, sistema diferente, não misturar numa mesma tela), lista a fonte única dos tokens, o catálogo de componentes, o status de produção (só login até agora), e formaliza como regra permanente os dois "contratos" que vinham sendo aplicados caso a caso: acessibilidade (contraste medido de verdade, foco real, alvos de toque, `prefers-*`) e desempenho (fundo ambiental nunca WebGL se a tela tiver animação contínua, cuidado com `movimento.ease` em propriedades animadas via JS).
+- **`CLAUDE.md`**: acrescentada uma linha nas regras operacionais apontando pro novo documento, igual já existia pro `REGRAS.md` — pra qualquer sessão futura (minha ou não) saber que esse sistema existe antes de mexer numa tela dele.
+- **`app/design-lab/CONHECIMENTO.md`** e **`app/login/CONHECIMENTO.md`**: cabeçalho atualizado com referência cruzada pro documento consolidado, e a frase desatualizada "nada foi aplicado ao CRM funcional" corrigida (já foi, na tela de login).
+
+Validado: `tsc --noEmit` e `npm run build` limpos, regressão completa do `/design-lab` + teste funcional do login (preenchimento, toggle de senha, submit, teclado) sem erro — confirma que o refactor de tokens não alterou nada visualmente, só organizou a fonte.
+
+Sem migração.

@@ -1,11 +1,16 @@
 # Conhecimento reutilizável — Liquid Glass / `/design-lab`
 
-> Documento vivo do laboratório experimental (`app/design-lab/`). Nada aqui
-> foi aplicado ao CRM funcional ainda — fica registrado pra quando a
-> migração for aprovada, e pra alimentar a skill `premium-liquid-ui` (ou o
-> futuro Skill Studio da Software Factory) quando ela for instalada de
-> verdade neste ambiente (hoje só o `SKILL.md`/descrição existe, sem os
-> arquivos de suporte — ver "Limitações" no fim).
+> Documento vivo do laboratório experimental (`app/design-lab/`). Ver
+> `design-system/LIQUID_GLASS.md` pro documento consolidado (tokens,
+> catálogo, contratos de acessibilidade/desempenho) — este arquivo aqui
+> tem o detalhe/histórico de cada decisão. Status de produção: só a tela
+> de login (`app/login/`) usa este sistema visual até agora (via a classe
+> CSS já aprovada, não os componentes React deste laboratório); o resto
+> segue experimental, aguardando aprovação visual. Serve também pra
+> alimentar a skill `premium-liquid-ui` (ou o futuro Skill Studio da
+> Software Factory) quando ela for instalada de verdade neste ambiente
+> (hoje só o `SKILL.md`/descrição existe, sem os arquivos de suporte — ver
+> "Limitações" no fim).
 
 ## Componentes aprovados (reutilizáveis)
 
