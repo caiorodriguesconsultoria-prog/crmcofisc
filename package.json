@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
+    "@number-flow/react": "^0.6.2",
     "@sentry/nextjs": "^10.76.2",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import NumberFlow from "@number-flow/react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   LayoutGrid,
@@ -45,6 +46,12 @@ const KPIS = [
 
 export default function DesignLabPage() {
   const [escuro, setEscuro] = useState(false);
+  // Fase 11 (CRM Premium — auditoria de recursos externos): @number-flow/
+  // react (MIT) nos valores de KPI — número troca com animação de dígito,
+  // em vez de aparecer/sumir. `bump` é só pra ter algo que muda de
+  // verdade no laboratório (produto real vai trocar quando os dados
+  // mudarem, não precisa desse botão).
+  const [bump, setBump] = useState(0);
   // Protótipo de laboratório, não produto — só pra ter paridade mínima com
   // a referência (sidebar some, dock vira a navegação) na hora de comparar
   // desktop vs. mobile lado a lado.
@@ -139,6 +146,9 @@ export default function DesignLabPage() {
               style={{ position: "absolute", top: 7, right: 8, width: 7, height: 7, borderRadius: "50%", background: cor.urgente, border: `1.5px solid ${escuro ? "#0E1526" : "#fff"}` }}
             />
           </button>
+          <GlassButton escuro={escuro} onClick={() => setBump((v) => (v === 0 ? 3 : 0))}>
+            Simular atualização
+          </GlassButton>
           <GlassButton escuro={escuro} onClick={() => setEscuro((v) => !v)}>
             {escuro ? "Tema escuro" : "Tema claro"}
           </GlassButton>
@@ -156,7 +166,9 @@ export default function DesignLabPage() {
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: paleta.texto, marginTop: 12 }}>{k.valor}</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: paleta.texto, marginTop: 12 }}>
+                <NumberFlow value={Number(k.valor) + bump} />
+              </div>
               <div style={{ fontSize: 12, color: paleta.textoTerciario, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.legenda ?? k.rotulo}</div>
             </GlassCard>
           ))}

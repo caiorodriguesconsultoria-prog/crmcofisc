@@ -1635,3 +1635,19 @@ Validado nesta rodada (Playwright, não inspeção visual só): dashboard deskto
 **Aguardando aprovação visual do Caio** antes de começar a migrar qualquer parte do Design System pro CRM funcional — conforme a seção 10 do documento de autorização. Nenhum componente de produto foi alterado em nenhuma das 10 fases.
 
 Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (15) · Fase 11 — "CRM Premium: implementação avançada de UI/UX" (auditoria + primeira dependência)
+
+Caio trouxe uma nova autorização, mais ampla que o documento anterior: estudar seletivamente recursos de 11 sites/bibliotecas externas (designeer.xyz, 21st.dev, reactbits.dev, magicui.design, shadcn/ui, Tremor, motion-primitives.com, number-flow, Mobbin, paper-design/shaders, motion.dev), consolidar o Design System, e um plano de 10 passos cobrindo dashboard, janelas de contrato, Andamentos/Relatórios, mobile, assistente de IA, microinterações e testes. Pediu auditoria antes de instalar ("evite dependências redundantes"), implementação de verdade (não só análise), validação a cada etapa, e documentação reutilizável — tudo ainda em branch separada, sem publicar em produção.
+
+**Passo 1 (auditoria)**: antes de instalar qualquer coisa, chequei natureza/licença de cada fonte (ver tabela completa em `app/design-lab/CONHECIMENTO.md`, novo arquivo — é o "conhecimento reutilizável" pedido, já que a skill `premium-liquid-ui` não está de fato instalada neste ambiente, só o `SKILL.md` foi enviado por upload). Resumo: só `@number-flow/react` (MIT) passou no critério de "ganho real + risco mínimo + licença adequada" pra instalar agora; `@paper-design/shaders-react` (Apache-2.0) fica como candidato a testar depois (WebGL, ~430KB, troca o fundo SVG atual por algo mais pesado — não decido isso sem medir desempenho primeiro); shadcn/ui e Tremor exigiriam Tailwind CSS como base (o projeto não usa) — trocar de paradigma de estilo só por isso contraria a própria regra de "evitar dependências redundantes", já que `GlassButton`/`GlassDonut` cobrem o mesmo papel; 21st.dev embrulha bibliotecas de terceiros sem licença clara por componente; motion-primitives.com e designeer.xyz bloquearam acesso (403) — sem conseguir ver conteúdo/licença, não instalo nada de lá.
+
+- **`@number-flow/react` 0.6.2** instalado (MIT, 25KB, zero dependências de runtime). Conferido via `npm audit` que nenhuma das 7 vulnerabilidades já sinalizadas pelo Dependabot veio dessa instalação (todas preexistentes: Sentry/Next/xlsx).
+- **`app/design-lab/page.tsx`**: valores de KPI (`17`, `5`, `6`...) passaram a usar `<NumberFlow>` em vez de texto estático — anima dígito a dígito quando o valor muda, em vez de trocar instantâneo. Acrescentado botão "Simular atualização" só pro laboratório (produto real vai trocar quando os dados mudarem de verdade, não precisa desse botão).
+- **`app/design-lab/CONHECIMENTO.md`** (novo): componentes aprovados, técnicas validadas, decisões de dependência com licença, erros encontrados/soluções, limitações — documento vivo pra alimentar a skill real ou o Skill Studio quando existirem de verdade neste ambiente.
+
+Validado com Playwright: clique real no botão "Simular atualização" (não só inspeção estática), zero erro de console, vídeo gravado mostrando a transição de dígito. `tsc --noEmit` e `npm run build` limpos.
+
+Nenhum componente de produto foi alterado — ainda só o laboratório. Os passos 2-10 do plano do Caio (consolidar o Design System, modernizar dashboard/janelas/Andamentos-Relatórios, mobile independente, assistente de IA, microinterações, testes finais) ficam pras próximas rodadas, uma de cada vez, com validação entre elas — mesmo ritmo das fases 6-10.
+
+Sem migração.
