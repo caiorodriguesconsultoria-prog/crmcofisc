@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   LayoutGrid,
   FileText,
@@ -21,7 +22,7 @@ import {
 import AmbientBackground from "./_glass/ambient-background";
 import FiltroRefracaoSVG from "./_glass/refracao";
 import { GlassCard, GlassButton, GlassInput, GlassTable, GlassAIButton, GlassSidebar, GlassDock, GlassSurface, GlassIconChip, GlassDonut } from "./_glass/componentes";
-import { cor, corEscuro } from "@/lib/theme";
+import { cor, corEscuro, movimento } from "@/lib/theme";
 
 // /design-lab — laboratório isolado (CRM_LIQUID_GLASS_SKILLS.md, seção 5):
 // dados fictícios, sem mutação real, não é tela do produto. Objetivo:
@@ -55,6 +56,18 @@ export default function DesignLabPage() {
     return () => window.removeEventListener("resize", atualizar);
   }, []);
   const paleta = escuro ? corEscuro : cor;
+  const reduzido = useReducedMotion();
+  // Motion Design (fase 8): entrada escalonada dos cards — cada grade tem
+  // seu próprio container pai com staggerChildren, os itens herdam a
+  // variante "item" (fade + leve subida). Roda uma vez por montagem da
+  // página, não a cada clique de tema/dock; desligado por completo com
+  // prefers-reduced-motion (sem delay nem transform, só aparece).
+  const grade = reduzido
+    ? { escondido: {}, visivel: {} }
+    : { escondido: { opacity: 0 }, visivel: { opacity: 1, transition: { staggerChildren: 0.045 } } };
+  const item = reduzido
+    ? { escondido: {}, visivel: {} }
+    : { escondido: { opacity: 0, y: 10 }, visivel: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } } };
 
   return (
     <div style={{ height: desktop ? "100vh" : "auto", minHeight: "100vh", position: "relative", overflow: desktop ? "hidden" : "visible" }}>
@@ -120,16 +133,20 @@ export default function DesignLabPage() {
             }}
           >
             <Bell size={16} />
-            <span style={{ position: "absolute", top: 7, right: 8, width: 7, height: 7, borderRadius: "50%", background: cor.urgente, border: `1.5px solid ${escuro ? "#0E1526" : "#fff"}` }} />
+            <motion.span
+              animate={reduzido ? undefined : { scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+              transition={reduzido ? undefined : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              style={{ position: "absolute", top: 7, right: 8, width: 7, height: 7, borderRadius: "50%", background: cor.urgente, border: `1.5px solid ${escuro ? "#0E1526" : "#fff"}` }}
+            />
           </button>
           <GlassButton escuro={escuro} onClick={() => setEscuro((v) => !v)}>
             {escuro ? "Tema escuro" : "Tema claro"}
           </GlassButton>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: desktop ? "repeat(5, 1fr)" : "repeat(2, 1fr)", gap: 12, flex: "0 0 auto" }}>
+        <motion.div variants={grade} initial="escondido" animate="visivel" style={{ display: "grid", gridTemplateColumns: desktop ? "repeat(5, 1fr)" : "repeat(2, 1fr)", gap: 12, flex: "0 0 auto" }}>
           {KPIS.map((k) => (
-            <GlassCard key={k.rotulo} escuro={escuro} style={{ padding: 16 }}>
+            <GlassCard key={k.rotulo} escuro={escuro} variants={item} style={{ padding: 16 }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6 }}>
                 <GlassIconChip Icone={k.Icone} cor={k.corIcone} fundo={k.fundo} />
                 {k.delta && (
@@ -143,10 +160,10 @@ export default function DesignLabPage() {
               <div style={{ fontSize: 12, color: paleta.textoTerciario, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.legenda ?? k.rotulo}</div>
             </GlassCard>
           ))}
-        </div>
+        </motion.div>
 
-        <div style={{ display: "grid", gridTemplateColumns: desktop ? "repeat(3, 1fr)" : "1fr", gridTemplateRows: desktop ? "repeat(2, auto)" : "none", gap: 12, flex: "0 0 auto" }}>
-          <GlassCard escuro={escuro} titulo="Contratos por etapa">
+        <motion.div variants={grade} initial="escondido" animate="visivel" style={{ display: "grid", gridTemplateColumns: desktop ? "repeat(3, 1fr)" : "1fr", gridTemplateRows: desktop ? "repeat(2, auto)" : "none", gap: 12, flex: "0 0 auto" }}>
+          <GlassCard escuro={escuro} titulo="Contratos por etapa" variants={item}>
             <GlassDonut
               escuro={escuro}
               total={17}
@@ -160,7 +177,7 @@ export default function DesignLabPage() {
             />
           </GlassCard>
 
-          <GlassCard escuro={escuro}>
+          <GlassCard escuro={escuro} variants={item}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>Entregas previstas</div>
               <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: paleta.textoSecundario }}>
@@ -187,7 +204,7 @@ export default function DesignLabPage() {
             </div>
           </GlassCard>
 
-          <GlassCard escuro={escuro} titulo="Cobertura de férias">
+          <GlassCard escuro={escuro} titulo="Cobertura de férias" variants={item}>
             <div style={{ fontSize: 26, fontWeight: 700, color: paleta.texto }}>75%</div>
             <div style={{ fontSize: 12, color: paleta.textoTerciario, marginTop: 3, marginBottom: 10 }}>3 de 4 coordenações</div>
             <div style={{ height: 8, borderRadius: 999, background: escuro ? "rgba(255,255,255,.12)" : "rgba(32,31,29,.08)" }}>
@@ -207,7 +224,7 @@ export default function DesignLabPage() {
             </div>
           </GlassCard>
 
-          <GlassCard escuro={escuro} style={{ display: "flex", flexDirection: "column" }}>
+          <GlassCard escuro={escuro} variants={item} style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Atividades prioritárias</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13, color: paleta.texto, flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
@@ -228,7 +245,7 @@ export default function DesignLabPage() {
             </span>
           </GlassCard>
 
-          <GlassCard escuro={escuro}>
+          <GlassCard escuro={escuro} variants={item}>
             <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Contratos com atraso</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}>
               {[
@@ -244,7 +261,7 @@ export default function DesignLabPage() {
             </div>
           </GlassCard>
 
-          <GlassSurface escuro={escuro} style={{ padding: 16, display: "flex", flexDirection: "column" }}>
+          <GlassSurface escuro={escuro} variants={item} style={{ padding: 16, display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#9B7A2E", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Insights da IA · beta</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: paleta.texto, flex: 1 }}>
               <div>• 2 entregas podem atrasar nos próximos 15 dias.</div>
@@ -255,7 +272,7 @@ export default function DesignLabPage() {
               Analisar com a IA <ArrowRight size={13} />
             </span>
           </GlassSurface>
-        </div>
+        </motion.div>
       </main>
 
       <GlassAIButton escuro={escuro} />

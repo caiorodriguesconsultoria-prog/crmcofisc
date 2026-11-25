@@ -1586,3 +1586,16 @@ Caio aprovou o resultado do dashboard ("ficou ótimo") e pediu pra seguir pra "f
 - Validado clicando de verdade nas três abas via Playwright (`getByRole("tab", ...).click()`) e capturando cada estado — confirma que a navegação funciona, não só que o HTML existe. Zero erro de console em todos os estados, desktop e mobile.
 
 Nenhum componente de produto foi alterado — só o laboratório. Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (12) · Fase 8 — Motion Design no laboratório
+
+Caio pediu pra seguir pra "fase 8". Ainda só no `/design-lab`. Dos requisitos originais do `CRM_LIQUID_GLASS_SKILLS.md` (seção dos obrigatórios), "Motion Design" era o único item do checklist que eu ainda não tinha atacado de propósito — só existiam micro-interações básicas (tap em botão, pílula deslizante das abas). Esta fase cobre isso.
+
+- **Entrada escalonada**: `GlassSurface`/`GlassCard` passaram a aceitar `variants`/`initial`/`animate` (repassados pro `motion.div` interno, em vez de um `<div>` comum) — permite orquestrar `staggerChildren` no grid pai sem precisar envolver cada card manualmente. Aplicado nos dois grids do `/design-lab` (KPIs e bento 3×2): fade + leve subida (10px), ~45ms de atraso entre cards.
+- **Troca de aba com crossfade**: `/design-lab/janela` — Resumo/Andamentos/Relatório agora trocam de conteúdo com fade + leve deslize (`AnimatePresence mode="wait"`), em vez de troca abrupta.
+- **Grupo "Cadastros" da sidebar**: expandir/recolher agora anima a altura de verdade (`AnimatePresence` + `height: "auto"`/`0`) e a seta gira suavemente — antes era um `{aberto && ...}` cru, sem transição.
+- **Respiração sutil**: botão flutuante de IA (glow pulsando no box-shadow) e o indicador do sino de notificação (pulso de escala/opacidade) — ambos sutis, decorativos, não disputam atenção com o conteúdo.
+- Todas as animações acima são puladas por completo quando `prefers-reduced-motion` está ativo (usando `useReducedMotion()` do framer-motion em cada componente/página que anima) — sem exceção, incluindo as de "respiração" contínua.
+- **Bug real encontrado e corrigido**: `movimento.ease` (`lib/theme.ts`) é a string CSS `"cubic-bezier(0.22, 1, 0.36, 1)"` — funciona em propriedades aceleradas por GPU (`opacity`/`transform`) via Web Animations API, mas o framer-motion instalado (v14) rejeita essa sintaxe de string pra propriedades animadas via motor próprio em JS (`height`, `boxShadow`), lançando `Invalid easing type` em runtime. Esse bug já existia antes (usado em `GlassSheet`, componente exportado mas nunca de fato renderizado em nenhuma página — por isso nunca foi disparado). Corrigido substituindo por array numérico equivalente (`[0.22, 1, 0.36, 1]`) nos pontos tocados nesta fase; não mexi em `lib/theme.ts` (token compartilhado, fora do escopo do laboratório).
+
+Validado via Playwright: zero erro de console/página em interações reais (clique no grupo Cadastros, clique nas abas da janela, espera pela animação de entrada do dashboard) — não só ausência de erro estático, mas clicando de fato. Build e `tsc --noEmit` limpos. Nenhum componente de produto foi alterado. Sem migração.

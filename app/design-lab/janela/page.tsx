@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { FileText, Clock, MessageSquare, CheckCircle2 } from "lucide-react";
 import AmbientBackground from "../_glass/ambient-background";
 import FiltroRefracaoSVG from "../_glass/refracao";
 import { GlassWindow, GlassTabs, GlassTable, GlassButton, GlassIconChip, GlassTimeline } from "../_glass/componentes";
-import { cor, corEscuro } from "@/lib/theme";
+import { cor, corEscuro, movimento } from "@/lib/theme";
 
 // /design-lab/janela — prova da janela contratual (CRM_LIQUID_GLASS_SKILLS.md,
 // seção 5.5: "janela contratual com texto denso e tabelas"). Dados
@@ -37,6 +38,7 @@ export default function DesignLabJanelaPage() {
   const [escuro, setEscuro] = useState(false);
   const [aba, setAba] = useState<Aba>("resumo");
   const paleta = escuro ? corEscuro : cor;
+  const reduzido = useReducedMotion();
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -73,69 +75,92 @@ export default function DesignLabJanelaPage() {
           />
         </div>
 
-        <div style={{ padding: "0 24px 28px", display: "flex", flexDirection: "column", gap: 16, maxHeight: 440, overflowY: "auto" }}>
-          {aba === "resumo" && (
-            <>
-              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: paleta.texto }}>
-                Objeto: aquisição de insulina humana, desmopressina acetato e demais insumos para atendimento das unidades
-                vinculadas à coordenação. Vigência até 04/12/2026. Fiscal titular designado por portaria publicada no DOU,
-                com substituto indicado para os períodos de ausência regulamentar.
-              </p>
-              <GlassTable
-                escuro={escuro}
-                colunas={["Parcela", "Prazo", "Situação"]}
-                linhas={[
-                  ["1ª parcela", "04/12/2026", <span key="a" style={{ color: cor.verdeEscuro, fontWeight: 600 }}>Entregue</span>],
-                  ["2ª parcela", "11/12/2026", <span key="b" style={{ color: cor.atencao, fontWeight: 600 }}>Aguardando</span>],
-                  ["3ª parcela", "a definir", "—"],
-                ]}
-              />
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-                  Cronograma de entregas
+        <div style={{ padding: "0 24px 28px", maxHeight: 440, overflowY: "auto" }}>
+          <AnimatePresence mode="wait" initial={false}>
+            {aba === "resumo" && (
+              <motion.div
+                key="resumo"
+                initial={reduzido ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduzido ? undefined : { opacity: 0, y: -6 }}
+                transition={{ duration: reduzido ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+              >
+                <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: paleta.texto }}>
+                  Objeto: aquisição de insulina humana, desmopressina acetato e demais insumos para atendimento das unidades
+                  vinculadas à coordenação. Vigência até 04/12/2026. Fiscal titular designado por portaria publicada no DOU,
+                  com substituto indicado para os períodos de ausência regulamentar.
+                </p>
+                <GlassTable
+                  escuro={escuro}
+                  colunas={["Parcela", "Prazo", "Situação"]}
+                  linhas={[
+                    ["1ª parcela", "04/12/2026", <span key="a" style={{ color: cor.verdeEscuro, fontWeight: 600 }}>Entregue</span>],
+                    ["2ª parcela", "11/12/2026", <span key="b" style={{ color: cor.atencao, fontWeight: 600 }}>Aguardando</span>],
+                    ["3ª parcela", "a definir", "—"],
+                  ]}
+                />
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+                    Cronograma de entregas
+                  </div>
+                  <GlassTimeline escuro={escuro} itens={CRONOGRAMA} />
                 </div>
-                <GlassTimeline escuro={escuro} itens={CRONOGRAMA} />
-              </div>
-            </>
-          )}
+              </motion.div>
+            )}
 
-          {aba === "andamentos" && (
-            <>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                <Clock size={13} />
-                Histórico de andamentos
-              </div>
-              <GlassTimeline escuro={escuro} itens={ANDAMENTOS} />
-            </>
-          )}
-
-          {aba === "relatorio" && (
-            <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            {aba === "andamentos" && (
+              <motion.div
+                key="andamentos"
+                initial={reduzido ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduzido ? undefined : { opacity: 0, y: -6 }}
+                transition={{ duration: reduzido ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  <MessageSquare size={13} />
-                  Relatório de execução
+                  <Clock size={13} />
+                  Histórico de andamentos
                 </div>
-                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: cor.verdeEscuro, background: cor.verdeEscuroFundo, borderRadius: 999, padding: "3px 9px" }}>
-                  <CheckCircle2 size={12} />
-                  Atualizado há 3 dias
-                </span>
-              </div>
-              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: paleta.texto }}>
-                Execução dentro do previsto. A 1ª parcela foi entregue e conferida sem divergências de quantidade ou
-                especificação técnica. A 2ª parcela está em trânsito, com previsão de entrega em 11/12/2026. Fiscal
-                titular acompanha o processo sem pendências registradas até o momento.
-              </p>
-              <GlassTable
-                escuro={escuro}
-                colunas={["Item", "Quantidade", "Conferência"]}
-                linhas={[
-                  ["Desmopressina acetato 0,1mg/ml", "41.000 un.", <span key="a" style={{ color: cor.verdeEscuro, fontWeight: 600 }}>OK</span>],
-                  ["Insulina humana NPH", "18.000 un.", <span key="b" style={{ color: cor.atencao, fontWeight: 600 }}>Pendente</span>],
-                ]}
-              />
-            </>
-          )}
+                <GlassTimeline escuro={escuro} itens={ANDAMENTOS} />
+              </motion.div>
+            )}
+
+            {aba === "relatorio" && (
+              <motion.div
+                key="relatorio"
+                initial={reduzido ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduzido ? undefined : { opacity: 0, y: -6 }}
+                transition={{ duration: reduzido ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    <MessageSquare size={13} />
+                    Relatório de execução
+                  </div>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: cor.verdeEscuro, background: cor.verdeEscuroFundo, borderRadius: 999, padding: "3px 9px" }}>
+                    <CheckCircle2 size={12} />
+                    Atualizado há 3 dias
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: paleta.texto }}>
+                  Execução dentro do previsto. A 1ª parcela foi entregue e conferida sem divergências de quantidade ou
+                  especificação técnica. A 2ª parcela está em trânsito, com previsão de entrega em 11/12/2026. Fiscal
+                  titular acompanha o processo sem pendências registradas até o momento.
+                </p>
+                <GlassTable
+                  escuro={escuro}
+                  colunas={["Item", "Quantidade", "Conferência"]}
+                  linhas={[
+                    ["Desmopressina acetato 0,1mg/ml", "41.000 un.", <span key="a" style={{ color: cor.verdeEscuro, fontWeight: 600 }}>OK</span>],
+                    ["Insulina humana NPH", "18.000 un.", <span key="b" style={{ color: cor.atencao, fontWeight: 600 }}>Pendente</span>],
+                  ]}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </GlassWindow>
     </div>

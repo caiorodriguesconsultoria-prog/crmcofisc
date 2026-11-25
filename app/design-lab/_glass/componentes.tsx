@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { cor, corEscuro, raio, elevacao, vidro, movimento } from "@/lib/theme";
 import { backdropRefracao } from "./refracao";
@@ -62,23 +62,34 @@ type PropsBase = {
   alphaFundo?: number;
   style?: React.CSSProperties;
   children?: React.ReactNode;
+  // Pass-through solto pro motion.div interno (entrada escalonada da fase
+  // 8) — tipado como `any` de propósito: isto é laboratório, não vale a
+  // pena importar os tipos completos do framer-motion só pra isso.
+  variants?: any;
+  initial?: any;
+  animate?: any;
 };
 
 /** Superfície de vidro genérica — base de todos os outros componentes. */
-export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style, children }: PropsBase) {
+export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style, children, variants, initial, animate }: PropsBase) {
   return (
-    <div style={{ borderRadius: raio.card, zIndex: elevacao.card, ...materialVidro(intensidade, !!escuro, alphaFundo), ...style }}>
+    <motion.div
+      variants={variants}
+      initial={initial}
+      animate={animate}
+      style={{ borderRadius: raio.card, zIndex: elevacao.card, ...materialVidro(intensidade, !!escuro, alphaFundo), ...style }}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
 /** Card pequeno (KPI, widget) — ~70% opaco (Caio): mais sólido que a janela,
  * já que carrega número/texto curto, mas ainda com vidro visível. */
-export function GlassCard({ escuro, titulo, style, children }: PropsBase & { titulo?: string }) {
+export function GlassCard({ escuro, titulo, style, children, variants, initial, animate }: PropsBase & { titulo?: string }) {
   const paleta = escuro ? corEscuro : cor;
   return (
-    <GlassSurface escuro={escuro} alphaFundo={0.7} style={{ padding: 16, ...style }}>
+    <GlassSurface escuro={escuro} alphaFundo={0.7} variants={variants} initial={initial} animate={animate} style={{ padding: 16, ...style }}>
       {titulo && <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{titulo}</div>}
       {children}
     </GlassSurface>
@@ -364,7 +375,7 @@ export function GlassSheet({ escuro, aberto, children }: PropsBase & { aberto: b
     <motion.div
       initial={reduzido ? false : { y: "100%" }}
       animate={{ y: 0 }}
-      transition={{ duration: movimento.janela, ease: movimento.ease as any }}
+      transition={{ duration: movimento.janela, ease: [0.22, 1, 0.36, 1] }}
       style={{
         position: "fixed",
         zIndex: elevacao.popover,
@@ -382,15 +393,24 @@ export function GlassSheet({ escuro, aberto, children }: PropsBase & { aberto: b
   );
 }
 
-/** Botão flutuante do assistente de IA — volumétrico, com leve glow. */
+/** Botão flutuante do assistente de IA — volumétrico, com leve glow.
+ * Motion Design (fase 8, CRM_LIQUID_GLASS_SKILLS.md): respiração sutil no
+ * glow externo (não no próprio botão, que ficaria irritante de olhar
+ * fixo) — só roda com `prefers-reduced-motion` desligado. */
 export function GlassAIButton({ escuro }: { escuro?: boolean }) {
   const paleta = escuro ? corEscuro : cor;
+  const reduzido = useReducedMotion();
   return (
     <motion.button
       type="button"
       aria-label="Assistente de IA"
       whileTap={{ scale: 0.94 }}
-      transition={movimento.springPress}
+      animate={
+        reduzido
+          ? undefined
+          : { boxShadow: ["0 1px 1px rgba(255,255,255,.4) inset, 0 10px 26px rgba(47,95,219,.4)", "0 1px 1px rgba(255,255,255,.4) inset, 0 10px 34px rgba(47,95,219,.6)", "0 1px 1px rgba(255,255,255,.4) inset, 0 10px 26px rgba(47,95,219,.4)"] }
+      }
+      transition={reduzido ? movimento.springPress : { boxShadow: { duration: 2.6, repeat: Infinity, ease: "easeInOut" }, scale: movimento.springPress }}
       style={{
         position: "fixed",
         zIndex: elevacao.notificacao,
@@ -469,6 +489,7 @@ export function GlassSidebar({
 }) {
   const [aberto, setAberto] = useState(true);
   const paleta = escuro ? corEscuro : cor;
+  const reduzido = useReducedMotion();
   return (
     <aside style={{ position: "fixed", zIndex: elevacao.navegacao, left: 16, top: 16, bottom: 16, width: 240, display: "flex", flexDirection: "column", borderRadius: raio.painel, padding: "16px 10px", ...materialVidro("padrao", !!escuro) }}>
       <div style={{ padding: "2px 10px 14px" }}>
@@ -519,15 +540,29 @@ export function GlassSidebar({
               }}
             >
               Cadastros
-              <ChevronDown size={13} style={{ transform: aberto ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .15s" }} />
+              <motion.span animate={{ rotate: aberto ? 0 : -90 }} transition={reduzido ? { duration: 0 } : movimento.springPress} style={{ display: "flex" }}>
+                <ChevronDown size={13} />
+              </motion.span>
             </button>
-            {aberto &&
-              grupoCadastros.map((i) => (
-                <div key={i.rotulo} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: raio.campo, fontSize: 12.5, fontWeight: 600, color: paleta.textoSecundario }}>
-                  <i.Icone size={14} />
-                  <span>{i.rotulo}</span>
-                </div>
-              ))}
+            <AnimatePresence initial={false}>
+              {aberto && (
+                <motion.div
+                  key="grupo-cadastros"
+                  initial={reduzido ? false : { height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={reduzido ? undefined : { height: 0, opacity: 0 }}
+                  transition={{ duration: reduzido ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ overflow: "hidden" }}
+                >
+                  {grupoCadastros.map((i) => (
+                    <div key={i.rotulo} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: raio.campo, fontSize: 12.5, fontWeight: 600, color: paleta.textoSecundario }}>
+                      <i.Icone size={14} />
+                      <span>{i.rotulo}</span>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </nav>
