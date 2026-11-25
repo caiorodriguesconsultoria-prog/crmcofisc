@@ -201,6 +201,37 @@ export function GlassDonut({
   );
 }
 
+/** Timeline numerada (cronograma de entregas, andamentos) — bolinha +
+ * linha conectora por item; status muda a cor da bolinha. Referência
+ * aprovada mostra isso na janela do contrato no mobile ("Cronograma de
+ * entregas"), em vez da tabela simples usada na primeira versão. */
+export function GlassTimeline({
+  escuro,
+  itens,
+}: {
+  escuro?: boolean;
+  itens: { rotulo: string; detalhe?: string; status: "concluido" | "atual" | "pendente" }[];
+}) {
+  const paleta = escuro ? corEscuro : cor;
+  const corStatus = { concluido: cor.verdeEscuro, atual: cor.atencao, pendente: paleta.textoTerciario };
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {itens.map((it, i) => (
+        <div key={it.rotulo} style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 16, flex: "none" }}>
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: corStatus[it.status], marginTop: 3, flex: "none" }} />
+            {i < itens.length - 1 && <span style={{ width: 2, flex: 1, background: paleta.borda, minHeight: 22 }} />}
+          </div>
+          <div style={{ paddingBottom: i < itens.length - 1 ? 14 : 0, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: paleta.texto }}>{it.rotulo}</div>
+            {it.detalhe && <div style={{ fontSize: 11.5, color: paleta.textoTerciario, marginTop: 1 }}>{it.detalhe}</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Botão volumétrico — camada de luz no topo + sombra de contato, em vez
  * de cor plana; "press" comprime (seção 8, spring moderada). */
 export function GlassButton({

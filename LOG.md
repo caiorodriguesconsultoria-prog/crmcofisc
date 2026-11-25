@@ -1575,3 +1575,14 @@ Caio confirmou o 50%/70% da rodada (8) como melhor que o teste de 30%/50% da rod
 - Verificado por script Playwright (`main.scrollHeight === main.clientHeight` em 1440×900): continua cabendo tudo no desktop sem rolagem, mesmo com o conteúdo novo.
 
 Nenhum componente de produto foi alterado — só o laboratório. Build e `tsc --noEmit` limpos. Sem migração.
+
+## 2026-11-25 (11) · Fase 7 — janela do contrato: abas de verdade + cronograma em timeline
+
+Caio aprovou o resultado do dashboard ("ficou ótimo") e pediu pra seguir pra "fase 7". Confirmei antes com ele: ainda só dentro do `/design-lab`, sem tocar no CRM funcional (a migração pro produto fica pra depois, por etapas, conforme a seção 10 do `CRM_LIQUID_GLASS_SKILLS.md`). Essa fase aplicou na janela do contrato (`/design-lab/janela`) o mesmo nível de acabamento já aprovado no dashboard.
+
+- **Bug real encontrado e corrigido**: as três abas (Resumo/Andamentos/Relatório) já existiam visualmente desde a Etapa 5, mas o corpo da janela sempre renderizava o mesmo conteúdo de Resumo — clicar em Andamentos ou Relatório não mudava nada. Ninguém tinha notado porque as provas visuais anteriores só validavam legibilidade do texto denso, nunca a navegação entre abas. Corrigido: cada aba agora mostra conteúdo próprio (Andamentos → timeline de histórico; Relatório → status "Atualizado há X dias" + texto + tabela de conferência de itens).
+- **`app/design-lab/_glass/componentes.tsx`**: novo componente `GlassTimeline` (bolinha + linha conectora por item, cor da bolinha muda por status: concluído/atual/pendente) — elemento "Cronograma de entregas" que estava na imagem de referência e ainda não tinha sido feito (só existia a tabela simples de parcelas).
+- **`app/design-lab/janela/page.tsx`**: cabeçalho ganhou `GlassIconChip` (ícone de documento), aba Resumo ganhou o cronograma em timeline abaixo da tabela de parcelas, abas Andamentos/Relatório implementadas com conteúdo fictício completo.
+- Validado clicando de verdade nas três abas via Playwright (`getByRole("tab", ...).click()`) e capturando cada estado — confirma que a navegação funciona, não só que o HTML existe. Zero erro de console em todos os estados, desktop e mobile.
+
+Nenhum componente de produto foi alterado — só o laboratório. Build e `tsc --noEmit` limpos. Sem migração.
