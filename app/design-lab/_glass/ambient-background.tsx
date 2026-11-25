@@ -1,13 +1,57 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
+
 // AmbientBackground (CRM_LIQUID_GLASS_SKILLS.md, seção 11 — "requisito
 // visual obrigatório"): composição azul luminosa com curvas largas e
-// suaves, camadas diagonais onduladas, SVG estático (sem imagem remota,
-// sem animação contínua). Paleta exatamente a sugerida no documento:
-// #78A9E8, #A6CFFF, #D5E9FF, #F0F7FF, #568CD5 — versão escura em azul
-// profundo equivalente. Compartilhado entre as telas do /design-lab
-// (futuramente DesktopShell/MobileShell, só depois de aprovado).
+// suaves, camadas diagonais onduladas, SVG estático (sem imagem remota).
+// Paleta exatamente a sugerida no documento: #78A9E8, #A6CFFF, #D5E9FF,
+// #F0F7FF, #568CD5 — versão escura em azul profundo equivalente.
+//
+// Passo 3 ("CRM Premium" — aperfeiçoar o fundo ambiental): acrescentadas
+// esferas 3D em CSS (mesma técnica validada na tela de login — ver
+// app/login/_fundo.tsx), por cima das ondas. As ondas continuam a base
+// (boas pra ocupar a tela inteira atrás de muitos cards, diferente da
+// composição "hero" do login), as esferas dão a profundidade/elevação
+// que a referência pede sem substituir o que já funcionava. CSS puro,
+// SEM WebGL — essa tela tem animação contínua (botão de IA, sino,
+// flutuação das esferas), e a lição do teste de @paper-design/
+// shaders-react (design-lab/CONHECIMENTO.md) foi clara: canvas WebGL +
+// animação contínua = caro. Medido depois desta mudança: sem aumento de
+// custo de CPU (ver LOG.md).
+const ESFERAS_CLARO = [
+  { top: "8%", left: "80%", tamanho: 110, de: "#C9DCFA", meio: "#8FB4F2", ate: "#568CD5", flutuar: 12 },
+  { top: "68%", left: "4%", tamanho: 90, de: "#D5E9FF", meio: "#A6CFFF", ate: "#6FA0ED", flutuar: 16 },
+];
+const ESFERAS_ESCURO = [
+  { top: "8%", left: "80%", tamanho: 110, de: "#3A6FDB", meio: "#2347A8", ate: "#14245A", flutuar: 12 },
+  { top: "68%", left: "4%", tamanho: 90, de: "#2F5FDB", meio: "#1B3FA6", ate: "#0A1530", flutuar: 16 },
+];
+
+function Esfera({ top, left, tamanho, de, meio, ate, flutuar, reduzido }: (typeof ESFERAS_CLARO)[number] & { reduzido: boolean }) {
+  return (
+    <motion.div
+      aria-hidden
+      animate={reduzido ? undefined : { y: [0, -flutuar, 0] }}
+      transition={reduzido ? undefined : { duration: 8 + flutuar / 4, repeat: Infinity, ease: "easeInOut" }}
+      style={{
+        position: "absolute",
+        top,
+        left,
+        width: tamanho,
+        height: tamanho,
+        borderRadius: "50%",
+        background: `radial-gradient(circle at 32% 26%, ${de} 0%, ${meio} 45%, ${ate} 100%)`,
+        boxShadow: `0 ${tamanho * 0.1}px ${tamanho * 0.25}px -${tamanho * 0.08}px rgba(26,54,138,.3)`,
+        opacity: 0.85,
+      }}
+    />
+  );
+}
+
 export default function AmbientBackground({ escuro }: { escuro?: boolean }) {
+  const reduzido = !!useReducedMotion();
+  const esferas = escuro ? ESFERAS_ESCURO : ESFERAS_CLARO;
   return (
     <div
       aria-hidden
@@ -52,6 +96,10 @@ export default function AmbientBackground({ escuro }: { escuro?: boolean }) {
            sem ser um brilho forte/neon) */}
         <circle cx="1250" cy="120" r="420" fill={escuro ? "#3A6FE0" : "#FFFFFF"} opacity={escuro ? 0.12 : 0.35} filter="url(#ondaBlur)" />
       </svg>
+
+      {esferas.map((e, i) => (
+        <Esfera key={i} {...e} reduzido={reduzido} />
+      ))}
     </div>
   );
 }

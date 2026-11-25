@@ -1706,3 +1706,15 @@ Caio aprovou a tela de login e pediu pra seguir pro passo 2 do plano "CRM Premiu
 Validado: `tsc --noEmit` e `npm run build` limpos, regressão completa do `/design-lab` + teste funcional do login (preenchimento, toggle de senha, submit, teclado) sem erro — confirma que o refactor de tokens não alterou nada visualmente, só organizou a fonte.
 
 Sem migração.
+
+## 2026-11-26 (3) · Passo 3 — fundo ambiental com esferas + confirmação de desempenho
+
+Caio aprovou o passo 2 e pediu pra seguir pro passo 3 ("aperfeiçoe o fundo ambiental azul e o material Liquid Glass").
+
+- **`app/design-lab/_glass/ambient-background.tsx`**: acrescentadas esferas 3D em CSS (mesma técnica validada na tela de login — `radial-gradient` + `box-shadow`, flutuação via `framer-motion` só em `transform`) por cima das ondas SVG existentes, nos dois temas. Decisão deliberada de NÃO substituir as ondas pelas esferas: as ondas funcionam bem como base ocupando a tela inteira atrás de muitos cards (composição de dashboard), enquanto as esferas são o elemento "hero" que funciona melhor numa composição mais vazia como a do login — aqui entram como acento discreto nos cantos, não substituição.
+- **Lição da rodada anterior aplicada de propósito**: CSS puro, sem WebGL, já que esta tela TEM animação contínua (botão de IA, sino) — exatamente a combinação que mediu caro com `@paper-design/shaders-react`. Medido depois da mudança, contra build de produção, 3 execuções: ~2,0-2,4% de 1 núcleo — igual ao baseline anterior (sem esferas), confirma que não introduzi o mesmo problema.
+- **Material Liquid Glass**: revisado visualmente (bordas ópticas iluminadas, profundidade, legibilidade) nas telas existentes — já estava consistente e aprovado nas fases anteriores; nenhuma mudança adicional pareceu necessária além do fundo. Registrado aqui em vez de silenciosamente pular o item do passo 3.
+
+Validado: `tsc --noEmit` e `npm run build` limpos, regressão completa (zero erro de console, interações de teclado/motion confirmadas), desempenho medido (não assumido) antes e depois. Nenhum componente de produto foi alterado — ainda só o laboratório (login já tinha sua própria versão da técnica, independente).
+
+Sem migração.
