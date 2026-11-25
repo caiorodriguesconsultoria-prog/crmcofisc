@@ -1678,3 +1678,18 @@ Caio pediu pra aplicar o `StaticMeshGradient` (candidato aprovado na rodada ante
 - **Lição**: medir um recurso isolado não basta quando ele vai conviver com outras partes dinâmicas da tela — o teste de desempenho precisa incluir o contexto completo antes de declarar "sem custo". Registrado isso explicitamente no documento de conhecimento, já que é exatamente o tipo de erro que o processo de auditoria deveria pegar.
 
 Build e `tsc --noEmit` limpos (voltou ao estado anterior). Validado com Playwright: zero erro de console, regressão completa sem quebra. Nenhum componente de produto foi alterado. Sem migração.
+
+## 2026-11-26 · Tela de login redesenhada — Authentication Blueprint (primeira migração real pro CRM funcional)
+
+Caio trouxe um mockup aprovado da tela de login (fundo azul perolado, esferas 3D, janela de vidro translúcida, assimétrico) e pediu pra aplicar na tela real antes de seguir pro passo 2 do plano "CRM Premium". Diferente de tudo que veio antes nesta sessão, isto **não foi feito no `/design-lab`** — foi direto em `app/login/page.tsx`, a tela de login de produção, na branch de trabalho (sem merge pra `main`, conforme a regra "não publique em produção sem aprovação").
+
+- **Decisão deliberada**: esferas em CSS/SVG puro (`radial-gradient` + `box-shadow`, flutuação via `framer-motion` só em `transform`), NÃO em WebGL (`@paper-design/shaders-react`) — porque o laboratório tinha acabado de medir que o shader fica caro quando combinado com qualquer animação contínua na mesma tela, e esta tela tem exatamente isso (esferas flutuando). Medido: ~0,1% de 1 núcleo — nem perto do problema anterior.
+- **`app/login/_fundo.tsx`** (novo): fundo + 3 esferas posicionadas assimetricamente (uma delas atrás da janela de vidro, aparece borrada através do `backdrop-filter` — "desfoque localizado" pedido, de graça, sem código extra).
+- **`app/login/page.tsx`** (reescrito visualmente, lógica preservada): a janela de vidro reaproveita `.crm-cartao-vidro-claro` (classe de produção já aprovada, com fallback de `prefers-reduced-transparency` embutido) — não o sistema experimental do laboratório. Identidade (texto + marca) à esquerda no desktop, escondida no mobile (regra nova em `app/globals.css`: `.crm-login-identidade`). Adicionado toggle de mostrar/ocultar senha (`Eye`/`EyeOff`, puramente visual). `handleSubmit`, `entrarComGoogle` e todos os estados de autenticação continuam EXATAMENTE iguais — nenhuma regra de acesso foi tocada, nenhum cadastro público foi criado.
+- **`app/login/CONHECIMENTO.md`** (novo): Authentication Blueprint — decisões, componentes reaproveitados, o que não mudou, acessibilidade verificada, limitações.
+
+Validado com Playwright: preenchimento + toggle de senha + submit (confirma que o erro aparece sem quebrar, já que não há Supabase real neste ambiente) + navegação por teclado (Tab alcança todos os campos/botões) + contraste medido de verdade (todos os textos passam WCAG AA, o mais apertado em 4,52:1) + custo de CPU das esferas flutuando (~0,1%) + zero erro de console real (só a tentativa de rede pro Supabase de mentira, esperada). Build e `tsc --noEmit` limpos.
+
+**Limitação**: fluxo de autenticação real (Supabase + Google OAuth de verdade) não pôde ser testado — sem credenciais reais neste ambiente. Testado só em Chromium headless.
+
+Sem migração de schema. Aguardando revisão visual do Caio antes de prosseguir pro passo 2 (consolidar o Design System).

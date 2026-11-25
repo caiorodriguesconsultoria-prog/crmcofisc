@@ -902,3 +902,15 @@ th {
     animation: none;
   }
 }
+
+/* Tela de login (Authentication Blueprint, ver app/login/CONHECIMENTO.md):
+   bloco de identidade (texto + marca) só aparece no desktop, igual ao
+   mockup aprovado — no mobile o formulário fica centralizado sozinho. */
+.crm-login-identidade {
+  display: none;
+}
+@media (min-width: 900px) {
+  .crm-login-identidade {
+    display: block;
+  }
+}
