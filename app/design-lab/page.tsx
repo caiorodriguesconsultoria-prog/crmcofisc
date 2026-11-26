@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import AmbientBackground from "./_glass/ambient-background";
 import FiltroRefracaoSVG from "./_glass/refracao";
-import { GlassCard, GlassButton, GlassInput, GlassTable, GlassAIButton, GlassSidebar, GlassDock, GlassSurface, GlassIconChip, GlassDonut } from "./_glass/componentes";
+import { GlassCard, GlassButton, GlassInput, GlassTable, GlassAIButton, GlassSidebar, GlassDock, GlassSurface, GlassIconChip, GlassDonut, GlassSparkline } from "./_glass/componentes";
 import { cor, corEscuro, movimento } from "@/lib/theme";
 
 // /design-lab — laboratório isolado (CRM_LIQUID_GLASS_SKILLS.md, seção 5):
@@ -37,11 +37,11 @@ import { cor, corEscuro, movimento } from "@/lib/theme";
 // alto que o outro). No mobile continua rolando normalmente — a restrição
 // de altura é só pra tela cheia de desktop.
 const KPIS = [
-  { rotulo: "Contratos", valor: "17", Icone: FileText, corIcone: "#2F5FDB", fundo: "rgba(47,95,219,.12)", legenda: "12 ativos · 5 concluídos" },
-  { rotulo: "Concluídos", valor: "5", Icone: CheckCircle2, corIcone: cor.verdeEscuro, fundo: cor.verdeEscuroFundo, delta: "+25%", deltaCor: cor.verdeEscuro },
-  { rotulo: "Entrega atrasada", valor: "6", Icone: AlertTriangle, corIcone: cor.urgente, fundo: cor.urgenteFundo, delta: "+2", deltaCor: cor.urgente },
-  { rotulo: "Relatório desatualizado", valor: "9", Icone: FileWarning, corIcone: cor.atencao, fundo: cor.atencaoFundo, delta: "-3", deltaCor: cor.verdeEscuro },
-  { rotulo: "Tarefas pendentes", valor: "2", Icone: ClipboardList, corIcone: "#6A5ACD", fundo: "rgba(106,90,205,.12)" },
+  { rotulo: "Contratos", valor: "17", Icone: FileText, corIcone: "#2F5FDB", fundo: "rgba(47,95,219,.12)", legenda: "12 ativos · 5 concluídos", tendencia: [12, 13, 14, 15, 16, 16, 17] },
+  { rotulo: "Concluídos", valor: "5", Icone: CheckCircle2, corIcone: cor.verdeEscuro, fundo: cor.verdeEscuroFundo, delta: "+25%", deltaCor: cor.verdeEscuro, tendencia: [2, 2, 3, 3, 4, 4, 5] },
+  { rotulo: "Entrega atrasada", valor: "6", Icone: AlertTriangle, corIcone: cor.urgente, fundo: cor.urgenteFundo, delta: "+2", deltaCor: cor.urgente, tendencia: [3, 3, 4, 4, 5, 5, 6] },
+  { rotulo: "Relatório desatualizado", valor: "9", Icone: FileWarning, corIcone: cor.atencao, fundo: cor.atencaoFundo, delta: "-3", deltaCor: cor.verdeEscuro, tendencia: [12, 12, 11, 10, 10, 9, 9] },
+  { rotulo: "Tarefas pendentes", valor: "2", Icone: ClipboardList, corIcone: "#6A5ACD", fundo: "rgba(106,90,205,.12)", tendencia: [4, 3, 3, 2, 3, 2, 2] },
 ];
 
 export default function DesignLabPage() {
@@ -170,6 +170,9 @@ export default function DesignLabPage() {
                 <NumberFlow value={Number(k.valor) + bump} />
               </div>
               <div style={{ fontSize: 12, color: paleta.textoTerciario, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.legenda ?? k.rotulo}</div>
+              <div style={{ marginTop: 8 }}>
+                <GlassSparkline dados={k.tendencia} cor={k.corIcone} />
+              </div>
             </GlassCard>
           ))}
         </motion.div>

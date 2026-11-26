@@ -1718,3 +1718,16 @@ Caio aprovou o passo 2 e pediu pra seguir pro passo 3 ("aperfeiçoe o fundo ambi
 Validado: `tsc --noEmit` e `npm run build` limpos, regressão completa (zero erro de console, interações de teclado/motion confirmadas), desempenho medido (não assumido) antes e depois. Nenhum componente de produto foi alterado — ainda só o laboratório (login já tinha sua própria versão da técnica, independente).
 
 Sem migração.
+
+## 2026-11-26 (4) · Passo 4 — sparklines de tendência nos KPIs
+
+Caio pediu pra seguir pro passo 4 ("modernize o dashboard, indicadores e gráficos").
+
+- **`app/design-lab/_glass/componentes.tsx`**: novo `GlassSparkline` — mini-gráfico de área (`recharts`, sem eixo/grade/tooltip, decoração de apoio ao número grande, não gráfico analítico). `recharts` já é dependência do projeto (usado em `app/dashboard/painel-dashboard.tsx` em produção) — não instalei nada novo.
+- **`app/design-lab/page.tsx`**: cada KPI ganhou uma tendência fictícia de 7 pontos, colorida igual ao ícone do card.
+
+**Custo medido, não assumido**: o bundle do `/design-lab` subiu de ~252KB pra ~345KB de "First Load JS" (+93KB). "`recharts` já é dependência" não quer dizer "de graça aqui" — o Next.js separa o bundle por rota, e essa rota especificamente não importava a lib antes (quem já paga esse custo é só a página de produção que já usa gráfico de barras). Registrado pra decisão consciente: se isso for migrar pro dashboard real, o custo já está pago lá (mesma rota já importa `recharts`); se for uma rota nova que não usa `recharts` hoje, o custo é real e vale pesar.
+
+Validado: `tsc --noEmit` e `npm run build` limpos, ainda cabe no desktop sem rolar (grade não cresceu o suficiente pra estourar), zero erro de console, regressão completa dos dois temas.
+
+Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
