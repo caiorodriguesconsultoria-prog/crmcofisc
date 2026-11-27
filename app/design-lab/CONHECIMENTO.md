@@ -26,7 +26,7 @@ Todos em `app/design-lab/_glass/componentes.tsx`, documentados com comentário d
 | `GlassDonut` | Gráfico de rosca com legenda | SVG puro, sem recharts (seria redundante — já é dependência, mas pra um donut simples não compensa) |
 | `GlassIconChip` | Ícone colorido de cabeçalho de card | — |
 | `GlassButton` / `GlassInput` / `GlassTabs` / `GlassPopover` / `GlassSheet` | Controles base | Variam por contexto (ver código); `GlassSheet` passou a ser usado de verdade no passo 7 (janela de contrato no mobile) |
-| `GlassAIButton` | Botão flutuante do assistente | Pulso de glow sutil (`prefers-reduced-motion` respeitado) |
+| `GlassAIButton` | Botão flutuante do assistente | Pulso de glow sutil (`prefers-reduced-motion` respeitado); passo 8 — abre painel de chat de verdade (sugestões + histórico fictício "digitado" aos poucos, mesma estrutura do `/assistente` real em produção, sem chamada de rede) |
 | `GlassDock` / `GlassSidebar` | Navegação mobile/desktop | Itens são `<button>` reais (fase 9 — não usar `<div>` decorativo) |
 
 ## Técnicas validadas

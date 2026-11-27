@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { ChevronDown, LogOut, type LucideIcon } from "lucide-react";
+import { ChevronDown, LogOut, Sparkles, Send, type LucideIcon } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { cor, corEscuro, raio, elevacao, vidro, vidroNivel, movimento } from "@/lib/theme";
 import { usarPodeHover } from "@/app/_ui/usar-pode-hover";
@@ -344,11 +344,29 @@ export function GlassButton({
 }
 
 /** Campo de texto — mesma ideia de superfície "quase sólida" de leitura. */
-export function GlassInput({ escuro, placeholder }: { escuro?: boolean; placeholder?: string }) {
+export function GlassInput({
+  escuro,
+  placeholder,
+  value,
+  onChange,
+  disabled,
+}: {
+  escuro?: boolean;
+  placeholder?: string;
+  value?: string;
+  onChange?: (v: string) => void;
+  disabled?: boolean;
+}) {
   const paleta = escuro ? corEscuro : cor;
   return (
     <input
       placeholder={placeholder}
+      // Controlado é opcional (passo 8 — chat do assistente de IA precisa
+      // de verdade; os usos decorativos anteriores continuam funcionando
+      // sem passar `value`/`onChange`, só não reagem a digitação).
+      value={value}
+      onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+      disabled={disabled}
       style={{
         width: "100%",
         padding: "10px 14px",
@@ -357,6 +375,7 @@ export function GlassInput({ escuro, placeholder }: { escuro?: boolean; placehol
         background: escuro ? "rgba(6,11,22,.6)" : "rgba(255,255,255,.7)",
         color: paleta.texto,
         fontSize: 13.5,
+        opacity: disabled ? 0.6 : 1,
       }}
     />
   );
@@ -468,45 +487,223 @@ export function GlassSheet({ escuro, aberto, children }: PropsBase & { aberto: b
   );
 }
 
+type MensagemChat = { role: "user" | "assistant"; content: string };
+
+// Mesmas duas sugestões e a mesma resposta-tipo do assistente real
+// (app/assistente/chat.tsx) — texto fictício aqui (sem chamada de rede;
+// laboratório não precisa de backend pra provar a interação), mas a
+// estrutura (sugestões, histórico de contrato, bolha de resposta) é a
+// mesma da Fase 1 em produção, não inventada do zero.
+const SUGESTOES_IA = ["Me passe o histórico do contrato 294/2026", "Resuma a situação do contrato 123/2026"];
+const RESPOSTA_FICTICIA_IA =
+  "Contrato 294/2026 — aquisição de insumos hospitalares. Vigência até 04/12/2026. 1ª parcela entregue e conferida em 04/11; 2ª parcela aguardando recebimento, prevista para 11/12. Nenhuma ocorrência em aberto no momento.";
+
 /** Botão flutuante do assistente de IA — volumétrico, com leve glow.
  * Motion Design (fase 8, CRM_LIQUID_GLASS_SKILLS.md): respiração sutil no
  * glow externo (não no próprio botão, que ficaria irritante de olhar
- * fixo) — só roda com `prefers-reduced-motion` desligado. */
+ * fixo) — só roda com `prefers-reduced-motion` desligado.
+ *
+ * Passo 8 ("CRM Premium" — aperfeiçoar o assistente de IA flutuante): o
+ * botão passou a abrir de verdade um painel de chat (antes só decorativo,
+ * sem `onClick`). Conversa simulada localmente (sem rede), mas espelhando
+ * a experiência real: sugestões, histórico, resposta "digitada" aos
+ * poucos (mesma ideia de streaming do `/assistente` em produção). Painel
+ * segue o padrão de popup pequeno do projeto (CLAUDE.md: "×" absoluto,
+ * título com paddingRight, maxWidth min(380px, calc(100vw-48px)),
+ * overlay escuro que fecha ao clicar fora). */
 export function GlassAIButton({ escuro }: { escuro?: boolean }) {
   const paleta = escuro ? corEscuro : cor;
   const reduzido = useReducedMotion();
-  return (
-    <motion.button
-      type="button"
-      aria-label="Assistente de IA"
-      whileTap={{ scale: 0.94 }}
-      animate={
-        reduzido
-          ? undefined
-          : { boxShadow: ["0 1px 1px rgba(255,255,255,.4) inset, 0 10px 26px rgba(47,95,219,.4)", "0 1px 1px rgba(255,255,255,.4) inset, 0 10px 34px rgba(47,95,219,.6)", "0 1px 1px rgba(255,255,255,.4) inset, 0 10px 26px rgba(47,95,219,.4)"] }
+  const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
+  const maisContraste = usePreferenciaMidia("(prefers-contrast: more)");
+  const [aberto, setAberto] = useState(false);
+  const [mensagens, setMensagens] = useState<MensagemChat[]>([]);
+  const [pergunta, setPergunta] = useState("");
+  const [digitando, setDigitando] = useState(false);
+
+  function enviar(texto: string) {
+    const p = texto.trim();
+    if (!p || digitando) return;
+    const historico: MensagemChat[] = [...mensagens, { role: "user", content: p }];
+    setMensagens([...historico, { role: "assistant", content: "" }]);
+    setPergunta("");
+    setDigitando(true);
+    let i = 0;
+    const passo = () => {
+      i += 4;
+      setMensagens([...historico, { role: "assistant", content: RESPOSTA_FICTICIA_IA.slice(0, i) }]);
+      if (i < RESPOSTA_FICTICIA_IA.length) {
+        setTimeout(passo, 18);
+      } else {
+        setDigitando(false);
       }
-      transition={reduzido ? movimento.springPress : { boxShadow: { duration: 2.6, repeat: Infinity, ease: "easeInOut" }, scale: movimento.springPress }}
-      style={{
-        position: "fixed",
-        zIndex: elevacao.notificacao,
-        right: 24,
-        bottom: 24,
-        width: 56,
-        height: 56,
-        borderRadius: "50%",
-        border: "1px solid rgba(255,255,255,.3)",
-        cursor: "pointer",
-        background: `radial-gradient(60% 60% at 30% 25%, rgba(255,255,255,.5) 0%, rgba(255,255,255,0) 60%), linear-gradient(160deg, ${paleta.destaque}, #7A5CF0)`,
-        boxShadow: `0 1px 1px rgba(255,255,255,.4) inset, 0 10px 26px rgba(47,95,219,.4)`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontSize: 22,
-      }}
-    >
-      ✦
-    </motion.button>
+    };
+    setTimeout(passo, 18);
+  }
+
+  return (
+    <>
+      <motion.button
+        type="button"
+        aria-label="Assistente de IA"
+        onClick={() => setAberto((v) => !v)}
+        whileTap={{ scale: 0.94 }}
+        animate={
+          reduzido
+            ? undefined
+            : { boxShadow: ["0 1px 1px rgba(255,255,255,.4) inset, 0 10px 26px rgba(47,95,219,.4)", "0 1px 1px rgba(255,255,255,.4) inset, 0 10px 34px rgba(47,95,219,.6)", "0 1px 1px rgba(255,255,255,.4) inset, 0 10px 26px rgba(47,95,219,.4)"] }
+        }
+        transition={reduzido ? movimento.springPress : { boxShadow: { duration: 2.6, repeat: Infinity, ease: "easeInOut" }, scale: movimento.springPress }}
+        style={{
+          position: "fixed",
+          zIndex: elevacao.notificacao,
+          right: 24,
+          bottom: 24,
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          border: "1px solid rgba(255,255,255,.3)",
+          cursor: "pointer",
+          background: `radial-gradient(60% 60% at 30% 25%, rgba(255,255,255,.5) 0%, rgba(255,255,255,0) 60%), linear-gradient(160deg, ${paleta.destaque}, #7A5CF0)`,
+          boxShadow: `0 1px 1px rgba(255,255,255,.4) inset, 0 10px 26px rgba(47,95,219,.4)`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+          fontSize: 22,
+        }}
+      >
+        ✦
+      </motion.button>
+
+      {aberto && (
+        <>
+          <div
+            onClick={() => setAberto(false)}
+            style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1, background: "rgba(32,31,29,.4)" }}
+          />
+          <motion.div
+            role="dialog"
+            aria-label="Assistente de IA"
+            initial={reduzido ? false : { opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: reduzido ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: "fixed",
+              zIndex: elevacao.popover,
+              right: 24,
+              bottom: 92,
+              width: "min(380px, calc(100vw - 48px))",
+              maxHeight: "calc(100vh - 140px)",
+              borderRadius: raio.painel,
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              boxSizing: "border-box",
+              ...materialVidro("padrao", !!escuro, vidroNivel.navegacao, transparenciaReduzida, maisContraste),
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setAberto(false)}
+              aria-label="Fechar"
+              style={{
+                position: "absolute",
+                top: 12,
+                right: 12,
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
+                border: "none",
+                background: escuro ? "rgba(255,255,255,.12)" : "rgba(32,31,29,.08)",
+                color: paleta.texto,
+                cursor: "pointer",
+                flex: "none",
+              }}
+            >
+              ×
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 34, flex: "none" }}>
+              <GlassIconChip Icone={Sparkles} cor={paleta.destaque} fundo={paleta.destaqueFundo} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: paleta.texto }}>Assistente</div>
+                <div style={{ fontSize: 11, color: paleta.textoTerciario }}>Pergunte sobre os contratos</div>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              {mensagens.length === 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <p style={{ margin: 0, fontSize: 12.5, color: paleta.textoTerciario, lineHeight: 1.5 }}>
+                    Pergunte sobre um contrato — o assistente busca o histórico (dados, cronograma e andamentos recentes)
+                    a partir do número.
+                  </p>
+                  {SUGESTOES_IA.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => enviar(s)}
+                      style={{
+                        textAlign: "left",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: paleta.destaque,
+                        background: paleta.destaqueFundo,
+                        border: "none",
+                        borderRadius: raio.campo,
+                        padding: "8px 10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {mensagens.map((m, i) => (
+                <div
+                  key={i}
+                  style={{
+                    alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+                    maxWidth: "85%",
+                    background: m.role === "user" ? paleta.destaque : escuro ? "rgba(6,11,22,.55)" : "rgba(255,255,255,.75)",
+                    color: m.role === "user" ? "#fff" : paleta.texto,
+                    borderRadius: 14,
+                    padding: "9px 12px",
+                    fontSize: 12.5,
+                    lineHeight: 1.5,
+                    whiteSpace: "pre-wrap",
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {m.content || (digitando && i === mensagens.length - 1 ? "…" : m.content)}
+                </div>
+              ))}
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                enviar(pergunta);
+              }}
+              style={{ display: "flex", gap: 8, marginTop: 12, flex: "none" }}
+            >
+              <GlassInput
+                escuro={escuro}
+                placeholder="Pergunte sobre um contrato…"
+                value={pergunta}
+                onChange={setPergunta}
+                disabled={digitando}
+              />
+              <GlassButton escuro={escuro} primario onClick={() => enviar(pergunta)}>
+                <Send size={15} />
+              </GlassButton>
+            </form>
+          </motion.div>
+        </>
+      )}
+    </>
   );
 }
 

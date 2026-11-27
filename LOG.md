@@ -1768,3 +1768,15 @@ Caio pediu pra seguir pro passo 7 ("implemente a experiência mobile independent
 Validado com Playwright, viewport mobile real (390×844) e desktop (1280×900) no mesmo teste: sheet renderiza largura inteira, abas/filtro/tags do passo 6 continuam funcionando dentro do sheet, alternância de tema funciona (testada de verdade, claro→escuro), zero erro de console; desktop confirmado sem regressão (janela flutuante centralizada intacta, botão de tema no lugar de sempre). `tsc --noEmit` e `npm run build` limpos.
 
 Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
+
+## 2026-11-27 (4) · Passo 8 — assistente de IA flutuante
+
+Caio pediu pra seguir pro passo 8 ("aperfeiçoe o assistente de IA flutuante").
+
+- **Achado antes de implementar**: `GlassAIButton` era só decorativo — tinha o pulso de glow (fase 8) mas nenhum `onClick`; clicar não fazia nada. Fui ver a funcionalidade real primeiro (`app/assistente/chat.tsx`, Fase 1 em produção): chat com sugestões, histórico de contrato, resposta em streaming (texto chega aos poucos), input com cancelar.
+- **Mudança**: `GlassAIButton` agora abre um painel de chat de verdade ao clicar — mesma estrutura do assistente real (as 2 mesmas sugestões, mesmo texto de ajuda, bolhas usuário/assistente), mas sem chamada de rede: resposta fictícia "digitada" aos poucos com `setTimeout` (simula o streaming real sem precisar de backend no laboratório). Painel segue o padrão de popup pequeno do projeto (CLAUDE.md): "×" absoluto no canto, overlay escuro que fecha ao clicar fora, `maxWidth: min(380px, calc(100vw - 48px))`, ancorado acima do botão flutuante.
+- **Componentes reutilizados ampliados**: `GlassInput` ganhou `value`/`onChange`/`disabled` opcionais (antes só decorativo, sem estado) — extensão mínima, não componente novo; os usos antigos continuam funcionando sem esses props.
+
+Validado com Playwright: clique real no botão abre o painel; clique numa sugestão gera a bolha do usuário E a resposta do assistente aparece (não só que o painel abriu); pergunta livre digitada + Enter também funciona; clique fora fecha o painel; testado em desktop e mobile (painel se ajusta à largura disponível nos dois). Zero erro de console. `tsc --noEmit` e `npm run build` limpos.
+
+Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
