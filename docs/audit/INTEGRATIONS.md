@@ -1,0 +1,21 @@
+# Integrações — CRM-COFISC (AS-IS)
+
+> Nenhum valor de credencial é exibido — só nomes de variável de ambiente e o fluxo de troca.
+
+| Integração | Autenticação | Fluxo | Variáveis (só nomes) |
+|---|---|---|---|
+| **Google Calendar + Tasks** | OAuth2 código-de-autorização, **conexão única compartilhada, administrada por admin** (não por usuário) | `app/api/google/auth` (só admin, redireciona pro consentimento Google, escopos `calendar.events` + `tasks`, `access_type=offline&prompt=consent` força refresh_token) → `callback` troca o código, grava **uma única linha `id:1`** em `google_calendar_tokens` via cliente service-role (ignora RLS, operação de admin). `lib/google-calendar.ts` + `app/api/google/sync` fazem as chamadas de criar/atualizar/remover/concluir, chamadas do lado do cliente logo após salvar um agendamento/tarefa no CRM (otimista, não é polling) | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+| **Google Drive (só backup)** | OAuth2, mesmo padrão, mas **não integrado ao app** — `app/api/google/drive-auth` + `drive-callback` são uma **ferramenta manual de configuração única**: `drive-callback` não grava nada, só exibe o refresh_token uma vez pro admin colar num secret do GitHub. Nada na UI do app linka pra essas duas rotas | Consumidor confirmado: `.github/workflows/backup-diario.yml` — cron do GitHub Actions (06:00 UTC diário) que faz `pg_dump` do banco Supabase, sobe como artefato do GitHub Actions (90 dias) e roda `scripts/backup_para_drive.py` (Python, `google-api-python-client`) pra subir o dump ao Drive e podar backups com mais de 90 dias lá também | `SUPABASE_DB_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_DRIVE_REFRESH_TOKEN`, `GOOGLE_DRIVE_FOLDER_ID` (todos como **secrets do GitHub Actions**, não env do Vercel) |
+| **Web Push (VAPID)** | Par de chaves VAPID via `web-push` | Navegador se inscreve → `POST /api/push/inscrever` grava `{pessoa_id, endpoint, p256dh, auth}`, deduplicado por `endpoint`; `DELETE` cancela. Servidor envia via `lib/push.ts::enviarPush`; **inscrições mortas se auto-podam** — um 404/410 do serviço de push dispara `DELETE` daquela linha (`verificar-lembretes/route.ts`) | Chaves VAPID (padrão provável `VAPID_PRIVATE_KEY`/`NEXT_PUBLIC_VAPID_PUBLIC_KEY` — confirmar nome exato em `lib/push.ts` se precisar) |
+| **Sentry** | Baseado em DSN, sem autenticação de usuário | `instrumentation.ts` — hooks nativos do Next.js (`register()`/`onRequestError()`, não o padrão antigo `sentry.*.config.js`), `tracesSampleRate: 0` (só erro, sem tracing de performance), toda ocorrência marcada com `sistema: "CRM-COFISC"`. Todo erro de servidor **também** dispara `notificarErroAdmins` (push pros admins) via `onRequestError`, exceto erros capturados como *dado* (não lançados), como a falha de ping do banco em `/api/status`, que chama `notificarErroAdmins` explicitamente inline (nunca passa pelo `onRequestError`) | `NEXT_PUBLIC_SENTRY_DSN` |
+| **Monitor externo de uptime** (padrão compatível com UptimeRobot ou similar) | `/api/status` em si é deliberadamente sem autenticação (health check público, sem dado sensível) | `GET /api/status` faz ping na tabela `coordenacoes` via cliente service; tem uma chave de teste deliberada `FORCAR_FALHA_STATUS=true` (só falha real dispara push) | `FORCAR_FALHA_STATUS` (só teste) |
+| **Feed `.ics` público** | Token estático na query string | `GET /api/agenda.ics?token=...` — token comparado contra `AGENDA_ICS_TOKEN`, serve todos os `processo_agendamentos` como VCALENDAR, pra assinar em qualquer app de calendário | `AGENDA_ICS_TOKEN` |
+| **API Anthropic** | Chave de API | Ver `AI.md` | `ANTHROPIC_API_KEY` |
+
+Nenhuma outra chamada `fetch` de terceiro foi encontrada além destas (busca ampla por `https://api`/hosts externos em `app/` e `lib/`).
+
+## O que uma futura integração precisaria saber
+
+- Autenticação server-to-server segue o padrão "checar env var presente → 503 se ausente" (replicável pra qualquer integração nova).
+- Integrações que tocam dado por usuário usam o cliente Supabase da sessão (RLS aplica); integrações administrativas/cron usam o cliente service-role explicitamente — a escolha de qual usar já está estabelecida como convenção no código.
+- Cron jobs usam `CRON_SECRET` (header, injetado automaticamente pela Vercel em crons nativos) — não reaproveitar sessão de usuário pra isso.
