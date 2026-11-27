@@ -1756,3 +1756,15 @@ Caio pediu pra seguir pro passo 6 ("modernize Andamentos e Relatórios"). Antes 
 Validado com Playwright contra build de produção: clique real no filtro "Ocorrências" confirma que os 3 andamentos comuns desaparecem e os 2 de ocorrência permanecem (não só que o filtro abre); botão "Exportar PDF" e os dois chips renderizam na aba Relatório; zero erro de console. `tsc --noEmit` e `npm run build` limpos.
 
 Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
+
+## 2026-11-27 (3) · Passo 7 — experiência mobile independente
+
+Caio pediu pra seguir pro passo 7 ("implemente a experiência mobile independente").
+
+- **Achado antes de implementar**: `GlassSheet` (bottom sheet de vidro, ~70%, sobe do rodapé) já existia no sistema desde as fases 7/8, mas nunca tinha sido usado em nenhuma tela — ficava "órfão" no arquivo de componentes. A janela de contrato (`/design-lab/janela`) renderizava a mesma janela flutuante centralizada em qualquer largura de tela, só encolhendo — não é "experiência mobile independente", é a mesma UI espremida.
+- **Mudança**: no mobile (`<768px`, via `usePreferenciaMidia`, agora exportado de `componentes.tsx` pra reuso), a janela de contrato passa a ser um bottom sheet nativo (`GlassSheet`) — sobe do rodapé, ocupa a largura inteira, cantos arredondados só no topo, faixa de arrasto no topo (convenção visual iOS/Android). No desktop continua exatamente a janela flutuante centralizada de antes, sem nenhuma mudança. Cabeçalho/abas/conteúdo (incluindo os filtros e tags do passo 6) são os mesmos nos dois casos — só o invólucro muda.
+- O botão de alternar tema, que no desktop fica dentro do cabeçalho da janela, virou um botão flutuante fixo no canto superior direito no mobile (mesma função, posição adequada ao padrão de sheet).
+
+Validado com Playwright, viewport mobile real (390×844) e desktop (1280×900) no mesmo teste: sheet renderiza largura inteira, abas/filtro/tags do passo 6 continuam funcionando dentro do sheet, alternância de tema funciona (testada de verdade, claro→escuro), zero erro de console; desktop confirmado sem regressão (janela flutuante centralizada intacta, botão de tema no lugar de sempre). `tsc --noEmit` e `npm run build` limpos.
+
+Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.

@@ -12,7 +12,7 @@ import { backdropRefracao } from "./refracao";
 // "respeite prefers-reduced-transparency e prefers-contrast"). Estilo
 // inline não aceita @media — só dá pra reagir a isso com matchMedia em
 // runtime. Hook genérico, reaproveitado pelas duas preferências.
-function usePreferenciaMidia(query: string): boolean {
+export function usePreferenciaMidia(query: string): boolean {
   const [ativo, setAtivo] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia(query);

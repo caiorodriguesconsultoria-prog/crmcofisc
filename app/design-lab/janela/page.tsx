@@ -5,8 +5,8 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { FileText, Clock, MessageSquare, CheckCircle2, Download } from "lucide-react";
 import AmbientBackground from "../_glass/ambient-background";
 import FiltroRefracaoSVG from "../_glass/refracao";
-import { GlassWindow, GlassTabs, GlassTable, GlassButton, GlassIconChip, GlassTimeline } from "../_glass/componentes";
-import { cor, corEscuro, movimento } from "@/lib/theme";
+import { GlassWindow, GlassSheet, GlassTabs, GlassTable, GlassButton, GlassIconChip, GlassTimeline, usePreferenciaMidia } from "../_glass/componentes";
+import { cor, corEscuro, elevacao, movimento } from "@/lib/theme";
 
 // /design-lab/janela — prova da janela contratual (CRM_LIQUID_GLASS_SKILLS.md,
 // seção 5.5: "janela contratual com texto denso e tabelas"). Dados
@@ -42,53 +42,62 @@ const CRONOGRAMA = [
 
 type FiltroAndamento = "todos" | "ocorrencias";
 
+// Passo 7 ("CRM Premium" — experiência mobile independente): no mobile a
+// janela de contrato deixa de ser uma janela flutuante centralizada e
+// passa a ser um "sheet" que sobe do rodapé (`GlassSheet`, já existia no
+// sistema desde a fase 7/8 mas nunca tinha sido usado em nenhuma tela —
+// ficava "órfão"). Não é só encolher a mesma janela: é o padrão nativo de
+// mobile (bottom sheet, like iOS/Android), com faixa de arrasto, cantos
+// arredondados só no topo e ocupando a largura inteira — diferente do
+// padrão desktop (janela flutuante centralizada, cantos arredondados nos
+// 4 lados). Cabeçalho/abas/conteúdo são os mesmos em ambos; só o invólucro
+// muda, por isso ficam numa variável só.
 export default function DesignLabJanelaPage() {
   const [escuro, setEscuro] = useState(false);
   const [aba, setAba] = useState<Aba>("resumo");
   const [filtroAndamento, setFiltroAndamento] = useState<FiltroAndamento>("todos");
   const paleta = escuro ? corEscuro : cor;
   const reduzido = useReducedMotion();
+  const mobile = usePreferenciaMidia("(max-width: 767px)");
 
   const andamentosFiltrados = ANDAMENTOS.filter((a) => filtroAndamento === "todos" || a.ocorrencia);
   const totalEntregue = 1;
   const totalPendente = 1;
 
-  return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <FiltroRefracaoSVG />
-      <AmbientBackground escuro={escuro} />
-
-      <GlassWindow escuro={escuro} style={{ width: "100%", maxWidth: 760 }}>
-        <div style={{ padding: "20px 24px 16px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ display: "flex", gap: 12, minWidth: 0 }}>
-            <GlassIconChip Icone={FileText} cor={paleta.destaque} fundo={paleta.destaqueFundo} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", background: paleta.destaque, display: "inline-block", padding: "4px 10px", borderRadius: 999 }}>
-                234/2026
-              </div>
-              <h2 style={{ margin: "8px 0 0", fontSize: 18, color: paleta.texto }}>Aquisição de insumos hospitalares</h2>
-              <p style={{ margin: "2px 0 0", fontSize: 12.5, color: paleta.textoTerciario }}>CGECA · NUP 25000.208214/2025-10</p>
+  const conteudo = (
+    <>
+      <div style={{ padding: mobile ? "0 4px 12px" : "20px 24px 16px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "flex", gap: 12, minWidth: 0 }}>
+          <GlassIconChip Icone={FileText} cor={paleta.destaque} fundo={paleta.destaqueFundo} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", background: paleta.destaque, display: "inline-block", padding: "4px 10px", borderRadius: 999 }}>
+              234/2026
             </div>
+            <h2 style={{ margin: "8px 0 0", fontSize: 18, color: paleta.texto }}>Aquisição de insumos hospitalares</h2>
+            <p style={{ margin: "2px 0 0", fontSize: 12.5, color: paleta.textoTerciario }}>CGECA · NUP 25000.208214/2025-10</p>
           </div>
+        </div>
+        {!mobile && (
           <GlassButton escuro={escuro} onClick={() => setEscuro((v) => !v)}>
             {escuro ? "Claro" : "Escuro"}
           </GlassButton>
-        </div>
+        )}
+      </div>
 
-        <div style={{ padding: "0 24px 16px" }}>
-          <GlassTabs
-            escuro={escuro}
-            opcoes={[
-              { valor: "resumo" as const, rotulo: "Resumo" },
-              { valor: "andamentos" as const, rotulo: "Andamentos" },
-              { valor: "relatorio" as const, rotulo: "Relatório" },
-            ]}
-            valor={aba}
-            aoMudar={setAba}
-          />
-        </div>
+      <div style={{ padding: mobile ? "0 4px 12px" : "0 24px 16px" }}>
+        <GlassTabs
+          escuro={escuro}
+          opcoes={[
+            { valor: "resumo" as const, rotulo: "Resumo" },
+            { valor: "andamentos" as const, rotulo: "Andamentos" },
+            { valor: "relatorio" as const, rotulo: "Relatório" },
+          ]}
+          valor={aba}
+          aoMudar={setAba}
+        />
+      </div>
 
-        <div style={{ padding: "0 24px 28px", maxHeight: 440, overflowY: "auto" }}>
+      <div style={{ padding: mobile ? "0 4px 20px" : "0 24px 28px", maxHeight: mobile ? "calc(80vh - 120px)" : 440, overflowY: "auto" }}>
           <AnimatePresence mode="wait" initial={false}>
             {aba === "resumo" && (
               <motion.div
@@ -205,7 +214,52 @@ export default function DesignLabJanelaPage() {
             )}
           </AnimatePresence>
         </div>
-      </GlassWindow>
+    </>
+  );
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
+      <FiltroRefracaoSVG />
+      <AmbientBackground escuro={escuro} />
+
+      {mobile && (
+        <button
+          type="button"
+          onClick={() => setEscuro((v) => !v)}
+          aria-label={escuro ? "Mudar para tema claro" : "Mudar para tema escuro"}
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            zIndex: elevacao.notificacao,
+            minWidth: 44,
+            minHeight: 44,
+            borderRadius: 999,
+            border: "none",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 700,
+            color: paleta.texto,
+            background: escuro ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.7)",
+          }}
+        >
+          {escuro ? "☀️" : "🌙"}
+        </button>
+      )}
+
+      {mobile ? (
+        <GlassSheet escuro={escuro} aberto>
+          {/* Faixa de arrasto — convenção visual de bottom sheet (iOS/Android), sinaliza que é "arrastável" mesmo sem gesto implementado ainda. */}
+          <div style={{ display: "flex", justifyContent: "center", paddingBottom: 10 }}>
+            <span style={{ width: 36, height: 4, borderRadius: 999, background: paleta.borda }} />
+          </div>
+          {conteudo}
+        </GlassSheet>
+      ) : (
+        <GlassWindow escuro={escuro} style={{ width: "100%", maxWidth: 760 }}>
+          {conteudo}
+        </GlassWindow>
+      )}
     </div>
   );
 }
