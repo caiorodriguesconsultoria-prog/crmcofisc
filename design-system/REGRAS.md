@@ -1,5 +1,12 @@
 # Regras do design novo (grade bento/dashboard)
 
+> **Status (decisão final, `docs/DECISIONS.md`): legado em desativação
+> progressiva.** O Design System definitivo do projeto passou a ser o
+> Liquid Glass (`design-system/LIQUID_GLASS.md`), em migração tela por
+> tela (plano em `docs/audit/BRANCH_SYNC.md` §7-10). Este documento
+> continua valendo **só para as telas que ainda não migraram** — nenhuma
+> tela nova ou redesenho deve mais partir deste padrão.
+
 Adaptação do guia "CRM COFISC — Padronização Visual (Dashboard)" (Caio, 28/10/2026)
 ao projeto real. Duas diferenças do guia original, decididas com o Caio antes da Etapa 1:
 

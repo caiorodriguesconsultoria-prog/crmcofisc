@@ -1,19 +1,25 @@
 # Design System Liquid Glass (CRM Premium)
 
-Consolidação do Design System proprietário construído em `/design-lab`
-(fases 1-11) e já validado em produção na tela de login (`app/login/`).
-Coexiste com `REGRAS.md` (o redesenho bento/dashboard, já aprovado e em
-produção em outras telas) — são dois sistemas visuais paralelos, cada um
-com seu próprio status e escopo de telas:
+> **Status (decisão final, `docs/DECISIONS.md`): este é o Design System
+> definitivo do projeto.** Consolidação do Design System proprietário
+> construído em `/design-lab` (fases 1-11), validado em produção na tela
+> de login (`app/login/`, pendente de confirmação de deploy — ver
+> `docs/audit/STATUS.md`) e em processo de **migração visual progressiva**
+> pro resto do produto, tela por tela, junto com melhorias funcionais já
+> planejadas (plano em `docs/audit/BRANCH_SYNC.md` §7-10). `REGRAS.md` (o
+> redesenho bento/dashboard) passa a legado em desativação progressiva:
+> continua válido pras telas que ainda não migraram, mas nenhuma tela nova
+> nasce mais nesse padrão.
 
 | | `REGRAS.md` (bento/dashboard) | Este documento (Liquid Glass) |
 |---|---|---|
-| Status | Aprovado, em produção | Login em produção; resto experimental em `/design-lab` |
+| Status | Legado — mantido só nas telas ainda não migradas | **Definitivo** — destino de toda tela, migração progressiva em andamento |
 | Visual | Cores sólidas, sem vidro/desfoque | Vidro translúcido, refração, fundo ambiental |
 | Fonte de tokens | `lib/theme.ts` (`cor`, `card`, `raio`) | `lib/theme.ts` (`vidro`, `vidroNivel`) |
 
-**Não misturar os dois num mesmo card/tela** sem decisão explícita — cada
-tela do produto pertence a um sistema ou outro.
+**Não misturar os dois sistemas num mesmo card/tela** — cada tela pertence
+a um sistema de cada vez; a migração troca a tela inteira, não mescla os
+dois visualmente numa transição.
 
 ## Fonte única dos tokens
 

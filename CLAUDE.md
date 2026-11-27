@@ -7,8 +7,10 @@
 - Implementar em passos pequenos, um commit por ajuste quando fizer sentido.
 - Documentar decisões relevantes no `LOG.md` (uma entrada por mudança, com o "porquê").
 - Fluxo de deploy: commitar/push na branch de trabalho → merge pra `main` (produção, auto-deploy) só depois de rodar `tsc --noEmit` e `npm run build` limpos → se a mudança depender de migração, só mergear depois do Caio confirmar que rodou o SQL.
-- Padrão visual novo (redesenho em etapas, grade bento/dashboard): ler `design-system/REGRAS.md` e `design-system/tokens.css` antes de mexer em qualquer tela que já tenha passado pelo redesenho, ou antes de criar componente novo em `app/_ui/`.
-- Padrão visual Liquid Glass (CRM Premium — vidro translúcido, fundo ambiental): ler `design-system/LIQUID_GLASS.md` antes de mexer em qualquer tela desse sistema (o redesenho da tela de login existe na branch de trabalho, mas não está confirmado no deploy de produção atual — ver `docs/audit/STATUS.md`/`BRANCH_SYNC.md`; resto ainda só em `/design-lab`) ou de avançar nas fases do plano "CRM Premium". Nunca misturar os dois sistemas visuais numa mesma tela.
+- **Design System definitivo: Liquid Glass** (`design-system/LIQUID_GLASS.md`) — decisão final registrada em `docs/DECISIONS.md`. Ler esse documento antes de mexer em qualquer tela ou criar componente novo. Migração das telas de produção é **progressiva, pareada a melhorias funcionais** (nunca uma reescrita de tudo de uma vez) — plano em `docs/audit/BRANCH_SYNC.md` §7-10. Nenhuma tela nova ou redesenho deve nascer no padrão bento antigo.
+- Padrão bento/dashboard antigo (`design-system/REGRAS.md`, `design-system/tokens.css`): **legado em desativação progressiva** — só consultar pra não quebrar uma tela que ainda não migrou; não usar como ponto de partida pra nada novo.
+- Nunca misturar os dois sistemas visuais numa mesma tela — a migração troca a tela inteira, não mescla os dois.
+- **Sincronizar com `main` antes de começar qualquer tarefa nova**: `git fetch origin main` + `git rev-list --left-right --count origin/main...<branch>`. Se a branch estiver atrás, resolver isso primeiro (reiniciar a branch do HEAD de `main` e rebasear o que não foi mesclado) antes de somar commits novos — ver `docs/audit/BRANCH_SYNC.md` para o incidente que motivou esta regra.
 
 ## Padrão de janela/popup (modal pequeno sobre a tela)
 

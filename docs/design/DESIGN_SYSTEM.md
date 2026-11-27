@@ -1,8 +1,8 @@
-# Design System — Liquid Glass (`/design-lab`)
+# Design System — Liquid Glass
 
-> Documentação de encerramento das 10 etapas do plano "CRM Premium". Fonte única dos valores: `lib/theme.ts` (código, não duplicado aqui) — este documento descreve o que existe e por quê. Para o histórico de decisão de cada valor, ver `design-system/LIQUID_GLASS.md` (consolidação) e `app/design-lab/CONHECIMENTO.md` (log técnico completo).
+> **Status (decisão final, `docs/DECISIONS.md`): Design System definitivo do produto**, não mais documentação de protótipo isolado — o destino dos componentes passa a ser `app/_ui/` (migração progressiva, plano em `docs/audit/BRANCH_SYNC.md` §7-10), não mais só `/design-lab`. Fonte única dos valores: `lib/theme.ts` (código, não duplicado aqui) — este documento descreve o que existe e por quê. Para o histórico de decisão de cada valor, ver `design-system/LIQUID_GLASS.md` (consolidação) e `app/design-lab/CONHECIMENTO.md` (log técnico completo).
 >
-> **Dois sistemas visuais coexistem no projeto, nunca misturados na mesma tela**: o bento/dashboard (`design-system/REGRAS.md`) e o Liquid Glass aqui descrito. Hoje o Liquid Glass está em produção só na tela de login; o resto vive em `/design-lab` como protótipo.
+> O bento/dashboard (`design-system/REGRAS.md`) é o sistema legado, mantido só nas telas ainda não migradas — nunca misturado com Liquid Glass numa mesma tela. `/design-lab` continua existindo como laboratório de validação antes de qualquer componente ser promovido para `app/_ui/`.
 
 ## Cores
 
