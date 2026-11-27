@@ -271,7 +271,7 @@ export function GlassTimeline({
   itens,
 }: {
   escuro?: boolean;
-  itens: { rotulo: string; detalhe?: string; status: "concluido" | "atual" | "pendente" }[];
+  itens: { rotulo: string; detalhe?: string; status: "concluido" | "atual" | "pendente"; tag?: string }[];
 }) {
   const paleta = escuro ? corEscuro : cor;
   const corStatus = { concluido: cor.verdeEscuro, atual: cor.atencao, pendente: paleta.textoTerciario };
@@ -284,7 +284,14 @@ export function GlassTimeline({
             {i < itens.length - 1 && <span style={{ width: 2, flex: 1, background: paleta.borda, minHeight: 22 }} />}
           </div>
           <div style={{ paddingBottom: i < itens.length - 1 ? 14 : 0, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: paleta.texto }}>{it.rotulo}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: paleta.texto }}>{it.rotulo}</div>
+              {it.tag && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: cor.atencao, background: cor.atencaoFundo, borderRadius: 999, padding: "2px 8px", textTransform: "uppercase", letterSpacing: 0.3 }}>
+                  {it.tag}
+                </span>
+              )}
+            </div>
             {it.detalhe && <div style={{ fontSize: 11.5, color: paleta.textoTerciario, marginTop: 1 }}>{it.detalhe}</div>}
           </div>
         </div>

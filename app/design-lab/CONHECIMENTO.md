@@ -22,7 +22,7 @@ Todos em `app/design-lab/_glass/componentes.tsx`, documentados com comentário d
 | `GlassCard` | KPI/widget de dashboard | ~70% opaco (Caio, rodada 10) |
 | `GlassWindow` | Janela de contrato/modal | ~50% opaco — mais vidro, mais decorativa |
 | `GlassTable` | Tabela densa | Sólida, SEM vidro de propósito (regra: "reading" ≠ "regular"/"clear") |
-| `GlassTimeline` | Cronograma/andamentos | Bolinha + linha, 3 status (concluído/atual/pendente) |
+| `GlassTimeline` | Cronograma/andamentos | Bolinha + linha, 3 status (concluído/atual/pendente), tag opcional por item (passo 6 — distingue "Ocorrência" de andamento comum) |
 | `GlassDonut` | Gráfico de rosca com legenda | SVG puro, sem recharts (seria redundante — já é dependência, mas pra um donut simples não compensa) |
 | `GlassIconChip` | Ícone colorido de cabeçalho de card | — |
 | `GlassButton` / `GlassInput` / `GlassTabs` / `GlassPopover` / `GlassSheet` | Controles base | Variam por contexto (ver código) |

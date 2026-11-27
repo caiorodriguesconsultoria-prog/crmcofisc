@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { FileText, Clock, MessageSquare, CheckCircle2 } from "lucide-react";
+import { FileText, Clock, MessageSquare, CheckCircle2, Download } from "lucide-react";
 import AmbientBackground from "../_glass/ambient-background";
 import FiltroRefracaoSVG from "../_glass/refracao";
 import { GlassWindow, GlassTabs, GlassTable, GlassButton, GlassIconChip, GlassTimeline } from "../_glass/componentes";
@@ -21,11 +21,17 @@ import { cor, corEscuro, movimento } from "@/lib/theme";
 // ainda — a tabela de parcelas continua existindo, mas só na aba Resumo.
 type Aba = "resumo" | "andamentos" | "relatorio";
 
+// Passo 6 ("CRM Premium" — modernizar Andamentos e Relatórios): tags e
+// filtro inspirados na tela real (app/processos/[id]/relatorio/
+// ocorrencias.tsx), que distingue andamentos comuns de "ocorrências"
+// (via campo incluirRelatorio). Aqui a distinção fica em `ocorrencia`;
+// dados fictícios, estrutura real.
 const ANDAMENTOS = [
-  { rotulo: "Relatório de execução inserido", detalhe: "22/11/2026 · Fiscal titular", status: "concluido" as const },
-  { rotulo: "2ª parcela aguardando recebimento", detalhe: "18/11/2026 · Fornecedor notificado", status: "atual" as const },
-  { rotulo: "1ª parcela entregue e conferida", detalhe: "04/11/2026 · Fiscal titular", status: "concluido" as const },
-  { rotulo: "Contrato assinado e publicado", detalhe: "02/10/2026 · DOU", status: "concluido" as const },
+  { rotulo: "Relatório de execução inserido", detalhe: "22/11/2026 · Fiscal titular", status: "concluido" as const, ocorrencia: false },
+  { rotulo: "Atraso na 2ª parcela — fornecedor notificado", detalhe: "18/11/2026 · Ocorrência registrada", status: "atual" as const, ocorrencia: true },
+  { rotulo: "1ª parcela entregue e conferida", detalhe: "04/11/2026 · Fiscal titular", status: "concluido" as const, ocorrencia: false },
+  { rotulo: "Divergência de quantidade sanada", detalhe: "28/10/2026 · Ocorrência registrada", status: "concluido" as const, ocorrencia: true },
+  { rotulo: "Contrato assinado e publicado", detalhe: "02/10/2026 · DOU", status: "concluido" as const, ocorrencia: false },
 ];
 
 const CRONOGRAMA = [
@@ -34,11 +40,18 @@ const CRONOGRAMA = [
   { rotulo: "3ª parcela · a definir", detalhe: "Sem data confirmada", status: "pendente" as const },
 ];
 
+type FiltroAndamento = "todos" | "ocorrencias";
+
 export default function DesignLabJanelaPage() {
   const [escuro, setEscuro] = useState(false);
   const [aba, setAba] = useState<Aba>("resumo");
+  const [filtroAndamento, setFiltroAndamento] = useState<FiltroAndamento>("todos");
   const paleta = escuro ? corEscuro : cor;
   const reduzido = useReducedMotion();
+
+  const andamentosFiltrados = ANDAMENTOS.filter((a) => filtroAndamento === "todos" || a.ocorrencia);
+  const totalEntregue = 1;
+  const totalPendente = 1;
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -118,11 +131,25 @@ export default function DesignLabJanelaPage() {
                 transition={{ duration: reduzido ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
                 style={{ display: "flex", flexDirection: "column", gap: 16 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  <Clock size={13} />
-                  Histórico de andamentos
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    <Clock size={13} />
+                    Histórico de andamentos
+                  </div>
+                  <GlassTabs
+                    escuro={escuro}
+                    opcoes={[
+                      { valor: "todos" as const, rotulo: "Todos" },
+                      { valor: "ocorrencias" as const, rotulo: "Ocorrências" },
+                    ]}
+                    valor={filtroAndamento}
+                    aoMudar={setFiltroAndamento}
+                  />
                 </div>
-                <GlassTimeline escuro={escuro} itens={ANDAMENTOS} />
+                <GlassTimeline
+                  escuro={escuro}
+                  itens={andamentosFiltrados.map((a) => ({ ...a, tag: a.ocorrencia ? "Ocorrência" : undefined }))}
+                />
               </motion.div>
             )}
 
@@ -145,6 +172,22 @@ export default function DesignLabJanelaPage() {
                     Atualizado há 3 dias
                   </span>
                 </div>
+
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: cor.verdeEscuro, background: cor.verdeEscuroFundo, borderRadius: 999, padding: "4px 10px" }}>
+                    {totalEntregue} item entregue
+                  </span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: cor.atencao, background: cor.atencaoFundo, borderRadius: 999, padding: "4px 10px" }}>
+                    {totalPendente} item pendente
+                  </span>
+                  <GlassButton escuro={escuro}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Download size={14} />
+                      Exportar PDF
+                    </span>
+                  </GlassButton>
+                </div>
+
                 <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: paleta.texto }}>
                   Execução dentro do previsto. A 1ª parcela foi entregue e conferida sem divergências de quantidade ou
                   especificação técnica. A 2ª parcela está em trânsito, com previsão de entrega em 11/12/2026. Fiscal

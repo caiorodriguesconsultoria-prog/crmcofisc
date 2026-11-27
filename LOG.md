@@ -1744,3 +1744,15 @@ Caio pediu pra seguir pro passo 5 ("aperfeiçoe menus, cards, filtros e janelas 
 Validado com Playwright: clique real no filtro (confirma que o item some/volta, não só que o popover abre), clique no menu de conta (confirma "Sair" aparece), regressão completa (zero erro de console, motion/interações anteriores intactas). `tsc --noEmit` e `npm run build` limpos.
 
 Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
+
+## 2026-11-27 (2) · Passo 6 — Andamentos e Relatórios
+
+Caio pediu pra seguir pro passo 6 ("modernize Andamentos e Relatórios"). Antes de inventar UI, li as telas reais de produto que esse passo deveria espelhar: `app/processos/[id]/relatorio/ocorrencias.tsx` (histórico de andamentos com distinção entre andamento comum e "ocorrência", via `incluirRelatorio`) e `app/processos/[id]/relatorio/quadro-resumitivo.tsx` (formulário de metadados do contrato).
+
+- **Andamentos** (`app/design-lab/janela/page.tsx` + `GlassTimeline` em `componentes.tsx`): acrescentada tag "Ocorrência" (pílula) por item, espelhando a distinção real entre andamento comum e ocorrência, mais um filtro Todos/Ocorrências (`GlassTabs`, mesmo padrão de filtro já aprovado no passo 5) que esconde/mostra os itens de verdade. `GlassTimeline` ganhou o campo opcional `tag?: string` — extensão mínima do componente reutilizável, não um componente novo.
+- **Relatório**: acrescentados chips de resumo ("1 item entregue" / "1 item pendente") e um botão "Exportar PDF" — decorativo aqui, mas grounded na funcionalidade real já existente (`app/processos/[id]/relatorio/pdf/page.tsx`, rota de exportação que já existe em produção).
+- **Decisão deliberada de escopo**: `quadro-resumitivo.tsx` (formulário com dezenas de campos de metadados jurídicos/contratuais — número SEI, pregão, valor unitário, fornecedores etc.) foi excluído desta rodada por ser dado de negócio específico demais pra uma prova visual; não há ganho em recriar esse formulário fictício no laboratório.
+
+Validado com Playwright contra build de produção: clique real no filtro "Ocorrências" confirma que os 3 andamentos comuns desaparecem e os 2 de ocorrência permanecem (não só que o filtro abre); botão "Exportar PDF" e os dois chips renderizam na aba Relatório; zero erro de console. `tsc --noEmit` e `npm run build` limpos.
+
+Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
