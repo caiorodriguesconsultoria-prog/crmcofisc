@@ -1,6 +1,6 @@
 # Testes realizados — Liquid Glass / CRM Premium
 
-> Todos os testes abaixo foram feitos com Playwright (Chromium headless) contra **build de produção** (`npm run build` + `npm run start`), não `npm run dev` — medição em dev mostrou-se enganosa por overhead de compilação na primeira navegação (0%, 40,7%, 1,5% em três execuções do mesmo teste). Nenhum teste foi feito em Safari/WebKit, Firefox, ou dispositivo real — limitação registrada, não escondida.
+> Todos os testes abaixo foram feitos com Playwright contra **build de produção** (`npm run build` + `npm run start`), não `npm run dev` — medição em dev mostrou-se enganosa por overhead de compilação na primeira navegação (0%, 40,7%, 1,5% em três execuções do mesmo teste). **Homologação final**: testado em Chromium, Firefox e WebKit (headless) — os três motores de renderização de desktop que o Playwright suporta. Segue sem teste em dispositivo físico (iOS/Android reais usam variações desses mesmos motores, não exatamente os binários de desktop testados aqui) — limitação registrada, não escondida.
 
 ## Dados simulados vs. funcionalidade real
 
@@ -32,23 +32,33 @@ Executados incrementalmente a cada passo (1-9) e revalidados juntos na auditoria
 
 **Zero erro de console** em todas as combinações testadas (ver matriz de telas abaixo).
 
-## Matriz de telas testadas (passo 10 — auditoria final)
+## Matriz de telas testadas (passo 10 — auditoria final; expandida na homologação final)
 
 | Tela | Desktop | Tablet | Mobile | Claro | Escuro |
 |---|---|---|---|---|---|
-| Dashboard (`/design-lab`) | ✅ | ✅ (ver gap abaixo) | ✅ | ✅ | ✅ |
+| Dashboard (`/design-lab`) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Janela de contrato (`/design-lab/janela`) | ✅ | ✅ | ✅ (sheet) | ✅ | ✅ |
 | Login (produção) | ✅ | ✅ | ✅ | ✅ | — (sistema de login é só claro, por mockup aprovado) |
 
-Screenshots em `screenshots/` (desktop 1280×900, tablet 768×1024, mobile 390×844; `-claro`/`-escuro`).
+Screenshots em `screenshots/`, prefixadas pelo motor (`chromium-`/`firefox-`/`webkit-`), desktop 1280×900, tablet 768×1024, mobile 390×844, `-claro`/`-escuro`.
 
-### Falha/gap encontrado nesta rodada (não corrigido — fora do escopo do plano de 10 passos)
+### Testado em 3 motores de renderização (homologação final)
 
-**Dashboard em largura de tablet (768px) estoura horizontalmente.** O breakpoint do dashboard é binário (`window.innerWidth >= 768` = modo desktop, com sidebar fixa + grade de 5/3 colunas), sem um terceiro estado intermediário para tablet. Em 768px exatos, a grade de cards fica larga demais para a viewport, cortando conteúdo à direita (ver `screenshots/dashboard-tablet-claro.png` — o card "Entregas previstas" tem o rótulo do filtro cortado, e os cards "Cobertura de férias"/"Insights da IA" ficam parcialmente fora da tela).
+| Motor | Instalação | Resultado |
+|---|---|---|
+| Chromium | Pré-instalado neste ambiente | ✅ 9/9 combinações (3 telas × 3 larguras), zero erro de console, zero overflow horizontal |
+| Firefox | Instalado nesta rodada (`playwright install firefox`) | ✅ 9/9 combinações, mesmos resultados |
+| WebKit | Instalado nesta rodada (`playwright install webkit` + `install-deps webkit` para as bibliotecas de sistema que faltavam) | ✅ 9/9 combinações, mesmos resultados |
 
-A **janela de contrato não tem esse problema** em tablet — ela já é centralizada com `maxWidth`, então apenas encolhe graciosamente (ver `screenshots/janela-tablet-claro.png`). O **login também não tem** — a coluna de identidade já esconde abaixo de 900px (CSS), então tablet cai no layout mobile centralizado (`screenshots/login-tablet-claro.png`).
+27 combinações no total (3 motores × 3 telas × 3 larguras), cada uma com teste de tema claro/escuro onde aplicável — **zero erro de console e zero overflow horizontal em todas elas** (`document.documentElement.scrollWidth` comparado contra `clientWidth`, não inspeção visual).
 
-Registrado em `MIGRATION.md` como item a resolver antes de migrar o dashboard para produção.
+### Gap de tablet — corrigido nesta rodada
+
+**Dashboard em largura de tablet (768-1023px) estourava horizontalmente** (achado do passo 10, corrigido agora). Causa: breakpoint binário (`window.innerWidth >= 768` = modo desktop, com sidebar fixa + grade de 5/3 colunas), sem terceiro estado para tablet — em 768px exatos a grade ficava larga demais, cortando conteúdo à direita.
+
+**Correção**: terceiro estado (`mobile` <768px / `tablet` 768-1023px / `desktop` ≥1024px) em `app/design-lab/page.tsx`. Tablet usa a mesma navegação por dock do mobile (sidebar fixa não cabe), grades intermediárias (3 colunas de KPI, 2 de bento) e scroll normal — só desktop mantém sidebar + grade de 5/3 colunas + altura travada em 100vh. Confirmado sem overflow em `screenshots/{chromium,firefox,webkit}-dashboard-tablet-{claro,escuro}.png`.
+
+A **janela de contrato nunca teve esse problema** (já é centralizada com `maxWidth`, só encolhe) e o **login também não** (a coluna de identidade já esconde abaixo de 900px) — confirmado nos screenshots correspondentes.
 
 ## Desempenho (CDP `Performance.getMetrics`, `TaskDuration` real — não estimativa)
 
@@ -68,19 +78,40 @@ Registrado em `MIGRATION.md` como item a resolver antes de migrar o dashboard pa
 
 **Limitação da medição**: Chromium headless deste ambiente não tem GPU real (`SwiftShader`, renderização por software via CPU) — os números do shader animado tendem a ser pessimistas comparados a hardware real com GPU. Não testado em hardware real.
 
-**Custo de bundle**: a rota `/design-lab` cresceu de ~252KB para ~345KB de First Load JS ao adicionar `GlassSparkline` (`recharts`) — o Next.js separa bundle por rota, então "já é dependência do projeto" não significa "grátis nesta rota especificamente".
+### Avaliação de remoção do shader não adotado (homologação final)
+
+`@paper-design/shaders-react` segue instalado, mas não adotado como fundo padrão (decisão original, confirmada acima). Avaliado nesta rodada se valia a pena desinstalar:
+
+- **Disco**: 1,8MB em `node_modules/@paper-design` — irrelevante.
+- **Bundle**: a única rota que o importa é `/design-lab/shader-teste` (`First Load JS` de ~254KB, na mesma faixa de `/design-lab/janela`, ~247KB) — **nenhuma outra rota paga esse custo**, código-dividido por rota pelo Next.js.
+- **Valor como ferramenta**: foi o instrumento que produziu o achado mais importante do processo ("WebGL + animação contínua = caro") e permite reavaliar o fundo ambiental no futuro (ex.: em hardware com GPU real) sem precisar reinstalar e reconstruir a ferramenta de comparação do zero.
+
+**Decisão: manter instalado.** Não há ganho real em remover (custo já é zero fora da única rota que o usa) e há custo real em remover (perde a ferramenta de medição validada).
+
+### Sparkline: SVG vs. Recharts (homologação final)
+
+Comparação entre a versão original (`GlassSparkline`, `recharts`) e a nova (`GlassSparklineSVG`, sem dependência), medida com build de produção:
+
+| Critério | `recharts` (removido) | SVG puro (adotado) |
+|---|---|---|
+| First Load JS do grupo `/design-lab` | 347KB (`/design-lab`) | **255KB** (-92KB) |
+| CPU (3s parado) | ~0% (sem animação) | ~0% (sem animação) — empate |
+| Fidelidade visual | Curva suavizada (`type="monotone"`, Bézier) | Path reto entre pontos — levemente mais angular, mas a diferença é imperceptível num sparkline de ~100×28px (confirmado visualmente em 3 motores) |
+
+**Decisão: adotada a versão SVG**, a versão `recharts` foi removida do protótipo (não ficou como código morto/duplicidade). `recharts` continua em produção normalmente (gráfico de barras do dashboard real), sem relação com esta troca.
 
 ## Acessibilidade
 
-- **Contraste**: medido via pixel renderizado + `getComputedStyle` + fórmula WCAG (não "parece combinar") — todos os textos passam 4,5:1+; o mais apertado foi "Ambiente de acesso restrito" na tela de login, a 4,52:1 (no limite, registrado para reforço futuro se necessário).
-- **Navegação por teclado**: todos os itens de navegação (sidebar, dock, abas) são `<button>` reais com alvo de toque mínimo de 44×44px (WCAG 2.5.5) — nenhum `<div>` decorativo disfarçado de controle. `outline` padrão do navegador nunca removido.
+- **Contraste**: medido via pixel renderizado/cor computada + fórmula WCAG (não "parece combinar") — todos os textos passam 4,5:1+; remedido na homologação final (rótulo do dashboard e rodapé do login): 5,34:1 em ambos, sem regressão.
+- **Navegação por teclado**: todos os itens de navegação (sidebar, dock, abas) são `<button>` reais com alvo de toque mínimo de 44×44px (WCAG 2.5.5) — nenhum `<div>` decorativo disfarçado de controle. `outline` padrão do navegador nunca removido. Remedido na homologação final: os 4 itens do dock mobile têm 44px de altura e largura ≥44px.
+- **Focus trap no painel de IA — corrigido na homologação final**: antes, `Tab` conseguia sair do painel pro resto da página e `Escape` não fechava nada (pendência documentada no passo 10). Agora: `Tab`/`Shift+Tab` cicla só dentro do painel (testado com 8 `Tab` seguidos — todos permaneceram dentro do `role="dialog"`), `Escape` fecha, e o foco retorna pro botão que abriu ao fechar (testado nos dois caminhos: `Escape` e clique no overlay).
 - **`prefers-reduced-motion`**: testado de verdade (não só código revisado) — painel de IA abre, sugestão funciona, resposta simulada aparece, tudo sem depender de nenhuma animação quando a preferência está ativa.
 - **`prefers-reduced-transparency`** e **`prefers-contrast: more`**: aplicados em todas as superfícies de vidro via `usePreferenciaMidia` — queda para quase opaco sem `backdrop-filter`, e borda reforçada, respectivamente.
-- **Gap conhecido, documentado e não corrigido**: o painel do assistente de IA não tem *focus trap* — `Tab` alcança o botão "Fechar" logo após abrir (ordem de DOM razoável), mas nada impede que `Tab` continue para o resto da página por trás, e `Escape` não fecha o painel. Pendência explícita para uma futura promoção a produto.
 
 ## Ferramentas de teste usadas
 
-- Playwright (Chromium) para funcional, visual e acessibilidade.
-- CDP `Performance.getMetrics` (`TaskDuration`) para CPU real, não estimada.
-- `sharp` (Node) para amostragem de pixel real em verificação de contraste.
-- `npx tsc --noEmit` e `npm run build` (com variáveis de ambiente Supabase placeholder) antes de cada commit, em todas as 10 etapas.
+- Playwright — Chromium (pré-instalado), Firefox e WebKit (instalados na homologação final via `playwright install firefox webkit`; WebKit precisou também de `playwright install-deps webkit` para bibliotecas de sistema ausentes no ambiente) — para funcional, visual, overflow e acessibilidade.
+- CDP `Performance.getMetrics` (`TaskDuration`) para CPU real, não estimada — Chromium apenas (Firefox/WebKit não expõem essa API via CDP).
+- `document.documentElement.scrollWidth` vs. `clientWidth` para detecção de overflow horizontal real, não inspeção visual.
+- `getComputedStyle` + fórmula de contraste relativo WCAG para verificação de contraste real.
+- `npx tsc --noEmit` e `npm run build` (com variáveis de ambiente Supabase placeholder) antes de cada commit, em todas as 10 etapas e na homologação final.

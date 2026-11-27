@@ -1,8 +1,8 @@
-# Status — plano "CRM Premium" (10 passos)
+# Status — plano "CRM Premium" (10 passos) + homologação final
 
 **Branch**: `claude/crm-cofisc-conexao-9pot1u`
-**Commit mais recente nesta documentação**: `8a6a524` (2026-11-27)
-**Aprovação**: cada passo foi aprovado individualmente por Caio antes do seguinte (ver `LOG.md` para o registro completo, entrada por entrada, com data e "porquê" de cada mudança).
+**Commit mais recente nesta documentação**: `0faa598` (2026-11-27, homologação final)
+**Aprovação**: cada passo foi aprovado individualmente por Caio antes do seguinte (ver `LOG.md` para o registro completo, entrada por entrada, com data e "porquê" de cada mudança). A homologação final (pedido explícito de Caio, após o passo 10) resolveu as 3 pendências técnicas que o passo 10 tinha deixado em aberto.
 
 ## Concluído (10/10 passos)
 
@@ -21,6 +21,18 @@
 
 **Extra, fora da numeração dos 10 passos, autorizado explicitamente por Caio**: redesenho da tela de login em produção (`9295702`), com "Authentication Blueprint" documentado em `app/login/CONHECIMENTO.md`.
 
+## Homologação final (`0faa598`, após o passo 10)
+
+Pedido de Caio em 7 itens, todos concluídos — ver `LOG.md` ("Homologação final do design-lab") e `TESTS.md` para o detalhe:
+
+1. ✅ Responsividade tablet corrigida (terceiro estado de breakpoint no dashboard).
+2. ✅ Focus trap + Escape + retorno de foco no painel de IA.
+3. ✅ Sparkline comparado (SVG vs. Recharts) — SVG adotado, -92KB de bundle.
+4. ✅ Shader não adotado avaliado — mantido instalado (custo zero fora da rota de teste).
+5. ✅ Testado em Chromium, Firefox e WebKit — 27 combinações, zero erro de console.
+6. ✅ Contraste, overflow, toque e desempenho validados — sem regressão em nenhum.
+7. ✅ `docs/design/` e `CRM_DESIGN.zip` atualizados.
+
 ## Aprovado para produção
 
 - ✅ **Tela de login** — única peça deste plano em produção hoje.
@@ -28,14 +40,13 @@
 ## Pendente (não implementado — decisão futura de Caio)
 
 - Promoção de qualquer componente do `/design-lab` para `app/_ui/` ou para telas reais do dashboard/contratos.
-- Correção do gap de responsividade em tablet do dashboard (ver `TESTS.md`/`MIGRATION.md`).
-- Focus trap no painel do assistente de IA, caso esse padrão venha a ser usado em produção.
-- Decisão sobre manter ou remover a dependência `@paper-design/shaders-react` (instalada, não adotada como fundo padrão).
 - Ligação do painel de IA flutuante (se promovido) à API real `/api/assistente`, em vez da resposta simulada.
+- Teste em dispositivo físico (iOS/Android reais) — a homologação cobriu Chromium/Firefox/WebKit desktop headless, não hardware móvel real.
 
 ## Branch e commits (cronologia completa desta fase)
 
 ```
+0faa598 design-lab: homologação — tablet, focus trap, sparkline SVG
 8a6a524 design-lab: passo 10 — auditoria final (visual, funcional, desempenho)
 c9067a6 design-lab: passo 9 — transições e microinterações
 537b95e design-lab: passo 8 — assistente de IA flutuante funcional
@@ -53,10 +64,11 @@ e65e9d3 design-lab: auditoria de recursos externos + number-flow nos KPIs (fase 
 
 (Commits anteriores a `e65e9d3` pertencem às fases 1-11 do redesenho Liquid Glass original, que antecederam o plano "CRM Premium" propriamente dito — ver `LOG.md` para o histórico completo desde o início do projeto.)
 
-## Regras operacionais respeitadas durante todo o plano
+## Regras operacionais respeitadas durante todo o plano (incluindo a homologação final)
 
 - Nenhuma credencial em código ou chat.
 - Nenhuma migração de schema de banco foi necessária nesta fase (toda alteração foi visual/frontend).
 - Nenhum merge para `main` sem aprovação explícita — este trabalho permanece inteiramente na branch de trabalho.
-- `tsc --noEmit` e `npm run build` limpos antes de cada um dos 10 commits.
+- `tsc --noEmit` e `npm run build` limpos antes de cada commit, incluindo o da homologação final.
 - Nenhuma regra de negócio, autenticação ou controle de acesso alterado (verificado explicitamente na tela de login, único ponto de contato com produção).
+- Nada instalado em produção nem migrado — `@paper-design/shaders-react` segue só no `/design-lab`; Firefox/WebKit foram instalados apenas como ferramentas de teste deste ambiente (Playwright), não como dependência do projeto.

@@ -64,13 +64,17 @@ Tokens em `movimento` (`lib/theme.ts`): `ease` (cubic-bezier `[0.22, 1, 0.36, 1]
 
 Catálogo de microinterações implementadas: entrada escalonada de grade (`staggerChildren`), crossfade de abas, grupo expansível com altura animada, elevação no hover de card (reaproveitada de `CardBento`, produção), `whileTap` em toda navegação (sidebar, dock, Cadastros), popovers com entrada/saída animada (fade + escala), pulso de glow no botão de IA e no sino de notificação (gated por `prefers-reduced-motion`), transição do número dos KPIs (`@number-flow/react`).
 
+**Focus trap no painel de IA** (homologação final): `Tab`/`Shift+Tab` cicla só entre os elementos focáveis do painel, `Escape` fecha, e o foco volta pro botão que abriu ao fechar — antes disso, `Tab` conseguia escapar do painel pro resto da página e `Escape` não fazia nada (ver `TESTS.md`).
+
 **Lição de desempenho validada** (ver `TESTS.md` para os números): fundo ambiental deve ser **sempre CSS/SVG, nunca WebGL/shader**, em qualquer tela com animação contínua — o custo não vem do shader isolado, vem da combinação canvas WebGL + qualquer animação rodando por cima.
 
 ## Responsividade
 
-Duas estratégias coexistem, cada uma para o tipo de tela certo:
-- **Dashboard** (`/design-lab`): breakpoint único em 768px (`window.innerWidth >= 768` = desktop), troca sidebar+grade fixa por dock+grade empilhada.
-- **Janela de contrato** (`/design-lab/janela`, passo 7): abaixo de 768px vira **bottom sheet nativo** (`GlassSheet`, sobe do rodapé, faixa de arrasto, cantos só no topo) em vez da janela flutuante centralizada do desktop — é uma experiência mobile *independente*, não a mesma UI encolhida.
+Três telas, três estratégias — cada uma para o tipo de tela certo:
+- **Dashboard** (`/design-lab`): três estados (`mobile` <768px, `tablet` 768-1023px, `desktop` ≥1024px — corrigido na homologação final, ver `TESTS.md`). Mobile e tablet usam dock de navegação (a sidebar fixa de 288px não cabe em nenhum dos dois); tablet usa grades intermediárias (3 colunas de KPI, 2 de bento) com scroll normal; só desktop mantém sidebar + grade de 5/3 colunas + altura travada em 100vh ("ver tudo sem rolar").
+- **Janela de contrato** (`/design-lab/janela`, passo 7): abaixo de 768px vira **bottom sheet nativo** (`GlassSheet`, sobe do rodapé, faixa de arrasto, cantos só no topo) em vez da janela flutuante centralizada do desktop — é uma experiência mobile *independente*, não a mesma UI encolhida. Em 768-1023px (tablet) já cai no mesmo tratamento do desktop (janela flutuante centralizada, só encolhe) — não tem o problema do dashboard porque nunca teve grade de colunas fixas.
 - **Login** (produção): duas colunas (identidade + formulário) acima de 900px; abaixo disso, formulário centralizado sozinho.
+
+Testado sem overflow horizontal em nenhuma combinação (Chromium/Firefox/WebKit × mobile/tablet/desktop × claro/escuro) — ver `TESTS.md`.
 
 **Gap encontrado na auditoria final** (ver `TESTS.md` e `MIGRATION.md`): o dashboard não tem um terceiro estado para tablet (~768-1024px) — na largura exata de 768px ele já cai no modo "desktop" com grade de 5/3 colunas fixas, causando corte horizontal de conteúdo. A janela de contrato e o login não têm esse problema (ambos degradam bem em 768px). Documentado como pendência, não corrigido nesta rodada (fora do escopo do plano de 10 passos, que não pedia um terceiro breakpoint).

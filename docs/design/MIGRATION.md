@@ -22,7 +22,7 @@
 
 1. **Baixo risco, alto valor imediato — popovers/microinterações** (passo 9): `whileTap` e entrada/saída animada de popover são mudanças pequenas e isoladas; podem ser aplicadas direto nos componentes de produção existentes (`barra-lateral.tsx`, `controle-segmentado.tsx`) sem reescrever nada.
 2. **Médio risco — padrão de bottom sheet mobile** (`GlassSheet`, passo 7): útil para qualquer modal/detalhe que hoje só encolhe no mobile em vez de virar um padrão nativo. Resolver primeiro o gap de tablet do dashboard (ver `TESTS.md`) antes de generalizar.
-3. **Médio risco — sparklines nos KPIs reais** (passo 4): `recharts` já é dependência de produção; o componente em si é pequeno, mas precisa de dados históricos reais (hoje só existe o valor atual do KPI) — depende de nova consulta/agregação, não só de UI.
+3. **Médio risco — sparklines nos KPIs reais** (passo 4, componente trocado na homologação final para `GlassSparklineSVG`, sem dependência externa): o componente em si é pequeno, mas precisa de dados históricos reais (hoje só existe o valor atual do KPI) — depende de nova consulta/agregação, não só de UI. Migrar fica mais simples agora — não depende mais de `recharts` estar na mesma rota.
 4. **Alto risco/esforço — material Liquid Glass completo**: migrar o dashboard inteiro para vidro translúcido é uma mudança visual grande, sujeita à mesma decisão que já existe hoje (dois sistemas visuais, nunca misturados) — exigiria decidir se o bento/dashboard atual é substituído ou se as duas telas continuam coexistindo por mais tempo.
 5. **Não recomendado migrar como está — assistente de IA flutuante**: o painel simulado é só prova de conceito visual; a versão real (`/assistente`) já existe e funciona com streaming de verdade. Se for levar o *visual* do painel flutuante para produção, a ligação teria que ser feita com `/api/assistente` de verdade, não com o texto fictício.
 
@@ -30,16 +30,18 @@
 
 | Pacote | Já em produção? | Observação |
 |---|---|---|
-| `framer-motion`, `recharts`, `lucide-react` | ✅ sim | Nenhuma dependência nova necessária para migrar a maior parte do sistema |
+| `framer-motion`, `lucide-react` | ✅ sim | Nenhuma dependência nova necessária para migrar a maior parte do sistema |
+| `recharts` | ✅ sim (uso próprio, sem relação com o protótipo) | **Não é mais usado em `/design-lab`** desde a homologação final — o sparkline do protótipo foi trocado para SVG puro (`GlassSparklineSVG`), então migrar sparklines pra produção não traz `recharts` como dependência nova nem reforça um uso já existente |
 | `@number-flow/react` | ❌ não | Precisaria ser decidido/aprovado para uso em produção (MIT, 25KB, zero deps — baixo risco) |
-| `@paper-design/shaders-react` | ❌ não, e **não recomendado adotar** | Testado e revertido por custo de CPU alto em contexto real (ver `TESTS.md`). Manter instalado só serve para a ferramenta de comparação `shader-teste`; se não for mais usado, é candidato a remoção futura |
+| `@paper-design/shaders-react` | ❌ não, e **não recomendado adotar** | Testado e revertido por custo de CPU alto em contexto real (ver `TESTS.md`). **Reavaliado na homologação final e mantido instalado** (custo zero fora da rota `shader-teste`, isolado por code-splitting) — não é mais "candidato a remoção", é uma decisão deliberada de manter como ferramenta |
 
 ## Riscos identificados
 
-- **Gap de responsividade em tablet** (dashboard, ver `TESTS.md`) — precisa de um terceiro breakpoint antes de qualquer migração do dashboard.
-- **Falta de focus trap no painel de IA** — se esse padrão de painel flutuante for reaproveitado em produção, precisa de tratamento de acessibilidade mais completo antes.
+- ~~Gap de responsividade em tablet~~ — **resolvido na homologação final** (terceiro estado de breakpoint no dashboard, testado em 3 motores sem overflow).
+- ~~Falta de focus trap no painel de IA~~ — **resolvido na homologação final** (`Tab` cicla dentro do painel, `Escape` fecha, foco retorna ao botão).
 - **Duplicação de navegação**: `GlassSidebar`/`GlassDock` reimplementam (não reutilizam) a estrutura de `barra-lateral.tsx`. Migrar o visual sem migrar o componente de verdade criaria duas fontes de navegação para manter — melhor migrar adaptando o componente real, não copiando o do protótipo.
 - **Dependência de API real para o assistente** — qualquer versão em produção do painel flutuante depende de `/api/assistente` estar pronto para o volume de uso (hoje é "Fase 1, em teste", conforme já indicado na própria tela real).
+- **Teste em dispositivo físico ainda não feito** — a homologação cobriu Chromium/Firefox/WebKit desktop (headless), mas não iOS/Android reais. Baixo risco (os motores mobile reais derivam dos mesmos engines testados), mas não confirmado.
 - **Toda migração de schema** (se alguma vier a ser necessária, por exemplo para sparklines históricos) segue a regra já existente do projeto: entregue como `.sql` para Caio rodar manualmente, nunca executada diretamente.
 
 ## Rollback

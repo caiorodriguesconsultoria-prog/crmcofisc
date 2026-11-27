@@ -34,14 +34,14 @@
 | `GlassTable` | 167 | Tabela — **nunca vidro**, sempre superfície sólida de leitura (regra do sistema: texto denso não deve ficar sobre fundo variável) | Nenhuma |
 | `GlassDonut` | 211 | Rosca com legenda | Desenhado à mão (SVG puro) — decisão deliberada de não somar `recharts` só para isso |
 | `GlassTimeline` | 271 | Timeline numerada (andamentos/cronograma) — ganhou campo opcional `tag` no passo 6 | Nenhuma |
-| `GlassSparkline` | 986 | Mini-gráfico de área sem eixo/tooltip | `recharts` (`AreaChart`/`Area`/`ResponsiveContainer`) — já dependência do projeto, mas **custo de bundle real**: a rota `/design-lab` não importava `recharts` antes (+93KB de First Load JS só nela, ver `TESTS.md`) |
+| `GlassSparklineSVG` | 1046 | Mini-gráfico de área sem eixo/tooltip, SVG puro | Nenhuma — substituiu a versão `recharts` na homologação final (-92KB de First Load JS no grupo de rotas do `/design-lab`; a versão `recharts` foi removida do protótipo, ver `TESTS.md`) |
 
 ## Decorativos
 
 | Componente | Linha | Descrição | Dependência |
 |---|---|---|---|
 | `GlassIconChip` | 199 | Chip de ícone colorido | `lucide-react` |
-| `GlassAIButton` | 533 | Botão flutuante de IA — **a partir do passo 8, abre um painel de chat funcional** (sugestões, histórico simulado, resposta "digitada" aos poucos) | `lucide-react` (`Sparkles`, `Send`) |
+| `GlassAIButton` | 532 | Botão flutuante de IA — abre um painel de chat funcional (sugestões, histórico simulado, resposta "digitada" aos poucos); **focus trap + Escape + retorno de foco** adicionados na homologação final | `lucide-react` (`Sparkles`, `Send`) |
 
 ## Hooks utilitários
 
@@ -65,9 +65,9 @@
 | Pacote | Versão | Licença | Uso | Status |
 |---|---|---|---|---|
 | `@number-flow/react` | ^0.6.2 | MIT | Transição animada de número nos KPIs | Em uso no protótipo |
-| `@paper-design/shaders-react` | ^0.0.82 | Apache-2.0 | Testado como fundo ambiental (shader WebGL) | **Instalado mas não adotado** — custo de CPU alto em contexto real (ver `TESTS.md`); mantido só para a ferramenta `shader-teste` |
+| `@paper-design/shaders-react` | ^0.0.82 | Apache-2.0 | Testado como fundo ambiental (shader WebGL) | **Instalado mas não adotado — reavaliado e mantido na homologação final**: 1,8MB em disco, custo ZERO em qualquer rota fora de `/design-lab/shader-teste` (isolado por code-splitting), mantido como ferramenta de medição (ver `TESTS.md`) |
 | `framer-motion` | ^14.7.1 | — | Já dependência de produção | Reutilizado |
-| `recharts` | ^3.10.1 | — | Já dependência de produção (gráfico de barras do dashboard real) | Reutilizado em `GlassSparkline` |
+| `recharts` | ^3.10.1 | — | Já dependência de produção (gráfico de barras do dashboard real) | **Removido do `/design-lab`** na homologação final — `GlassSparklineSVG` (SVG puro) substituiu a versão que usava `recharts`; produção continua usando `recharts` normalmente, sem relação com esta decisão |
 | `lucide-react` | ^1.64.0 | — | Já dependência de produção | Reutilizado |
 
 Nenhuma dependência redundante foi instalada (shadcn/ui e Tremor foram avaliados e rejeitados por exigirem Tailwind, que o projeto não usa — ver `app/design-lab/CONHECIMENTO.md`).
