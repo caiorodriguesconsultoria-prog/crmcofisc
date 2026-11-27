@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 import AmbientBackground from "./_glass/ambient-background";
 import FiltroRefracaoSVG from "./_glass/refracao";
-import { GlassCard, GlassButton, GlassInput, GlassTable, GlassAIButton, GlassSidebar, GlassDock, GlassSurface, GlassIconChip, GlassDonut, GlassSparkline } from "./_glass/componentes";
-import { cor, corEscuro, movimento } from "@/lib/theme";
+import { GlassCard, GlassButton, GlassInput, GlassTable, GlassAIButton, GlassSidebar, GlassDock, GlassSurface, GlassIconChip, GlassDonut, GlassSparkline, GlassPopover } from "./_glass/componentes";
+import { cor, corEscuro, movimento, raio, elevacao } from "@/lib/theme";
 
 // /design-lab — laboratório isolado (CRM_LIQUID_GLASS_SKILLS.md, seção 5):
 // dados fictícios, sem mutação real, não é tela do produto. Objetivo:
@@ -44,6 +44,16 @@ const KPIS = [
   { rotulo: "Tarefas pendentes", valor: "2", Icone: ClipboardList, corIcone: "#6A5ACD", fundo: "rgba(106,90,205,.12)", tendencia: [4, 3, 3, 2, 3, 2, 2] },
 ];
 
+// Passo 5 ("CRM Premium" — aperfeiçoar filtros): cada item tem `dias`
+// (dias a partir de hoje, fictício) pra o filtro "Próximos N dias" filtrar
+// de verdade, não só mudar o rótulo.
+const ENTREGAS_PREVISTAS = [
+  { c: "339/2026", item: "Desmopressina", d: "04/12", dias: 4 },
+  { c: "294/2026", item: "Rivastigmina", d: "11/12", dias: 9 },
+  { c: "305/2026", item: "Insulina Humana", d: "15/12", dias: 18 },
+  { c: "196/2026", item: "Material cirúrgico", d: "22/12", dias: 28 },
+];
+
 export default function DesignLabPage() {
   const [escuro, setEscuro] = useState(false);
   // Fase 11 (CRM Premium — auditoria de recursos externos): @number-flow/
@@ -52,6 +62,9 @@ export default function DesignLabPage() {
   // verdade no laboratório (produto real vai trocar quando os dados
   // mudarem, não precisa desse botão).
   const [bump, setBump] = useState(0);
+  // Filtro de verdade (passo 5) — "Próximos N dias" em Entregas previstas.
+  const [janelaEntregas, setJanelaEntregas] = useState<7 | 15 | 30>(30);
+  const [filtroAberto, setFiltroAberto] = useState(false);
   // Protótipo de laboratório, não produto — só pra ter paridade mínima com
   // a referência (sidebar some, dock vira a navegação) na hora de comparar
   // desktop vs. mobile lado a lado.
@@ -192,20 +205,51 @@ export default function DesignLabPage() {
             />
           </GlassCard>
 
-          <GlassCard escuro={escuro} variants={item}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <GlassCard escuro={escuro} variants={item} style={{ overflow: "visible" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, position: "relative" }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5 }}>Entregas previstas</div>
-              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: paleta.textoSecundario }}>
-                Próximos 30 dias <ChevronDown size={12} />
-              </span>
+              <button
+                type="button"
+                onClick={() => setFiltroAberto((v) => !v)}
+                style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: paleta.textoSecundario, background: "transparent", border: "none", cursor: "pointer", padding: "4px 2px" }}
+              >
+                Próximos {janelaEntregas} dias <ChevronDown size={12} />
+              </button>
+              {filtroAberto && (
+                <>
+                  <div onClick={() => setFiltroAberto(false)} style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1 }} />
+                  <GlassPopover escuro={escuro} style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, padding: 4, minWidth: 120 }}>
+                    {([7, 15, 30] as const).map((dias) => (
+                      <button
+                        key={dias}
+                        type="button"
+                        onClick={() => {
+                          setJanelaEntregas(dias);
+                          setFiltroAberto(false);
+                        }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "7px 10px",
+                          border: "none",
+                          borderRadius: raio.campo,
+                          background: dias === janelaEntregas ? paleta.destaqueFundo : "transparent",
+                          color: dias === janelaEntregas ? paleta.destaque : paleta.texto,
+                          fontSize: 12.5,
+                          fontWeight: dias === janelaEntregas ? 700 : 500,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Próximos {dias} dias
+                      </button>
+                    ))}
+                  </GlassPopover>
+                </>
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-              {[
-                { c: "339/2026", item: "Desmopressina", d: "04/12" },
-                { c: "294/2026", item: "Rivastigmina", d: "11/12" },
-                { c: "305/2026", item: "Insulina Humana", d: "15/12" },
-                { c: "196/2026", item: "Material cirúrgico", d: "22/12" },
-              ].map((e) => (
+              {ENTREGAS_PREVISTAS.filter((e) => e.dias <= janelaEntregas).map((e) => (
                 <div key={e.c} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
                   <div style={{ width: 26, height: 26, borderRadius: "50%", background: paleta.destaqueFundo, color: paleta.destaque, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
                     <FileText size={13} />

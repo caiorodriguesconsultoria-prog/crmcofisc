@@ -1731,3 +1731,16 @@ Caio pediu pra seguir pro passo 4 ("modernize o dashboard, indicadores e gráfic
 Validado: `tsc --noEmit` e `npm run build` limpos, ainda cabe no desktop sem rolar (grade não cresceu o suficiente pra estourar), zero erro de console, regressão completa dos dois temas.
 
 Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
+
+## 2026-11-27 · Passo 5 — menus, cards, filtros e janelas (3 melhorias concretas)
+
+Caio pediu pra seguir pro passo 5 ("aperfeiçoe menus, cards, filtros e janelas de contratos"). Três ações concretas, não mudança genérica:
+
+- **Cards**: `GlassCard` ganhou elevação no hover (`y: -3` + sombra) — reaproveitando o padrão JÁ aprovado em produção (`CardBento`, `app/_ui/card-bento.tsx`), incluindo o hook `usarPodeHover()` (evita "hover preso" em toque/mobile) e `useReducedMotion()`. Não inventei um efeito novo pro laboratório; importei o que já existe.
+- **Filtros**: "Próximos 30 dias" em "Entregas previstas" agora filtra de verdade — clique abre um `GlassPopover` com 7/15/30 dias, cada entrega fictícia ganhou um campo `dias` e a lista é filtrada ao vivo. Testado de verdade (clique real via Playwright): o item "Material cirúrgico" (28 dias) desaparece ao trocar pra 7 dias e volta em 30.
+- **Menus**: o rodapé de conta da `GlassSidebar` (antes só decorativo) virou botão que abre um menu (`GlassPopover` com "Sair") — mesmo padrão de overlay-fecha-ao-clicar-fora já usado em produção (`app/_ui/barra-lateral.tsx`).
+- **Janelas de contrato**: revisadas — já tinham abas funcionais, timeline e cronograma das fases 7/9; nenhuma lacuna nova encontrada que justificasse mudança nesta rodada (registrado em vez de pular silenciosamente).
+
+Validado com Playwright: clique real no filtro (confirma que o item some/volta, não só que o popover abre), clique no menu de conta (confirma "Sair" aparece), regressão completa (zero erro de console, motion/interações anteriores intactas). `tsc --noEmit` e `npm run build` limpos.
+
+Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.

@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown, LogOut, type LucideIcon } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { cor, corEscuro, raio, elevacao, vidro, vidroNivel, movimento } from "@/lib/theme";
+import { usarPodeHover } from "@/app/_ui/usar-pode-hover";
 import { backdropRefracao } from "./refracao";
 
 // Fase 9 (CRM_LIQUID_GLASS_SKILLS.md / regra da skill premium-liquid-ui:
@@ -97,10 +98,12 @@ type PropsBase = {
   variants?: any;
   initial?: any;
   animate?: any;
+  whileHover?: any;
+  whileTap?: any;
 };
 
 /** Superfície de vidro genérica — base de todos os outros componentes. */
-export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style, children, variants, initial, animate }: PropsBase) {
+export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style, children, variants, initial, animate, whileHover, whileTap }: PropsBase) {
   const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
   const maisContraste = usePreferenciaMidia("(prefers-contrast: more)");
   return (
@@ -108,6 +111,8 @@ export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style
       variants={variants}
       initial={initial}
       animate={animate}
+      whileHover={whileHover}
+      whileTap={whileTap}
       style={{ borderRadius: raio.card, zIndex: elevacao.card, ...materialVidro(intensidade, !!escuro, alphaFundo, transparenciaReduzida, maisContraste), ...style }}
     >
       {children}
@@ -119,8 +124,22 @@ export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style
  * já que carrega número/texto curto, mas ainda com vidro visível. */
 export function GlassCard({ escuro, titulo, style, children, variants, initial, animate }: PropsBase & { titulo?: string }) {
   const paleta = escuro ? corEscuro : cor;
+  const reduzido = useReducedMotion();
+  const podeHover = usarPodeHover();
+  // Elevação no hover — mesmo padrão já aprovado em produção (CardBento,
+  // app/_ui/card-bento.tsx), reaproveitado aqui em vez de inventar um novo
+  // (passo 5, "aperfeiçoe... cards"). Só em dispositivo com hover de
+  // verdade (sem isso, toque em mobile deixava o "hover" preso).
   return (
-    <GlassSurface escuro={escuro} alphaFundo={vidroNivel.cartao} variants={variants} initial={initial} animate={animate} style={{ padding: 16, ...style }}>
+    <GlassSurface
+      escuro={escuro}
+      alphaFundo={vidroNivel.cartao}
+      variants={variants}
+      initial={initial}
+      animate={animate}
+      whileHover={!reduzido && podeHover ? { y: -3, boxShadow: "0 10px 24px rgba(32,31,29,.12)", transition: movimento.springHover } : undefined}
+      style={{ padding: 16, ...style }}
+    >
       {titulo && <div style={{ fontSize: 11, fontWeight: 600, color: paleta.textoTerciario, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{titulo}</div>}
       {children}
     </GlassSurface>
@@ -564,6 +583,7 @@ export function GlassSidebar({
   contaEmail?: string;
 }) {
   const [aberto, setAberto] = useState(true);
+  const [menuContaAberto, setMenuContaAberto] = useState(false);
   const paleta = escuro ? corEscuro : cor;
   const reduzido = useReducedMotion();
   const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
@@ -673,14 +693,35 @@ export function GlassSidebar({
         )}
       </nav>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 10px 2px", borderTop: `1px solid ${paleta.borda}`, marginTop: 6 }}>
-        <div style={{ width: 28, height: 28, borderRadius: "50%", background: paleta.destaqueFundo, color: paleta.destaque, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-          CA
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: paleta.texto }}>{contaNome}</div>
-          <div style={{ fontSize: 10, color: paleta.textoTerciario, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contaEmail}</div>
-        </div>
+      <div style={{ position: "relative", borderTop: `1px solid ${paleta.borda}`, marginTop: 6 }}>
+        <button
+          type="button"
+          onClick={() => setMenuContaAberto((v) => !v)}
+          style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "9px 10px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left" }}
+        >
+          <div style={{ width: 28, height: 28, borderRadius: "50%", background: paleta.destaqueFundo, color: paleta.destaque, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+            CA
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: paleta.texto }}>{contaNome}</div>
+            <div style={{ fontSize: 10, color: paleta.textoTerciario, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contaEmail}</div>
+          </div>
+        </button>
+        {menuContaAberto && (
+          <>
+            <div onClick={() => setMenuContaAberto(false)} style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1 }} />
+            <GlassPopover escuro={escuro} style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 10, right: 10, padding: 4 }}>
+              <button
+                type="button"
+                onClick={() => setMenuContaAberto(false)}
+                style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 8px", fontSize: 13, fontWeight: 600, color: paleta.textoSecundario, background: "transparent", border: "none", borderRadius: raio.campo, cursor: "pointer" }}
+              >
+                <LogOut size={14} />
+                Sair
+              </button>
+            </GlassPopover>
+          </>
+        )}
       </div>
       {children}
     </aside>
