@@ -98,12 +98,13 @@ type PropsBase = {
   variants?: any;
   initial?: any;
   animate?: any;
+  exit?: any;
   whileHover?: any;
   whileTap?: any;
 };
 
 /** Superfície de vidro genérica — base de todos os outros componentes. */
-export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style, children, variants, initial, animate, whileHover, whileTap }: PropsBase) {
+export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style, children, variants, initial, animate, exit, whileHover, whileTap }: PropsBase) {
   const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
   const maisContraste = usePreferenciaMidia("(prefers-contrast: more)");
   return (
@@ -111,6 +112,7 @@ export function GlassSurface({ escuro, intensidade = "padrao", alphaFundo, style
       variants={variants}
       initial={initial}
       animate={animate}
+      exit={exit}
       whileHover={whileHover}
       whileTap={whileTap}
       style={{ borderRadius: raio.card, zIndex: elevacao.card, ...materialVidro(intensidade, !!escuro, alphaFundo, transparenciaReduzida, maisContraste), ...style }}
@@ -450,10 +452,27 @@ export function GlassTabs<T extends string>({
   );
 }
 
-/** Popover em vidro — mesmo material "padrao", elevação popover. */
+/** Popover em vidro — mesmo material "padrao", elevação popover.
+ *
+ * Passo 9 ("CRM Premium" — transições e microinterações): antes aparecia/
+ * sumia de forma abrupta (os dois usos — menu de conta da sidebar e filtro
+ * "Próximos N dias" do painel — só faziam `{aberto && <GlassPopover>...}`,
+ * sem nenhuma animação). Entrada/saída (fade + leve escala/deslocamento)
+ * ficam aqui dentro, de propósito — quem chama só precisa envolver o uso em
+ * `<AnimatePresence>` pra saída animar também (entrada funciona mesmo sem). */
 export function GlassPopover({ escuro, style, children }: PropsBase) {
+  const reduzido = useReducedMotion();
   return (
-    <GlassSurface escuro={escuro} style={{ borderRadius: raio.card, zIndex: elevacao.popover, padding: 10, ...style }}>
+    <GlassSurface
+      escuro={escuro}
+      initial={reduzido ? false : { opacity: 0, y: -4, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      // Sem efeito se o chamador não envolver com <AnimatePresence> (saída
+      // não anima sem isso), mas inofensivo — framer-motion ignora `exit`
+      // fora de AnimatePresence.
+      exit={reduzido ? undefined : { opacity: 0, y: -4, scale: 0.97 }}
+      style={{ borderRadius: raio.card, zIndex: elevacao.popover, padding: 10, transformOrigin: "top", ...style }}
+    >
       {children}
     </GlassSurface>
   );
@@ -576,17 +595,25 @@ export function GlassAIButton({ escuro }: { escuro?: boolean }) {
         ✦
       </motion.button>
 
-      {aberto && (
+      <AnimatePresence>
+        {aberto && (
         <>
-          <div
+          <motion.div
+            key="overlay-ia"
             onClick={() => setAberto(false)}
+            initial={reduzido ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduzido ? undefined : { opacity: 0 }}
+            transition={{ duration: reduzido ? 0 : 0.14 }}
             style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1, background: "rgba(32,31,29,.4)" }}
           />
           <motion.div
+            key="painel-ia"
             role="dialog"
             aria-label="Assistente de IA"
             initial={reduzido ? false : { opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduzido ? undefined : { opacity: 0, y: 16, scale: 0.98 }}
             transition={{ duration: reduzido ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
             style={{
               position: "fixed",
@@ -702,7 +729,8 @@ export function GlassAIButton({ escuro }: { escuro?: boolean }) {
             </form>
           </motion.div>
         </>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -717,6 +745,7 @@ export function GlassDock({
   itens: { rotulo: string; Icone: LucideIcon; ativo?: boolean }[];
 }) {
   const paleta = escuro ? corEscuro : cor;
+  const reduzido = useReducedMotion();
   const transparenciaReduzida = usePreferenciaMidia("(prefers-reduced-transparency: reduce)");
   const maisContraste = usePreferenciaMidia("(prefers-contrast: more)");
   return (
@@ -738,11 +767,14 @@ export function GlassDock({
         // <button>, não <div> — alvo de toque real (fase 9: acessibilidade).
         // Min. 44px de altura (WCAG 2.5.5/skill premium-liquid-ui) e SEM
         // `outline: none`: o anel de foco padrão do navegador continua
-        // visível no teclado, de propósito.
-        <button
+        // visível no teclado, de propósito. Passo 9: whileTap (antes tocar
+        // não dava nenhum feedback visual — mesmo spring de todo botão).
+        <motion.button
           key={i.rotulo}
           type="button"
           aria-current={i.ativo ? "page" : undefined}
+          whileTap={reduzido ? undefined : { scale: 0.92 }}
+          transition={movimento.springPress}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -763,7 +795,7 @@ export function GlassDock({
         >
           <i.Icone size={18} />
           {i.rotulo}
-        </button>
+        </motion.button>
       ))}
     </div>
   );
@@ -803,10 +835,14 @@ export function GlassSidebar({
         {itens.map((i) => (
           // <button>, não <div> (fase 9): sem isso o item nunca recebia foco
           // de teclado — parecia navegável, mas Tab pulava direto por cima.
-          <button
+          // Passo 9: whileTap (antes só clicava sem nenhum feedback visual —
+          // mesmo spring já usado em todo botão do sistema).
+          <motion.button
             key={i.rotulo}
             type="button"
             aria-current={i.ativo ? "page" : undefined}
+            whileTap={reduzido ? undefined : { scale: 0.97 }}
+            transition={movimento.springPress}
             style={{
               display: "flex",
               alignItems: "center",
@@ -826,14 +862,16 @@ export function GlassSidebar({
           >
             <i.Icone size={15} />
             <span>{i.rotulo}</span>
-          </button>
+          </motion.button>
         ))}
 
         {grupoCadastros && grupoCadastros.length > 0 && (
           <>
-            <button
+            <motion.button
               type="button"
               onClick={() => setAberto((v) => !v)}
+              whileTap={reduzido ? undefined : { scale: 0.98 }}
+              transition={movimento.springPress}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -854,7 +892,7 @@ export function GlassSidebar({
               <motion.span animate={{ rotate: aberto ? 0 : -90 }} transition={reduzido ? { duration: 0 } : movimento.springPress} style={{ display: "flex" }}>
                 <ChevronDown size={13} />
               </motion.span>
-            </button>
+            </motion.button>
             <AnimatePresence initial={false}>
               {aberto && (
                 <motion.div
@@ -866,9 +904,11 @@ export function GlassSidebar({
                   style={{ overflow: "hidden" }}
                 >
                   {grupoCadastros.map((i) => (
-                    <button
+                    <motion.button
                       key={i.rotulo}
                       type="button"
+                      whileTap={reduzido ? undefined : { scale: 0.97 }}
+                      transition={movimento.springPress}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -888,7 +928,7 @@ export function GlassSidebar({
                     >
                       <i.Icone size={14} />
                       <span>{i.rotulo}</span>
-                    </button>
+                    </motion.button>
                   ))}
                 </motion.div>
               )}
@@ -911,10 +951,11 @@ export function GlassSidebar({
             <div style={{ fontSize: 10, color: paleta.textoTerciario, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contaEmail}</div>
           </div>
         </button>
+        <AnimatePresence>
         {menuContaAberto && (
           <>
-            <div onClick={() => setMenuContaAberto(false)} style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1 }} />
-            <GlassPopover escuro={escuro} style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 10, right: 10, padding: 4 }}>
+            <div key="overlay-conta" onClick={() => setMenuContaAberto(false)} style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1 }} />
+            <GlassPopover key="popover-conta" escuro={escuro} style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 10, right: 10, padding: 4 }}>
               <button
                 type="button"
                 onClick={() => setMenuContaAberto(false)}
@@ -926,6 +967,7 @@ export function GlassSidebar({
             </GlassPopover>
           </>
         )}
+        </AnimatePresence>
       </div>
       {children}
     </aside>

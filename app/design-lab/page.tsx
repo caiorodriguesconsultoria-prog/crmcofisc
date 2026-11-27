@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import NumberFlow from "@number-flow/react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   LayoutGrid,
   FileText,
@@ -215,10 +215,11 @@ export default function DesignLabPage() {
               >
                 Próximos {janelaEntregas} dias <ChevronDown size={12} />
               </button>
+              <AnimatePresence>
               {filtroAberto && (
                 <>
-                  <div onClick={() => setFiltroAberto(false)} style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1 }} />
-                  <GlassPopover escuro={escuro} style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, padding: 4, minWidth: 120 }}>
+                  <div key="overlay-filtro" onClick={() => setFiltroAberto(false)} style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1 }} />
+                  <GlassPopover key="popover-filtro" escuro={escuro} style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, padding: 4, minWidth: 120 }}>
                     {([7, 15, 30] as const).map((dias) => (
                       <button
                         key={dias}
@@ -247,6 +248,7 @@ export default function DesignLabPage() {
                   </GlassPopover>
                 </>
               )}
+              </AnimatePresence>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
               {ENTREGAS_PREVISTAS.filter((e) => e.dias <= janelaEntregas).map((e) => (

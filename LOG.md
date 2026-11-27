@@ -1780,3 +1780,16 @@ Caio pediu pra seguir pro passo 8 ("aperfeiçoe o assistente de IA flutuante").
 Validado com Playwright: clique real no botão abre o painel; clique numa sugestão gera a bolha do usuário E a resposta do assistente aparece (não só que o painel abriu); pergunta livre digitada + Enter também funciona; clique fora fecha o painel; testado em desktop e mobile (painel se ajusta à largura disponível nos dois). Zero erro de console. `tsc --noEmit` e `npm run build` limpos.
 
 Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
+
+## 2026-11-27 (5) · Passo 9 — transições e microinterações
+
+Caio pediu pra seguir pro passo 9 ("implemente transições e microinterações"), confirmando antes que o trabalho continua só no `/design-lab` (mesma regra desde o início do plano "CRM Premium" — só a tela de login tem permissão explícita pra ir direto a produção).
+
+- **Achado antes de implementar**: boa parte da animação de entrada/hover já tinha sido feita na fase 8 (bem no começo deste processo, antes do "CRM Premium"). O que realmente faltava, auditado nesta rodada: popovers apareciam/sumiam de forma abrupta (sem transição nenhuma) e vários botões de navegação não davam nenhum feedback ao toque.
+- **`GlassPopover`**: ganhou entrada/saída animada (fade + leve escala/deslocamento) por padrão — afeta os dois usos existentes (menu de conta da sidebar e filtro "Próximos N dias" do painel), que antes só faziam `{aberto && <GlassPopover>}` sem nenhuma animação. `GlassSurface` ganhou suporte a `exit` (antes só tinha initial/animate) pra viabilizar isso.
+- **Painel do assistente de IA** (passo 8): mesmo tratamento — ganhou saída animada e overlay com fade, ambos agora dentro de `<AnimatePresence>` (antes só tinha entrada).
+- **Botões de navegação sem nenhum feedback de toque**: itens da `GlassSidebar` (nav principal + grupo Cadastros + botão de expandir Cadastros) e da `GlassDock` viraram `motion.button` com `whileTap` (mesmo spring — `movimento.springPress` — já usado em todo outro botão do sistema). Antes clicar neles não tinha retorno visual nenhum, só o clique funcionava.
+
+Validado com Playwright: filtro de entregas abre/fecha e atualiza o valor corretamente; menu de conta abre/fecha com "Sair" funcionando; grupo Cadastros expande/colapsa (eram falsos-positivos no teste automatizado inicial — confirmado via screenshot que tudo funciona, incluindo um texto "...próximos 15 dias" dentro do card de Insights que colidiu com a busca de texto do teste, não um bug real); dock mobile com os 3 itens continua clicável; painel de IA abre/fecha normalmente. Zero erro de console em desktop e mobile. `tsc --noEmit` e `npm run build` limpos.
+
+Nenhum componente de produto foi alterado — ainda só o laboratório. Sem migração.
