@@ -17,6 +17,7 @@ Mapa da documentação gerada em `docs/audit/`. Auditoria read-only: nenhum cód
 | [`TESTS.md`](TESTS.md) | Cobertura (zero automatizada), CI existente, limitações desta própria auditoria |
 | [`GAPS.md`](GAPS.md) | Consolidado de lacunas, riscos, débito técnico e dado inconsistente |
 | [`STATUS.md`](STATUS.md) | Branch, commits, versões, estado real do deploy de produção (via Vercel) |
+| [`BRANCH_SYNC.md`](BRANCH_SYNC.md) | Análise da divergência `origin/main`×branch de trabalho — classificação de commits, conflitos/regressões, backups, plano de integração segura |
 
 ## Como ler
 

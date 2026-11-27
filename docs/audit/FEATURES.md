@@ -50,7 +50,7 @@ Dashboard real, com dado de verdade (distinto do protótipo Liquid Glass em `/de
 ## Fornecedores / Gestores e Fiscais / Coordenações / Tags
 
 - **Fornecedores**: nome, CNPJ, preposto, telefone, múltiplos e-mails (`fornecedor_emails`, botão copiar-todos), lista de contratos vinculados. **Operacional.**
-- **Gestores e Fiscais**: unificados em `/gestores` (lista+form compartilhados, `app/_pessoas-papel/`); `/fiscais`, `/fiscais/novo`, `/gestores/novo` são **só redirecionamentos**, mantidos por links antigos. Mostra período de ausência por pessoa. **Operacional.**
+- **Gestores e Fiscais**: na branch de trabalho auditada, unificados em `/gestores` (lista+form compartilhados, `app/_pessoas-papel/`), com `/fiscais`/`/fiscais/novo`/`/gestores/novo` como redirecionamentos. **Correção (`docs/audit/BRANCH_SYNC.md`)**: essa unificação é um commit só da branch de trabalho (`c5314dd`, "CRM Premium — Etapa 2"), **não confirmado em produção** — o deploy atual (`origin/main`) mantém `/fiscais` e `/gestores` como páginas completas e separadas (cada uma com sua própria consulta `pessoa_papeis.papel = 'fiscal'|'gestor'`), e recebeu correções de bug próprias nesse formato depois do ponto em que a branch se separou (ver `BRANCH_SYNC.md` seção 3). Mostra período de ausência por pessoa nos dois casos. **Operacional** (em ambas as versões, separadamente).
 - **Coordenações**: sigla, nome, telefone, coordenador nome/e-mail, mais `pessoa_papeis` (coordenador/substituto/equipe). **Operacional.**
 - **Tags**: categoria/valor/cor/ativo, com contexto de contagem (contratos abertos, agendamentos de hoje). **Operacional.**
 

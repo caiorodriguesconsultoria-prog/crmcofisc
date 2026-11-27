@@ -19,7 +19,7 @@
 | 9 | Transições e microinterações | `c9067a6` | Popovers animados, `whileTap` em toda navegação |
 | 10 | Testes visuais, funcionais e de desempenho | `8a6a524` | Auditoria final — zero erro de console, CPU estável, gap de tablet documentado |
 
-**Extra, fora da numeração dos 10 passos, autorizado explicitamente por Caio**: redesenho da tela de login em produção (`9295702`), com "Authentication Blueprint" documentado em `app/login/CONHECIMENTO.md`.
+**Extra, fora da numeração dos 10 passos, autorizado explicitamente por Caio**: redesenho da tela de login (`9295702`), com "Authentication Blueprint" documentado em `app/login/CONHECIMENTO.md`. **Correção (`docs/audit/BRANCH_SYNC.md`)**: esse redesenho existe na branch de trabalho; não está confirmado no deploy de produção atual (Vercel aponta pro commit anterior a ele).
 
 ## Homologação final (`0faa598`, após o passo 10)
 
@@ -35,7 +35,7 @@ Pedido de Caio em 7 itens, todos concluídos — ver `LOG.md` ("Homologação fi
 
 ## Aprovado para produção
 
-- ✅ **Tela de login** — única peça deste plano em produção hoje.
+- **Tela de login** — aprovada visualmente por Caio e pronta na branch de trabalho; **não confirmada no deploy de produção atual** (ver `docs/audit/STATUS.md`/`BRANCH_SYNC.md` — correção desta rodada de auditoria).
 
 ## Pendente (não implementado — decisão futura de Caio)
 

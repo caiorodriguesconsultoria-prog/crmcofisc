@@ -3,10 +3,13 @@
 > Documento vivo do laboratório experimental (`app/design-lab/`). Ver
 > `design-system/LIQUID_GLASS.md` pro documento consolidado (tokens,
 > catálogo, contratos de acessibilidade/desempenho) — este arquivo aqui
-> tem o detalhe/histórico de cada decisão. Status de produção: só a tela
-> de login (`app/login/`) usa este sistema visual até agora (via a classe
-> CSS já aprovada, não os componentes React deste laboratório); o resto
-> segue experimental, aguardando aprovação visual. Serve também pra
+> tem o detalhe/histórico de cada decisão. Status de produção: a tela
+> de login (`app/login/`) tem um redesenho pronto na branch de trabalho
+> usando este sistema visual (via a classe CSS já aprovada, não os
+> componentes React deste laboratório) — **mas esse redesenho não está
+> confirmado no deploy de produção atual** (ver `docs/audit/STATUS.md`/
+> `BRANCH_SYNC.md`); o resto segue experimental, aguardando aprovação
+> visual. Serve também pra
 > alimentar a skill `premium-liquid-ui` (ou o futuro Skill Studio da
 > Software Factory) quando ela for instalada de verdade neste ambiente
 > (hoje só o `SKILL.md`/descrição existe, sem os arquivos de suporte — ver

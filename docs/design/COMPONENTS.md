@@ -16,7 +16,7 @@
 
 | Componente | Linha | Descrição | Reutilização |
 |---|---|---|---|
-| `GlassSidebar` | 808 | Sidebar desktop — itens de nav, grupo "Cadastros" expansível, rodapé de conta com menu (`GlassPopover`) | Espelha a estrutura real de `app/_ui/barra-lateral.tsx` (produção) |
+| `GlassSidebar` | 808 | Sidebar desktop — itens de nav, grupo "Cadastros" expansível, rodapé de conta com menu (`GlassPopover`) | Espelha `app/_ui/barra-lateral.tsx` — **correção (`docs/audit/BRANCH_SYNC.md`)**: esse arquivo existe só na branch de trabalho, não em produção; a navegação real de produção hoje é a barra superior de cápsulas (`app/_ui/barra-topo.tsx`), sem sidebar |
 | `GlassDock` | 740 | Dock inferior mobile — itens como `<button>` reais, min. 44×44px | — |
 | `GlassTabs` | 389 | Abas segmentadas, pílula ativa animada por `layoutId` | Mesma mecânica de `app/_ui/controle-segmentado.tsx` (produção) |
 
@@ -76,6 +76,6 @@ Nenhuma dependência redundante foi instalada (shadcn/ui e Tremor foram avaliado
 
 - `usarPodeHover()` (`app/_ui/usar-pode-hover.ts`) — importado diretamente, não reimplementado.
 - Padrão de hover de `CardBento` (`app/_ui/card-bento.tsx`) — mesmos valores de spring/deslocamento.
-- Padrão de overlay-fecha-ao-clicar-fora de `app/_ui/barra-lateral.tsx` (menu de conta).
+- Padrão de overlay-fecha-ao-clicar-fora de `app/_ui/barra-lateral.tsx` (menu de conta) — arquivo só na branch de trabalho, ver correção acima.
 - Estrutura do assistente de IA real (`app/assistente/chat.tsx`) — mesmas 2 sugestões, mesmo texto de ajuda, mesma lógica de bolhas de mensagem (sem chamada de rede no protótipo).
 - Classe `.crm-cartao-vidro-claro` (`app/globals.css`) — única peça do sistema experimental que **já está em produção**, via a tela de login (não importa os componentes React do `/design-lab`, reaproveita a classe CSS que já existia).

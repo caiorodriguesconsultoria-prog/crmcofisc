@@ -49,11 +49,16 @@ Detalhe de cada um, com motivo de cada decisão de design, em
 
 ## Status de produção (o que já saiu do laboratório)
 
-- **Tela de login** (`app/login/`): único caso de uso real até agora. Usa
-  a classe CSS `.crm-cartao-vidro-claro` (`app/globals.css`) — a mesma já
+- **Tela de login** (`app/login/`): redesenhada na branch de trabalho (usa
+  a classe CSS `.crm-cartao-vidro-claro`, `app/globals.css` — a mesma já
   aprovada nos cards do Painel — e NÃO os componentes React do
-  `/design-lab/_glass` (que continuam marcados como laboratório). Fundo
-  animado em CSS/SVG puro (esferas), não WebGL. Ver `app/login/CONHECIMENTO.md`.
+  `/design-lab/_glass`, que continuam marcados como laboratório; fundo
+  animado em CSS/SVG puro, não WebGL; ver `app/login/CONHECIMENTO.md`).
+  **Correção (auditoria de divergência de branch, `docs/audit/BRANCH_SYNC.md`):
+  esse redesenho não está confirmado no deploy de produção atual** (deploy
+  Vercel verificado em `0efae14`, que corresponde ao commit anterior ao
+  redesenho) — tratar como pendente de merge/confirmação com Caio, não
+  como já publicado.
 - **Resto** (dashboard, janela de contrato, Andamentos/Relatório): só em
   `/design-lab`, aguardando aprovação visual antes de migrar.
 
