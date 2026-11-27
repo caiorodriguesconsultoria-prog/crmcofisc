@@ -80,6 +80,12 @@ Ao aplicar de verdade no `AmbientBackground` (usado por trás das telas reais do
 
 **Lição pro processo**: medir um recurso isolado não basta quando ele vai conviver com outras partes dinâmicas da tela real — o teste tem que incluir o contexto completo antes de declarar "sem custo".
 
+### Confirmação final (passo 10 — auditoria de encerramento do plano "CRM Premium")
+
+Remedida contra build de produção, depois de TODAS as adições dos passos 5-9 (sparklines, filtro real, menu de conta, painel de IA funcional, popovers animados, `whileTap` em toda navegação): dashboard completo, parado, idle = **~2,0-2,3% de 1 núcleo** — igual ao baseline do passo 3 (~1,8-2,2%), sem acúmulo de custo. Com o painel de IA aberto (árvore de componentes extra montada, mas sem animação contínua própria): **~2,0%**, mesma faixa. Janela de contrato no mobile (sheet, sem glow/pulso nenhum): **~0,09%**, like esperado — esta tela nunca teve animação contínua decorativa.
+
+Confirma que a regra registrada acima ("CSS/SVG, nunca WebGL, em qualquer tela com animação contínua") continua sendo respeitada e que nenhuma das novas interações adicionadas neste plano introduziu custo de CPU residual.
+
 ## Erros encontrados e soluções
 
 1. **Abas que trocavam visualmente mas não o conteúdo** (`/design-lab/janela`) — o seletor de aba mudava de estado, mas o corpo renderizava sempre "Resumo". Corrigido renderizando por `aba === "..."` de fato.
@@ -90,3 +96,4 @@ Ao aplicar de verdade no `AmbientBackground` (usado por trás das telas reais do
 
 - **Testado só em Chromium headless (Playwright)** neste ambiente. Nenhuma evidência de Safari/WebKit, Firefox, ou dispositivo iOS/Android real — não declarar suporte lá sem testar de verdade.
 - **A skill `premium-liquid-ui` não está instalada neste ambiente** — só o texto do `SKILL.md` foi enviado por upload, sem os arquivos de suporte (`assets/engine/liquid-glass.js`, `references/*.md`, `scripts/*.py`, wallpapers). Este documento existe justamente pra preencher esse papel até a skill real (ou o Skill Studio da Software Factory) estar disponível pra receber o conteúdo formalmente.
+- **Painel do assistente de IA (passo 8) sem focus trap** — `Tab` alcança o botão "×" logo depois de abrir (ordem de DOM razoável), mas não existe nenhuma barreira impedindo `Tab` de sair do painel pro resto da página por trás, nem `Escape` pra fechar. Testado o suficiente pra confirmar que não quebra nada (foco não se perde), mas um focus trap de verdade (como teclado dentro de um modal real) ficaria pro dia que isso for promovido a produto.
