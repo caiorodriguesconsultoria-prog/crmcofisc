@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import AmbientBackground from "./_glass/ambient-background";
 import FiltroRefracaoSVG from "./_glass/refracao";
-import { GlassCard, GlassButton, GlassInput, GlassTable, GlassAIButton, GlassSidebar, GlassDock, GlassSurface, GlassIconChip, GlassDonut, GlassSparkline, GlassPopover } from "./_glass/componentes";
+import { GlassCard, GlassButton, GlassInput, GlassTable, GlassAIButton, GlassSidebar, GlassDock, GlassSurface, GlassIconChip, GlassDonut, GlassSparklineSVG, GlassPopover } from "./_glass/componentes";
 import { cor, corEscuro, movimento, raio, elevacao } from "@/lib/theme";
 
 // /design-lab — laboratório isolado (CRM_LIQUID_GLASS_SKILLS.md, seção 5):
@@ -68,13 +68,28 @@ export default function DesignLabPage() {
   // Protótipo de laboratório, não produto — só pra ter paridade mínima com
   // a referência (sidebar some, dock vira a navegação) na hora de comparar
   // desktop vs. mobile lado a lado.
-  const [desktop, setDesktop] = useState(true);
+  //
+  // Homologação (achado do passo 10, corrigido aqui): o corte binário em
+  // 768px tratava qualquer tablet como "desktop" — sidebar fixa de 288px +
+  // grade de 5/3 colunas não cabe numa viewport de 768-1023px, estourava
+  // horizontalmente (ver docs/design/TESTS.md). Em vez de só patchear o
+  // número, virou um terceiro estado de verdade: tablet usa a mesma
+  // navegação por dock do mobile (a sidebar fixa não cabe), mas com grades
+  // intermediárias (3/2 colunas) e scroll normal — só o desktop (≥1024px)
+  // mantém a promessa de "ver tudo sem rolar" que motivou travar a altura.
+  type Largura = "mobile" | "tablet" | "desktop";
+  const [largura, setLargura] = useState<Largura>("desktop");
   useEffect(() => {
-    const atualizar = () => setDesktop(window.innerWidth >= 768);
+    const atualizar = () => {
+      const w = window.innerWidth;
+      setLargura(w < 768 ? "mobile" : w < 1024 ? "tablet" : "desktop");
+    };
     atualizar();
     window.addEventListener("resize", atualizar);
     return () => window.removeEventListener("resize", atualizar);
   }, []);
+  const desktop = largura === "desktop";
+  const mobile = largura === "mobile";
   const paleta = escuro ? corEscuro : cor;
   const reduzido = useReducedMotion();
   // Motion Design (fase 8): entrada escalonada dos cards — cada grade tem
@@ -114,7 +129,7 @@ export default function DesignLabPage() {
       <main
         style={{
           marginLeft: desktop ? 288 : 0,
-          padding: desktop ? "20px 24px" : "16px 16px 90px",
+          padding: desktop ? "20px 24px" : mobile ? "16px 16px 90px" : "20px 24px 90px",
           maxWidth: 1400,
           height: desktop ? "100vh" : "auto",
           display: "flex",
@@ -167,7 +182,7 @@ export default function DesignLabPage() {
           </GlassButton>
         </div>
 
-        <motion.div variants={grade} initial="escondido" animate="visivel" style={{ display: "grid", gridTemplateColumns: desktop ? "repeat(5, 1fr)" : "repeat(2, 1fr)", gap: 12, flex: "0 0 auto" }}>
+        <motion.div variants={grade} initial="escondido" animate="visivel" style={{ display: "grid", gridTemplateColumns: desktop ? "repeat(5, 1fr)" : mobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 12, flex: "0 0 auto" }}>
           {KPIS.map((k) => (
             <GlassCard key={k.rotulo} escuro={escuro} variants={item} style={{ padding: 16 }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6 }}>
@@ -184,13 +199,13 @@ export default function DesignLabPage() {
               </div>
               <div style={{ fontSize: 12, color: paleta.textoTerciario, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.legenda ?? k.rotulo}</div>
               <div style={{ marginTop: 8 }}>
-                <GlassSparkline dados={k.tendencia} cor={k.corIcone} />
+                <GlassSparklineSVG dados={k.tendencia} cor={k.corIcone} />
               </div>
             </GlassCard>
           ))}
         </motion.div>
 
-        <motion.div variants={grade} initial="escondido" animate="visivel" style={{ display: "grid", gridTemplateColumns: desktop ? "repeat(3, 1fr)" : "1fr", gridTemplateRows: desktop ? "repeat(2, auto)" : "none", gap: 12, flex: "0 0 auto" }}>
+        <motion.div variants={grade} initial="escondido" animate="visivel" style={{ display: "grid", gridTemplateColumns: desktop ? "repeat(3, 1fr)" : mobile ? "1fr" : "repeat(2, 1fr)", gridTemplateRows: desktop ? "repeat(2, auto)" : "none", gap: 12, flex: "0 0 auto" }}>
           <GlassCard escuro={escuro} titulo="Contratos por etapa" variants={item}>
             <GlassDonut
               escuro={escuro}

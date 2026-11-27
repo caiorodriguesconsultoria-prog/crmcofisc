@@ -1806,3 +1806,19 @@ Caio pediu pra seguir pro passo 10, última etapa do plano de 10 passos autoriza
 **Conclusão do plano "CRM Premium" (passos 1-10)**: encerrado dentro do escopo autorizado — trabalho inteiramente em `/design-lab` (exceção única e explicitamente autorizada: a tela de login, já em produção desde o passo "Authentication Blueprint"), nenhuma regra de negócio ou autenticação alterada, nenhuma dependência redundante instalada, branch separada (`claude/crm-cofisc-conexao-9pot1u`), nada publicado em produção sem aprovação explícita. Documentação consolidada em `design-system/LIQUID_GLASS.md`, `app/design-lab/CONHECIMENTO.md` e `app/login/CONHECIMENTO.md`, servindo de base pra uma futura skill `premium-liquid-ui`/Skill Studio, já que a skill de verdade não está instalada neste ambiente.
 
 Sem migração.
+
+## 2026-11-27 (7) · Homologação final do design-lab
+
+Caio pediu pra finalizar a homologação do `/design-lab` com 7 itens concretos, documentados em `docs/design/`. Resumo técnico (ver os `.md` em `docs/design/` para o detalhe completo):
+
+1. **Responsividade tablet corrigida**: o corte binário em 768px (`desktop`/`mobile`) virou um terceiro estado (`mobile`/`tablet`/`desktop`, limites em 768px e 1024px) em `app/design-lab/page.tsx`. Tablet (768-1023px) usa a mesma navegação por dock do mobile (a sidebar fixa de 288px não cabe) com grades intermediárias (3 colunas de KPI, 2 de bento) e scroll normal — só desktop mantém a promessa de "ver tudo sem rolar". Confirmado sem overflow horizontal em Chromium/Firefox/WebKit.
+2. **Focus trap + Escape + retorno de foco no painel de IA** (`GlassAIButton`): `Tab`/`Shift+Tab` agora cicla só entre os elementos focáveis do painel (testado: 8 `Tab` seguidos nunca saíram do `role="dialog"`), `Escape` fecha, e o foco volta pro botão que abriu ao fechar (testado nos dois caminhos — `Escape` e clique fora).
+3. **Sparkline SVG vs. Recharts — comparado e decidido**: nova `GlassSparklineSVG` (SVG puro, sem dependência) substituiu a versão `recharts`. Bundle: **-92KB de First Load JS** em todo o grupo de rotas do `/design-lab` (recharts não é mais importado ali). CPU: igual (nenhuma das duas anima continuamente). Fidelidade: path reto entre pontos em vez da curva suavizada do recharts — perda aceitável num sparkline pequeno, confirmada visualmente em 3 engines. Versão `recharts` removida (não ficou como duplicidade).
+4. **Shader não adotado (`@paper-design/shaders-react`) — avaliado, mantido instalado**: ocupa 1,8MB em disco, mas **custo zero em qualquer outra rota** (isolado por code-splitting — `/design-lab/shader-teste` é a única rota que o importa, e seu First Load JS fica na mesma faixa das outras rotas do laboratório). Decisão: manter — é a ferramenta que produziu o achado mais importante do processo (WebGL + animação contínua = caro) e pode ser reusada se o fundo ambiental for revisitado no futuro.
+5. **Testado em Chromium, Firefox e WebKit** (WebKit instalado nesta rodada — dependências de sistema que faltavam foram instaladas via `apt-get`): desktop/tablet/mobile × claro/escuro, dashboard + janela de contrato + login. Zero erro de console em todas as 27 combinações.
+6. **Validado**: contraste (5,34:1, igual ao já medido antes — sem regressão), overflow (zero em qualquer combinação, incluindo o tablet antes quebrado), alvo de toque (dock mobile, todos ≥44×44px), desempenho (CPU do dashboard: ~2,1% desktop / ~2,4% tablet — mesma faixa de sempre, sem regressão da correção de grade).
+7. **`docs/design/` e `CRM_DESIGN.zip` atualizados** com os achados desta rodada.
+
+Validado: `tsc --noEmit` e `npm run build` limpos (build de produção confirmou que nenhuma rota real foi afetada — só rotas do `/design-lab`). Nenhuma regra de negócio, autenticação ou dado alterado. Nada migrado nem publicado — tudo permanece em `/design-lab`.
+
+Sem migração.

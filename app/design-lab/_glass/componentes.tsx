@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronDown, LogOut, Sparkles, Send, type LucideIcon } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { cor, corEscuro, raio, elevacao, vidro, vidroNivel, movimento } from "@/lib/theme";
 import { usarPodeHover } from "@/app/_ui/usar-pode-hover";
 import { backdropRefracao } from "./refracao";
@@ -539,6 +538,52 @@ export function GlassAIButton({ escuro }: { escuro?: boolean }) {
   const [mensagens, setMensagens] = useState<MensagemChat[]>([]);
   const [pergunta, setPergunta] = useState("");
   const [digitando, setDigitando] = useState(false);
+  const botaoRef = useRef<HTMLButtonElement>(null);
+  const painelRef = useRef<HTMLDivElement>(null);
+  const estavaAberto = useRef(false);
+
+  // Homologação (passo 10 apontou a lacuna, corrigido aqui): focus trap +
+  // Escape + retorno de foco. Antes `Tab` saía do painel pro resto da
+  // página por trás e `Escape` não fechava nada — um modal "de mentira"
+  // do ponto de vista de teclado, mesmo com o visual certo.
+  useEffect(() => {
+    if (aberto) {
+      estavaAberto.current = true;
+      const painel = painelRef.current;
+      if (!painel) return;
+      const seletor = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+      const focaveis = () =>
+        Array.from(painel.querySelectorAll<HTMLElement>(seletor)).filter((el) => !el.hasAttribute("disabled"));
+      focaveis()[0]?.focus();
+
+      function aoTeclar(e: KeyboardEvent) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setAberto(false);
+          return;
+        }
+        if (e.key !== "Tab") return;
+        const itens = focaveis();
+        if (itens.length === 0) return;
+        const primeiro = itens[0];
+        const ultimo = itens[itens.length - 1];
+        if (e.shiftKey && document.activeElement === primeiro) {
+          e.preventDefault();
+          ultimo.focus();
+        } else if (!e.shiftKey && document.activeElement === ultimo) {
+          e.preventDefault();
+          primeiro.focus();
+        }
+      }
+      document.addEventListener("keydown", aoTeclar);
+      return () => document.removeEventListener("keydown", aoTeclar);
+    } else if (estavaAberto.current) {
+      // Só devolve o foco se o painel REALMENTE esteve aberto antes — sem
+      // essa guarda, a montagem inicial (aberto=false) tentaria focar o
+      // botão à toa.
+      botaoRef.current?.focus();
+    }
+  }, [aberto]);
 
   function enviar(texto: string) {
     const p = texto.trim();
@@ -563,8 +608,10 @@ export function GlassAIButton({ escuro }: { escuro?: boolean }) {
   return (
     <>
       <motion.button
+        ref={botaoRef}
         type="button"
         aria-label="Assistente de IA"
+        aria-expanded={aberto}
         onClick={() => setAberto((v) => !v)}
         whileTap={{ scale: 0.94 }}
         animate={
@@ -608,8 +655,10 @@ export function GlassAIButton({ escuro }: { escuro?: boolean }) {
             style={{ position: "fixed", inset: 0, zIndex: elevacao.popover - 1, background: "rgba(32,31,29,.4)" }}
           />
           <motion.div
+            ref={painelRef}
             key="painel-ia"
             role="dialog"
+            aria-modal="true"
             aria-label="Assistente de IA"
             initial={reduzido ? false : { opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -983,21 +1032,38 @@ export function useAbrirFechar(inicial = false) {
  * app/dashboard/painel-dashboard.tsx) — não é uma lib nova só pra isso.
  * Sem eixo/grade/tooltip de propósito: é decoração de apoio ao número
  * grande, não um gráfico pra analisar ponto a ponto. */
-export function GlassSparkline({ dados, cor: corLinha }: { dados: number[]; cor: string }) {
-  const pontos = dados.map((v, i) => ({ i, v }));
+// Homologação do design-lab: existiu aqui uma versão baseada em `recharts`
+// (`AreaChart`/`Area`/`ResponsiveContainer`), comparada contra a versão SVG
+// abaixo em bundle (-92KB de First Load JS no grupo de rotas do /design-lab,
+// já que nada mais usava `recharts` ali), CPU (igual, nenhuma das duas anima
+// continuamente) e fidelidade visual (curva reta vs. suavizada — ver
+// docs/design/TESTS.md pro veredito completo). SVG venceu e a versão
+// `recharts` foi removida — não existe mais nenhum uso de `recharts` em
+// `/design-lab` (produção continua usando `recharts` normalmente no
+// gráfico de barras do dashboard real, sem relação com esta decisão).
+/** Sparkline — SVG puro, sem dependência externa. Path reto entre pontos,
+ * calculado à mão a partir do array de dados. */
+export function GlassSparklineSVG({ dados, cor: corLinha }: { dados: number[]; cor: string }) {
+  const w = 100;
+  const h = 28;
+  const min = Math.min(...dados);
+  const max = Math.max(...dados);
+  const amplitude = max - min || 1;
+  const passoX = w / (dados.length - 1 || 1);
+  const pontos = dados.map((v, i) => [i * passoX, h - ((v - min) / amplitude) * (h - 4) - 2] as const);
+  const linha = pontos.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+  const area = `${linha} L${w},${h} L0,${h} Z`;
+  const id = `sparkline-svg-${corLinha.replace("#", "")}`;
   return (
-    <div style={{ width: "100%", height: 28 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={pontos} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id={`sparkline-${corLinha.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={corLinha} stopOpacity={0.35} />
-              <stop offset="100%" stopColor={corLinha} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area type="monotone" dataKey="v" stroke={corLinha} strokeWidth={1.75} fill={`url(#sparkline-${corLinha.replace("#", "")})`} isAnimationActive={false} />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={corLinha} stopOpacity={0.35} />
+          <stop offset="100%" stopColor={corLinha} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${id})`} stroke="none" />
+      <path d={linha} fill="none" stroke={corLinha} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
