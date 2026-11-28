@@ -37,4 +37,17 @@
 
 ## Próxima ação
 
-Nenhuma ação autônoma adicional nesta linha de trabalho sem novo pedido — aguardar decisão de Caio sobre: (a) rodar os comandos de tag de proteção, (b) aprovar o role de leitura e os secrets novos, (c) autorizar um primeiro `workflow_dispatch` de teste do workflow proposto. Ao retomar, ler este arquivo + `docs/audit/BRANCH_SYNC.md` §13 antes de qualquer novo teste — não repetir a restauração de schema nem os testes de mecanismo já validados acima.
+Nenhuma ação autônoma adicional na linha de trabalho de **backup** sem novo pedido — aguardar decisão de Caio sobre: (a) rodar os comandos de tag de proteção, (b) aprovar o role de leitura e os secrets novos, (c) autorizar um primeiro `workflow_dispatch` de teste do workflow proposto. Ao retomar essa linha, ler este arquivo + `docs/audit/BRANCH_SYNC.md` §13 antes de qualquer novo teste — não repetir a restauração de schema nem os testes de mecanismo já validados acima.
+
+---
+
+## Checkpoint 2026-11-29 — DT-001 a DT-009 formalizadas; início da Fase 00.3
+
+| | |
+|---|---|
+| Retomado a partir de | commit `5f3068d` (idêntico ao HEAD no início desta entrada — nada ficou pendente de commit) |
+| Alteração nesta entrada | `CLAUDE.md`: seção "Decisões técnicas (DT)" — DT-001 a DT-009 registradas; DT-006/DT-007 só apontam pra regras já existentes (sem duplicar texto) |
+
+### Fase 00.3 — preparação de integração isolada sobre `main` atual
+
+Ver `docs/audit/BRANCH_SYNC.md` §7.1 (já documentava a decisão de base — `origin/main` em `0efae14`, não o ancestral comum antigo). Esta fase materializa isso como branch isolada, sem conteúdo de integração ainda (fora de escopo aqui) e sem tocar `main` ou a branch de trabalho existente.

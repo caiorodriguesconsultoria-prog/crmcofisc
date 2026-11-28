@@ -13,6 +13,22 @@
 - Nunca misturar os dois sistemas visuais numa mesma tela — a migração troca a tela inteira, não mescla os dois.
 - **Sincronizar com `main` antes de começar qualquer tarefa nova**: `git fetch origin main` + `git rev-list --left-right --count origin/main...<branch>`. Se a branch estiver atrás, resolver isso primeiro (reiniciar a branch do HEAD de `main` e rebasear o que não foi mesclado) antes de somar commits novos — ver `docs/audit/BRANCH_SYNC.md` para o incidente que motivou esta regra.
 
+## Decisões técnicas (DT) — registro formal
+
+Numeração estável de princípios operacionais, pra referenciar por número em vez de repetir texto. Onde o princípio já está detalhado em outra regra deste arquivo ou em outro documento, a entrada aqui é só o ponteiro — não duplicar o conteúdo.
+
+- **DT-001 — Economia de tokens/contexto**: não reler, retestar ou reexplicar o que já foi validado e está documentado; reaproveitar resultado de checkpoint anterior; saída proporcional ao pedido, nunca maior "por garantia".
+- **DT-002 — Proatividade operacional**: resolver bloqueios e avançar tarefas independentes dentro do que já está autorizado, sem parar pra perguntar o que o escopo já responde — mas nunca como atalho pra contornar uma autorização que falta (merge/deploy/produção/custo seguem exigindo o "sim" do Caio, ver regra de autorização explícita abaixo).
+- **DT-003 — Responsividade integral**: toda tela/componente, novo ou alterado, funciona em qualquer largura de viewport — não é opcional nem adiável pra depois.
+- **DT-004 — Preservar requisitos, dados e funcionalidades**: mudança é aditiva por padrão; nada existente (requisito, dado, funcionalidade, credencial, configuração de produção) é removido ou sobrescrito sem autorização explícita e sem antes preservar o que já havia (stash/branch/cópia em vez de descartar).
+- **DT-005 — Skills sob demanda**: carregar/usar skill, ferramenta ou subagente só quando a tarefa concreta pedir, nunca especulativamente "pra garantir cobertura".
+- **DT-006 — Liquid Glass definitivo, migração progressiva**: ver regra de Design System acima (`design-system/LIQUID_GLASS.md`, `docs/DECISIONS.md`).
+- **DT-007 — Sincronização, versionamento e rollback seguro**: ver regra de sincronização com `main` acima e `docs/audit/BRANCH_SYNC.md` (checkpoints, tags de proteção, autorização explícita de merge/deploy).
+- **DT-008 — Execução incremental, checkpoints, reaproveitamento, isolamento de bloqueios, continuidade independente**: toda tarefa de múltiplas etapas registra checkpoint em `EXECUTION_STATE.md` (subtarefa validada, o que foi reaproveitado, o que ficou bloqueado); retomada sempre a partir do último checkpoint válido ali, nunca do início; um bloqueio isola só a subtarefa afetada, sem travar as demais já autorizadas.
+- **DT-009 — Sandbox reproduzível, dados sintéticos, custo zero**: verificação de mecanismo (schema, restauração, integridade, criptografia) roda em infraestrutura local/descartável com dados sintéticos antes de qualquer teste contra sistema ou dado real — nunca gera custo ou usa credencial real só para validar lógica.
+
+Pendências abertas da linha de trabalho de backup (análise completa, não repetir): ver `EXECUTION_STATE.md` → "Pendente" e `docs/audit/BRANCH_SYNC.md` §13.
+
 ## Padrão de janela/popup (modal pequeno sobre a tela)
 
 Usado em `app/_ui/popup-nome.tsx` e no modal de edição de `app/_pessoas-papel/lista.tsx`. Ao criar um novo popup/modal pequeno (não a tela cheia `/processos/[id]`, que é outro padrão), seguir:
