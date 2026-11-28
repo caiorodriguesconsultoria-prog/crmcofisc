@@ -51,3 +51,15 @@ Nenhuma ação autônoma adicional na linha de trabalho de **backup** sem novo p
 ### Fase 00.3 — preparação de integração isolada sobre `main` atual
 
 Ver `docs/audit/BRANCH_SYNC.md` §7.1 (já documentava a decisão de base — `origin/main` em `0efae14`, não o ancestral comum antigo). Esta fase materializa isso como branch isolada, sem conteúdo de integração ainda (fora de escopo aqui) e sem tocar `main` ou a branch de trabalho existente.
+
+| Item | Resultado |
+|---|---|
+| Refs reconfirmadas | `origin/main` = `0efae14` (inalterado); branch de trabalho = `a3f07e7` (331/47) |
+| Branch isolada criada | `integracao/liquid-glass-sobre-main-20261129`, a partir de `origin/main` (`0efae14`) — **sem commits próprios ainda**, idêntica a `main` |
+| Permissão remota | **Resolvida, sem bloqueio** — diferente da tentativa de tag (§11/§12, HTTP 403), o push desta branch NOVA foi aceito pelo GitHub (achado: a restrição anterior era só sobre criar **tags**, não sobre criar branches). Branch já durável em `origin/integracao/liquid-glass-sobre-main-20261129`, não depende do container efêmero |
+| Branches preservadas | `main` e `claude/crm-cofisc-conexao-9pot1u` inalteradas — nenhum checkout, commit ou push nelas durante esta fase |
+| Sandbox reutilizado | `git worktree` na pasta de scratchpad (mesmo padrão de custo zero de DT-009), removido ao final — não sujou o checkout principal |
+| Baseline funcional | `npm ci` + `npx tsc --noEmit` (exit 0) + `npm run build` (exit 0) rodados contra o conteúdo exato de `main`, isolado no worktree. **`main` builda limpo** — baseline funcional estabelecida antes de qualquer integração |
+| Auditorias reutilizadas | Nenhuma reexecutada — `docs/audit/BRANCH_SYNC.md` §§1-10 (inventário de commits, grupos de incorporação, mapa de promoção de componentes) seguem válidas e não foram reabertas |
+
+**Pendente (fora do escopo autorizado aqui)**: qualquer conteúdo de integração real (grupos 1-4 de §7.2) — Fase 00.3 só estabelece a base isolada e a baseline, não inicia incorporação.
