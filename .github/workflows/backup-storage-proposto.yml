@@ -1,0 +1,108 @@
+name: "[PROPOSTO, não ativo] Backup do banco + Storage, cifrado e com manifesto"
+
+# PROPOSTA — ver docs/audit/BRANCH_SYNC.md §11 (Fase 00.2). Ainda não
+# substitui backup-diario.yml nem roda em agenda nenhuma: só
+# `workflow_dispatch` manual, pra Caio testar antes de decidir ativar.
+# Não editar backup-diario.yml direto evita que esta mudança rode sozinha
+# com segredos reais antes de alguém revisar.
+#
+# O que este workflow acrescenta ao backup-diario.yml existente:
+#   1. Backup do Storage (bucket "andamento-anexos"), que hoje fica de fora
+#      (achado em docs/audit/GAPS.md).
+#   2. Manifesto SHA-256 de cada artefato (dump + storage), pra verificar
+#      integridade na hora de restaurar.
+#   3. Cifragem com `age` antes de subir pro Drive — só a chave PÚBLICA
+#      fica no repositório (chave pública não é segredo); a privada fica
+#      só com o Caio, offline, fora do GitHub inteiramente.
+#   4. Retenção GFS (7 diários / 4 semanais / 3 mensais) em vez do corte
+#      fixo de 90 dias — ver scripts/retencao_gfs.py.
+#
+# Segredos NOVOS que este workflow precisa (nomes apenas, nenhum valor
+# aqui ou em qualquer lugar do repositório):
+#   AGE_PUBLIC_KEY             - chave pública de cifragem (não é segredo
+#                                por natureza, mas documentado como tal
+#                                pra não depender de decisão de onde
+#                                guardar uma chave "pública só nossa")
+#   SUPABASE_URL               - já conhecida (igual a
+#                                NEXT_PUBLIC_SUPABASE_URL do app)
+#   SUPABASE_SERVICE_ROLE_KEY  - JÁ EXISTE como segredo do Vercel; precisa
+#                                ser adicionada TAMBÉM como GitHub Secret
+#                                (mesma chave, destino novo) — não é uma
+#                                chave nova a gerar, só a mesma em mais um
+#                                lugar que o Caio controla
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backup-completo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Instala cliente do Postgres (versão 17, compatível com o banco)
+        run: |
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Instala age (cifragem)
+        run: sudo apt-get install -y age
+
+      - name: Configura Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Instala dependências Python
+        run: pip install --quiet google-api-python-client google-auth requests
+
+      - name: Gera o dump do banco
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          data=$(date +%Y-%m-%d)
+          mkdir -p backup-${data}
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --format=custom --file="backup-${data}/banco.dump"
+          echo "DATA=${data}" >> "$GITHUB_ENV"
+
+      - name: Baixa o bucket "andamento-anexos" do Storage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/backup_storage.py andamento-anexos "backup-${DATA}/storage"
+
+      - name: Compacta tudo num único arquivo
+        run: tar -czf "backup-crmcofisc-${DATA}.tar.gz" -C "backup-${DATA}" .
+
+      - name: Gera manifesto SHA-256
+        run: python scripts/gerar_manifesto.py "backup-crmcofisc-${DATA}.tar.gz" > "backup-crmcofisc-${DATA}.sha256"
+
+      - name: Cifra o backup com age (chave pública só, privada fica com o Caio)
+        env:
+          AGE_PUBLIC_KEY: ${{ secrets.AGE_PUBLIC_KEY }}
+        run: age -r "$AGE_PUBLIC_KEY" -o "backup-crmcofisc-${DATA}.tar.gz.age" "backup-crmcofisc-${DATA}.tar.gz"
+
+      - name: Guarda como artefato do GitHub (redundância, 14 dias — Drive é a cópia com retenção GFS)
+        uses: actions/upload-artifact@v7
+        with:
+          name: "backup-crmcofisc-${{ env.DATA }}"
+          path: |
+            backup-crmcofisc-${{ env.DATA }}.tar.gz.age
+            backup-crmcofisc-${{ env.DATA }}.sha256
+          retention-days: 14
+
+      - name: Sobe pro Drive e aplica retenção GFS (7 diários / 4 semanais / 3 mensais)
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_DRIVE_REFRESH_TOKEN: ${{ secrets.GOOGLE_DRIVE_REFRESH_TOKEN }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: |
+          python scripts/backup_para_drive.py "backup-crmcofisc-${DATA}.tar.gz.age"
+          python scripts/backup_para_drive.py "backup-crmcofisc-${DATA}.sha256"
+          python scripts/retencao_gfs.py

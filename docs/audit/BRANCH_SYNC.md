@@ -264,3 +264,52 @@ Consequência, item a item do pedido:
 ### Preservação de dados/credenciais/produção
 
 Nenhum dado, credencial ou configuração de produção foi tocado nesta execução — as únicas ações reais foram leitura (HEADs, Vercel, Supabase MCP de outro projeto só pra confirmar a ausência de acesso) e uma tentativa de push de tag, recusada antes de qualquer efeito. `origin/main` e o deploy de produção seguem exatamente como estavam.
+
+## 12. Resolução dos bloqueios de 00.1–00.2, sem custo adicional (2026-11-28, continuação)
+
+> Reavaliação pedida explicitamente por Caio: "resolva os bloqueios... sem custo adicional". Não houve novo acesso ao projeto Supabase real nem a GitHub Secrets — a mudança foi separar o que de fato dependia disso do que podia ser verificado com infraestrutura local, gratuita e descartável. Nenhuma dependência redundante foi instalada no projeto (nada em `package.json`/manifesto committed), nenhum segredo foi exposto, nenhum dado foi transferido sem autorização, produção não foi alterada, nenhum serviço foi contratado.
+
+### 00.1 (atualização) — HEADs/checkpoint reconfirmados
+
+| Item | Resultado |
+|---|---|
+| HEADs reconfirmados | `origin/main` = `0efae14` (inalterado desde §11); branch de trabalho = `1dfdcda` (avançou — commit do `CRM_INTEGRATION.zip`); contagem = 331 só em `main`, 44 só na branch |
+| Deploy de produção (Vercel) | Reconfirmado novamente: `0efae14`, sem mudança |
+| Proteção por tag real | Ainda bloqueada pelo mesmo HTTP 403 (push restrito à branch nomeada) — não foi retentada, por instrução explícita de não contornar bloqueio de permissão. Comandos para Caio executar, atualizados para o checkpoint atual: |
+
+```
+git tag -a safety/main-pre-integracao-20261128 0efae14e81402af9336b48f8969e73a9a61f1a8a -m "Checkpoint de proteção pré-integração — produção"
+git tag -a safety/branch-pre-integracao-20261128 1dfdcdae0148f44acc860ce0b732fa99b43902b7 -m "Checkpoint de proteção pré-integração — branch de trabalho"
+git push origin safety/main-pre-integracao-20261128 safety/branch-pre-integracao-20261128
+```
+
+### 00.2 (atualização) — o que foi efetivamente destravado
+
+Reavaliação do impedimento original: a falta de acesso ao projeto Supabase real via MCP bloqueia só a verificação end-to-end **contra dados de produção reais**. Ela não bloqueia (a) verificar se o *mecanismo* de backup/restauração funciona, usando infraestrutura local gratuita e descartável, nem (b) escrever o código que vai rodar dentro do GitHub Actions, que já tem (ou pode receber) os secrets reais sem este ambiente precisar vê-los.
+
+| Item pedido | Status | Como foi verificado |
+|---|---|---|
+| Supabase CLI/API oficial, sem depender do MCP | **Viável, confirmado** | `npx -y supabase <comando>` funciona sem instalação persistente (versão 3.4.0 resolvida sob demanda) — não entra como dependência do projeto |
+| Restauração isolada (schema) via Supabase CLI + Docker local | **Executado e verificado, custo zero** | Docker estava instalado mas o daemon não estava ativo; iniciado manualmente (`dockerd`) só para este teste. Copiadas as 50 migrações reais (`supabase/migrations/`) para um diretório descartável, `supabase init --force` + `supabase start`: as 50 aplicaram sem erro num Postgres 17.12 local. Verificado via `psql` direto: 30 tabelas (bate com `docs/audit/DATA_MODEL.md`), RLS ativo em 100% das tabelas (0 linhas na consulta de "RLS desligado"), funções `is_authorized()` e `is_admin()` presentes, 103 políticas RLS ativas. Stack derrubada depois (`supabase stop`), containers/volumes/diretórios removidos, ~8GB de imagens Docker podadas — sandbox devolvido limpo. **Importante: isto valida a restauração de ESTRUTURA (schema/RLS/migrações), não de DADOS reais** — não havia dados de produção disponíveis nem foram usados |
+| Checksum/integridade (SHA-256 + manifesto) | **Mecanismo testado e verificado** | `scripts/gerar_manifesto.py` (novo): gera manifesto no formato padrão `sha256sum`. Testado com arquivo descartável: manifesto válido, `sha256sum -c` passa; arquivo corrompido de propósito → `FAILED` + exit code 1. Detecção de corrupção confirmada |
+| Criptografia (age/GPG) | **Mecanismo testado e verificado** | Par de chaves `age` **descartável**, gerado e apagado só para o teste (nunca chave real): cifrado → decifrado → `diff` idêntico ao original. Round-trip confirmado |
+| Backup do banco (pg_dump) | **Código preparado, não alterado o fluxo existente** | `backup-diario.yml` (produção, agendado) não foi tocado. A proposta de extensão usa `pg_dump --format=custom`, igual ao que já roda hoje |
+| Backup do Storage (bucket `andamento-anexos`) | **Código novo preparado (`scripts/backup_storage.py`), não testado contra dados reais** | Usa a API REST oficial do Supabase Storage (só `requests`, já disponível em runner Python padrão — nenhuma dependência nova). Lista recursivamente e baixa preservando estrutura de pastas. Revisado por leitura, correto na lógica, mas sem bucket real pra exercitar aqui — fica pendente de validação por Caio num `workflow_dispatch` manual |
+| Retenção GFS (7 diários / 4 semanais / 3 mensais) | **Lógica implementada e testada com dados sintéticos** | `scripts/retencao_gfs.py` (novo) — substitui o corte fixo de 90 dias (`limpa_backups_antigos` em `scripts/backup_para_drive.py`, que continua intocado/em uso até decisão em contrário). Testada a função pura `selecionar_para_manter()` com 400 dias de datas sintéticas (não é chamada real ao Drive): resultado determinístico correto — 7 diários mais recentes + 4 semanas ISO distintas + 3 meses distintos, com sobreposição esperada entre os grupos |
+| Validar autorização institucional/destino/acesso/retenção | **Ainda decisão de Caio, não técnica** | Inalterado de §11 — nenhuma infraestrutura resolve isso, é política. A proposta de retenção GFS acima é uma sugestão técnica pronta pra aprovação, não uma decisão tomada |
+| Verificar checksums/consistência entre registros reais e anexos reais | **Ainda não executado** | Continua exigindo acesso ao banco/Storage reais — fora do que "sem custo adicional" resolve. O mecanismo de verificação (acima) está pronto; falta o dado real pra rodar contra |
+| Restauração isolada de DADOS reais (não só schema) | **Ainda não executado, mesmo motivo de §11** | Precisaria de um dump real pra restaurar — não disponível sem acesso ao projeto |
+
+### Arquivos novos (propostos, não ativos, pendentes de commit/decisão)
+
+- `scripts/backup_storage.py` — baixa um bucket do Supabase Storage via API REST oficial
+- `scripts/gerar_manifesto.py` — gera manifesto SHA-256 (testado)
+- `scripts/retencao_gfs.py` — retenção GFS 7/4/3 (lógica testada; import do `cliente_drive` de `backup_para_drive.py` feito tardio, dentro de `main()`, pra não exigir `google-api-python-client` só pra testar a lógica pura)
+- `.github/workflows/backup-storage-proposto.yml` — workflow novo, `workflow_dispatch` apenas (nunca em agenda), não substitui `backup-diario.yml`. Lista nos comentários os novos GitHub Secrets necessários (nomes só, nenhum valor): `AGE_PUBLIC_KEY` (nova), `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (já existem no Vercel — precisam ser adicionadas também como GitHub Secret, mesma chave, destino novo)
+
+### Limitações que permanecem (não resolvidas por infraestrutura local)
+
+1. Nenhuma verificação rodou contra o projeto Supabase real ou dados reais — só contra schema público (migrações já versionadas no repo) e dados sintéticos/descartáveis.
+2. `backup_storage.py` não foi exercitado contra um bucket real — risco residual de algum detalhe da API (paginação além de 1000 itens, caracteres especiais em nomes de arquivo) só aparecer em uso real.
+3. A ativação de qualquer peça disto em produção (rodar o workflow proposto com secrets reais, gerar o par de chaves `age` real e guardar a privada, adicionar `SUPABASE_SERVICE_ROLE_KEY` como GitHub Secret) depende de ações do Caio — nenhuma delas foi feita aqui.
+4. Restauração de **dados** reais (não só estrutura) continua não verificada, e só pode ser verificada com acesso real ou custo de provisionamento — nenhum dos dois ocorreu aqui.
