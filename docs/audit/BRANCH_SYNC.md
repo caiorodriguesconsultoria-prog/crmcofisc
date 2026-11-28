@@ -115,13 +115,14 @@ Essas são as mesmas referências já sinalizadas como pendência em `docs/audit
 
 Decisões finais de Caio (registradas em `docs/DECISIONS.md`): **Liquid Glass é o Design System definitivo do projeto**; a migração das telas de produção acontece **progressivamente, junto com melhorias funcionais já planejadas** (não de uma vez); adotar a sidebar flutuante e unificar Gestores/Fiscais, nos dois casos **já no padrão Liquid Glass**; preservar toda funcionalidade/correção que `main` acumulou de forma independente. O plano abaixo é a preparação para quando a execução for autorizada — nenhum passo aqui foi rodado.
 
-### 7.0 Proteção das branches (primeiro passo, antes de qualquer outro)
+### 7.0 Proteção das branches (Fase 00.1 — executada em 2026-11-28, ver §11)
 
-Antes de tocar em qualquer arquivo: criar um ponto de restauração para os dois lados, sem alterar nenhum dos dois:
-- Tag/branch de segurança em `origin/main` no commit atual (`0efae14`) — ponto de rollback do lado produção.
-- Tag/branch de segurança na branch de trabalho no commit atual (`c4eb9f6`) — preserva o estado íntegro do protótipo/documentação/plano antes de qualquer reescrita.
+Checkpoint de proteção, por SHA exato (não por tag — a tentativa de criar tags `safety/*` em `origin` foi negada pelo GitHub, HTTP 403; este git local está autorizado a dar push só na branch de trabalho nomeada, não em novos refs — ver §11 pro impedimento completo):
 
-Nenhuma dessas tags foi criada nesta tarefa (é só análise/preparação).
+- **Produção/`origin/main`**: `0efae14e81402af9336b48f8969e73a9a61f1a8a` — reconfirmado via Vercel nesta data, sem mudança desde a análise anterior.
+- **Branch de trabalho**: `101c9f528220d90cb0a0a90ec49c6d27b989fafc` — HEAD no momento desta checagem (2026-11-28 00:35 UTC).
+
+Esses dois SHAs são o checkpoint de rollback oficial até que Caio crie as tags de verdade (comando pronto em §11) ou autorize outro mecanismo de proteção.
 
 ### 7.1 Base da integração
 
@@ -185,7 +186,7 @@ Cada grupo (§7.2) é seu próprio checkpoint — critério de aceite antes de a
 3. Revisão humana (Caio) do grupo isolado, antes de iniciar o próximo.
 
 Rollback independente por grupo:
-- Se um grupo falhar em qualquer checkpoint: reverter só aquele grupo, voltando à tag de segurança da branch de trabalho (§7.0) — os demais grupos, já aprovados em checkpoints anteriores, não são afetados.
+- Se um grupo falhar em qualquer checkpoint: reverter só aquele grupo, voltando ao checkpoint de segurança da branch de trabalho (`101c9f5`, §7.0) — os demais grupos, já aprovados em checkpoints anteriores, não são afetados.
 - Nenhum grupo chega a `main` antes de todos os checkpoints passarem — não há rollback de produção a fazer até a etapa final de merge.
 - Depois de um eventual merge futuro: `git revert` do commit de merge específico (nunca `reset` forçado em `main`) — mesmo padrão já usado para o caso do login em `docs/design/MIGRATION.md`.
 
@@ -222,3 +223,44 @@ Mudança de status, não de conteúdo técnico (tokens/componentes continuam des
 - `docs/design/DESIGN_SYSTEM.md` — adiciona nota de que deixou de ser "documentação de protótipo isolado" e passa a documentar o Design System real do produto, com `app/_ui/` como destino final dos componentes (não mais `/design-lab` como fim de linha).
 
 Essas três mudanças de cabeçalho foram aplicadas nos respectivos arquivos nesta mesma rodada — ver cada um para o texto exato, não duplicado aqui.
+
+## 11. Execução Fase 00.1–00.2 (2026-11-28) — status, impedimentos
+
+> Esta seção registra o que foi de fato executado nesta data (não mais só plano) e os impedimentos encontrados, conforme pedido explícito de parar e informar quando houver bloqueio de segurança, acesso ou custo.
+
+### 00.1 — Reconfirmação de HEADs e proteção das branches
+
+| Item | Resultado |
+|---|---|
+| HEADs reconfirmados | `origin/main` = `0efae14` (inalterado); branch de trabalho = `101c9f5`; ancestral comum = `d1bac7f` (inalterado); contagem = 331 só em `main`, 43 só na branch |
+| Deploy de produção (Vercel) | Reconfirmado: `0efae14`, sem mudança |
+| Proteção de `origin/main` | **Bloqueada** — tentativa de `git push` de uma tag `safety/main-pre-integracao-20261128` apontando pro SHA de `origin/main` foi recusada pelo GitHub com HTTP 403. As credenciais deste ambiente têm push autorizado só pra branch nomeada `claude/crm-cofisc-conexao-9pot1u`, não pra novos refs (tags ou outras branches) |
+| Proteção da branch de trabalho | **Bloqueada** pelo mesmo motivo — tag local criada e descartada (não é durável sem push; o container deste ambiente é efêmero) |
+| Checkpoint registrado como alternativa | SHAs exatos documentados em §7.0: `origin/main` em `0efae14e81402af9336b48f8969e73a9a61f1a8a`, branch de trabalho em `101c9f528220d90cb0a0a90ec49c6d27b989fafc`. Válido como referência de rollback enquanto as tags reais não existem, mas **sem a garantia de durabilidade que uma tag genuína dá** (um SHA sem nenhum ref apontando pra ele pode, em tese, ser removido pelo coletor de lixo do GitHub se nada mais o referenciar) |
+
+**Impedimento — ação pendente de Caio**: criar as duas tags manualmente (ou autorizar uma conta/token com permissão de push mais ampla neste ambiente). Comandos prontos, só rodar com acesso de escrita ao repositório:
+```
+git tag -a safety/main-pre-integracao-20261128 0efae14e81402af9336b48f8969e73a9a61f1a8a -m "Checkpoint de proteção pré-integração — produção"
+git tag -a safety/branch-pre-integracao-20261128 101c9f528220d90cb0a0a90ec49c6d27b989fafc -m "Checkpoint de proteção pré-integração — branch de trabalho"
+git push origin safety/main-pre-integracao-20261128 safety/branch-pre-integracao-20261128
+```
+
+### 00.2 — Backup permanente (banco + Storage), verificação e restauração isolada
+
+**Impedimento de acesso, bloqueante para todo o escopo de 00.2**: o Supabase MCP conectado a esta sessão **não tem nenhum projeto do CRM-COFISC** — `list_organizations`/`list_projects` só retornam projetos de outro workspace ("Hub Financeiro Familiar"/"jarvis-família"), sem relação com este CRM. Confirmado também que este ambiente não tem acesso aos GitHub Secrets usados pelo workflow de backup real (`SUPABASE_DB_URL`, credenciais do Google Drive) — são secrets de CI, não expostos a este container por desenho.
+
+Consequência, item a item do pedido:
+
+| Item pedido | Status | Motivo |
+|---|---|---|
+| Implementar backup permanente do banco | **Não executado** | Sem acesso ao projeto Supabase real nem aos secrets que o workflow usaria — qualquer alteração em `backup-diario.yml` ficaria sem como ser testada de verdade nesta sessão. Escrever a mudança "às cegas" e chamá-la de implementada seria enganoso |
+| Implementar backup permanente do Storage (`andamento-anexos`) | **Não executado** | Mesmo motivo — e é trabalho novo (não existe hoje, ver `GAPS.md`), não só estender algo já testado |
+| Validar autorização institucional, destino, criptografia, acesso e retenção | **Não executado — decisão de Caio, não técnica** | São escolhas de política que esta sessão não pode presumir: quem deve ter acesso aos arquivos de backup, se o destino atual (artefato do GitHub Actions + pasta do Google Drive pessoal) é o aprovado pra dado institucional, se precisa de criptografia adicional além da que o Drive/GitHub já aplicam em repouso, qual a retenção formalmente exigida (hoje é 90 dias por convenção do workflow, nunca formalizada como política) |
+| Verificar checksums/consistência entre registros e anexos | **Não executado** | Exige consulta real ao banco (`andamento_anexos`) e ao bucket de Storage — nenhum dos dois acessível nesta sessão |
+| Testar restauração integral em ambiente isolado | **Não executado — bloqueio duplo** | (a) mesma falta de acesso ao projeto real; (b) mesmo com acesso, restaurar um dump em ambiente isolado significa provisionar um projeto Supabase novo (ou reativar um pausado) — **custo adicional recorrente ou pontual**, que não deve ser incorrido sem autorização explícita de Caio |
+
+**Recomendação para destravar, quando Caio autorizar**: rodar esta mesma Fase 00.2 numa sessão/ambiente com (1) o Supabase MCP conectado ao projeto real do CRM-COFISC (ou acesso equivalente por CLI com a `SUPABASE_DB_URL`), e (2) autorização explícita pra criar um projeto Supabase temporário de teste de restauração (ciente do custo). Sem isso, qualquer "implementação" de backup permanente feita aqui seria código não validado contra o sistema real — risco maior do que não ter feito nada.
+
+### Preservação de dados/credenciais/produção
+
+Nenhum dado, credencial ou configuração de produção foi tocado nesta execução — as únicas ações reais foram leitura (HEADs, Vercel, Supabase MCP de outro projeto só pra confirmar a ausência de acesso) e uma tentativa de push de tag, recusada antes de qualquer efeito. `origin/main` e o deploy de produção seguem exatamente como estavam.

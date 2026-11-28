@@ -7,6 +7,7 @@
 - Implementar em passos pequenos, um commit por ajuste quando fizer sentido.
 - Documentar decisões relevantes no `LOG.md` (uma entrada por mudança, com o "porquê").
 - Fluxo de deploy: commitar/push na branch de trabalho → merge pra `main` (produção, auto-deploy) só depois de rodar `tsc --noEmit` e `npm run build` limpos → se a mudança depender de migração, só mergear depois do Caio confirmar que rodou o SQL.
+- **Merge pra `main` e qualquer deploy exigem autorização explícita do Caio, caso a caso** — mesmo com `tsc`/`build` limpos e testes de regressão passando. Vale em especial para a integração da branch de trabalho em andamento (`docs/audit/BRANCH_SYNC.md`): nenhum checkpoint (§7.6) autoriza merge/deploy por si só, cada um exige o "sim" de Caio separadamente.
 - **Design System definitivo: Liquid Glass** (`design-system/LIQUID_GLASS.md`) — decisão final registrada em `docs/DECISIONS.md`. Ler esse documento antes de mexer em qualquer tela ou criar componente novo. Migração das telas de produção é **progressiva, pareada a melhorias funcionais** (nunca uma reescrita de tudo de uma vez) — plano em `docs/audit/BRANCH_SYNC.md` §7-10. Nenhuma tela nova ou redesenho deve nascer no padrão bento antigo.
 - Padrão bento/dashboard antigo (`design-system/REGRAS.md`, `design-system/tokens.css`): **legado em desativação progressiva** — só consultar pra não quebrar uma tela que ainda não migrou; não usar como ponto de partida pra nada novo.
 - Nunca misturar os dois sistemas visuais numa mesma tela — a migração troca a tela inteira, não mescla os dois.
